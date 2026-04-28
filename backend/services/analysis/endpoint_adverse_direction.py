@@ -130,6 +130,17 @@ def list_compound_classes() -> list[str]:
     return list(_load_compound_registry().keys())
 
 
+def compound_class_exemplars(class_key: str) -> list[str]:
+    """Return registered exemplars (compound names) for a compound class.
+
+    Used by ``services.analysis.compound_class.resolve_pharmacologic_class``
+    to match study TS-metadata treatment names against known class members.
+    Returns ``[]`` for unknown class keys.
+    """
+    entry = _load_compound_registry().get(class_key) or {}
+    return list(entry.get("exemplars") or [])
+
+
 def is_direction_canonical_adverse(endpoint_class: str | None, observed_direction: str | None) -> bool:
     """True when ``observed_direction`` matches the class's primary adverse direction.
 

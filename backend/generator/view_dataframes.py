@@ -80,12 +80,35 @@ def _effect_matches_trend_direction(finding: dict, pw: dict) -> bool:
 def _is_loael_driving_woe(
     finding: dict, dose_level: int, n_per_group: int,
     effect_threshold: float = 0.3,
+    *,
+    sex_findings: list[dict] | None = None,
+    study_pharmacologic_class: str | None = None,
 ) -> bool:
     """Weight-of-evidence LOAEL gate (B4c, peer-reviewed).
 
     Returns True if *finding* should drive LOAEL at *dose_level* using
     multi-criteria OR.  Combined alpha ~0.06-0.08 at N=3 with mitigations
     (Haseman 1990/1996 NTP precedent: ~7-8%).
+
+    C7 wiring (DATA-GAP-NOAEL-ALG-02 2026-04-28). When both ``sex_findings``
+    and ``study_pharmacologic_class`` are provided, two additional gates fire:
+
+    - **C7 suppression** (between not_treatment_related override and C1):
+      direction-exception predicate evaluation (e.g., FW palatability
+      rebound). Match suppresses all C1-C5 firing AND emits the
+      ``c7_suppression_reason`` audit-trail field on the finding (A4
+      reframe -- does NOT change ``finding_class``).
+    - **C7 corroboration** (after C5, before final return False): when
+      observed effect direction is non-canonical for the endpoint class
+      (e.g., BW-up, FW-up, OM-down), evaluate cross-finding corroboration
+      triggers. Mechanism (compound_class:* flag): any-one fires =
+      corroborated. Observation (cross-domain FW/CL/OM/MA/MI): >=2 same-
+      dose fires = corroborated. Corroborated => returns True; emits
+      ``c7_corroboration`` audit-trail field.
+
+    Both kwargs default to None for back-compat with callers that haven't
+    been plumbed yet -- C7 silently no-ops in that case (existing C1-C5
+    behavior preserved).
     """
     pw = _get_pairwise_at_dose(finding, dose_level)
     if not pw:
@@ -100,9 +123,25 @@ def _is_loael_driving_woe(
     # WoE criterion below. Without this early-return, C2b's no-fc-gate path
     # would re-fire on the same finding's raw pairwise effect, defeating the
     # override. CLAUDE.md rule 19: regulatory reviewer expects override
-    # semantics to be uniform across the gate.
+    # semantics to be uniform across the gate. Per CLAUDE.md rule 21
+    # (algorithm-as-advisor), C7 also DOES NOT override not_treatment_related
+    # -- the credentialed reviewer's override is final.
     if fc == "not_treatment_related":
         return False
+
+    # C7 suppression: direction-exception predicate match (e.g., FW
+    # palatability_rebound). When the registered exception's all_of
+    # predicates all evaluate True, the finding is suppressed from
+    # LOAEL-driving regardless of C1-C5 firings. The finding's adversity
+    # classification (finding_class) is unchanged -- only its LOAEL-driving
+    # status. Caller-visible audit trail via the c7_suppression_reason
+    # field on the finding (A4 reframe; no finding_class enum widening).
+    if sex_findings is not None:
+        from services.analysis.c7_corroboration import evaluate_direction_exception
+        suppression = evaluate_direction_exception(finding, dose_level, sex_findings)
+        if suppression is not None:
+            finding.setdefault("c7_suppression_reason", suppression)
+            return False
 
     # C1: Effect relevance — gLower > threshold (sample-size-invariant).
     # Incidence: falls to p-value (h_lower excluded, degenerate at small N).
@@ -175,6 +214,47 @@ def _is_loael_driving_woe(
         ctrl = _get_group_stats_at_dose(finding, 0)
         if gs and ctrl:
             if gs.get("incidence", 0) >= 0.5 and ctrl.get("incidence", 0) == 0:
+                return True
+
+    # C7: Bidirectional adverse-direction corroboration (DATA-GAP-NOAEL-ALG-02
+    # 2026-04-28). When the FINDING-LEVEL direction is non-canonical for the
+    # endpoint class (e.g., a BW finding with direction="up" against canonical
+    # BW-down adversity, indicating sustained body-weight gain across the
+    # study), C1-C5 would not have fired -- but the synthesis F1d/F1e contract
+    # is that such effects ARE adverse when corroborated by either (a)
+    # compound-class mechanism (any one compound_class:* trigger; PPAR-gamma,
+    # glucocorticoid, etc.) or (b) >=2 cross-domain observations at the same
+    # dose+sex (FW_up + CL_fluid_retention + OM_organomegaly for BW-up
+    # corroboration). C7 fires only on finding-level direction (the
+    # `finding.direction` field), NOT on per-dose pairwise sign -- per the
+    # BUG-033 lesson, per-dose sign-flips are noise on canonical-direction
+    # findings and must NOT activate C7 (would re-fire LOAEL on the exact
+    # patterns the BUG-033 direction-match guard exists to suppress).
+    # C7 does NOT override `not_treatment_related` (early gate above) per
+    # CLAUDE.md rule 21. Back-compat: when sex_findings is None, C7 is silent.
+    if sex_findings is not None:
+        from services.analysis.c7_corroboration import evaluate_c7_corroboration
+        from services.analysis.endpoint_adverse_direction import (
+            is_direction_canonical_adverse,
+            lookup_endpoint_class,
+        )
+        endpoint_class = lookup_endpoint_class(
+            finding.get("endpoint_label"),
+            send_domain=finding.get("domain"),
+        )
+        finding_direction = finding.get("direction")
+        if finding_direction in ("up", "down") and not is_direction_canonical_adverse(
+            endpoint_class, finding_direction,
+        ):
+            result = evaluate_c7_corroboration(
+                finding, dose_level, sex_findings, study_pharmacologic_class,
+            )
+            if result.corroborated:
+                finding.setdefault("c7_corroboration", {
+                    "corroborated": True,
+                    "mechanism_fires": list(result.mechanism_fires),
+                    "observation_fires": list(result.observation_fires),
+                })
                 return True
 
     return False
@@ -740,6 +820,7 @@ def build_endpoint_loael_summary(
     dose_groups: list[dict],
     params: ScoringParams | None = None,
     compound_partitions: dict | None = None,
+    study_pharmacologic_class: str | None = None,
 ) -> dict[str, dict]:
     """F1a top-level emission per AC-F1-10 / F-S4 Option 1.
 
@@ -785,6 +866,7 @@ def build_endpoint_loael_summary(
                 has_concurrent_control=True,
                 is_single_dose=partition.get("is_single_dose", False),
                 aggregation_out=comp_out,
+                study_pharmacologic_class=study_pharmacologic_class,
             )
             for k, v in comp_out.items():
                 out[f"{comp_id}::{k}"] = v
@@ -792,6 +874,7 @@ def build_endpoint_loael_summary(
     _build_noael_for_groups(
         findings, dose_groups, mortality=None, params=params,
         has_concurrent_control=True, aggregation_out=out,
+        study_pharmacologic_class=study_pharmacologic_class,
     )
     return out
 
@@ -804,6 +887,7 @@ def build_noael_summary(
     has_concurrent_control: bool = True,
     compound_partitions: dict | None = None,
     classification_framework: str | None = None,
+    study_pharmacologic_class: str | None = None,
 ) -> list[dict]:
     """Build NOAEL summary: 3 rows (M, F, combined) per compound.
 
@@ -830,6 +914,7 @@ def build_noael_summary(
                 comp_findings, comp_dgs, mortality=mortality,
                 params=params, has_concurrent_control=has_concurrent_control,
                 is_single_dose=partition.get("is_single_dose", False),
+                study_pharmacologic_class=study_pharmacologic_class,
             )
             for r in comp_rows:
                 r["compound_id"] = comp_id
@@ -839,6 +924,7 @@ def build_noael_summary(
     return _build_noael_for_groups(
         findings, dose_groups, mortality=mortality,
         params=params, has_concurrent_control=has_concurrent_control,
+        study_pharmacologic_class=study_pharmacologic_class,
     )
 
 
@@ -956,6 +1042,7 @@ def _build_noael_for_groups(
     has_concurrent_control: bool = True,
     is_single_dose: bool = False,
     aggregation_out: dict | None = None,
+    study_pharmacologic_class: str | None = None,
 ) -> list[dict]:
     """Internal: build NOAEL for a single compound's dose groups.
 
@@ -1112,9 +1199,15 @@ def _build_noael_for_groups(
             n_timepoints = len(ep_findings)
             endpoint_class = _classify_endpoint(ep_findings[0], n_timepoints)
             for dose_level in treated_dose_levels:
+                # C7 plumbing: ep_findings is already filtered to a single
+                # (endpoint_label, sex) bucket; the loop's outer sex_findings
+                # is the broader sex-only filter the C7 cross-finding queries
+                # operate over (FW_up trigger needs FW findings, not just BW).
                 decision = _aggregate_loael_drivers(
                     ep_findings, dose_level, endpoint_class,
                     _n_per_group, params,
+                    sex_findings=sex_findings,
+                    study_pharmacologic_class=study_pharmacologic_class,
                 )
                 aggregation_decisions[(label, dose_level)] = decision
                 if decision.get("fired") and not decision.get("suspended"):
@@ -1170,7 +1263,11 @@ def _build_noael_for_groups(
             for f in sex_findings:
                 if f.get("is_derived"):
                     continue
-                if _is_loael_driving_woe(f, loael_level, _n_per_group, params.effect_relevance_threshold):
+                if _is_loael_driving_woe(
+                    f, loael_level, _n_per_group, params.effect_relevance_threshold,
+                    sex_findings=sex_findings,
+                    study_pharmacologic_class=study_pharmacologic_class,
+                ):
                     pw = _get_pairwise_at_dose(f, loael_level)
                     if pw is None:
                         continue
@@ -1193,6 +1290,7 @@ def _build_noael_for_groups(
         confidence = _compute_noael_confidence(
             sex_filter, sex_findings, findings, noael_level, n_adverse_at_loael,
             dose_groups=dose_groups, params=params,
+            study_pharmacologic_class=study_pharmacologic_class,
         )
 
         # GAP-163: LOO fragility penalty on NOAEL confidence
@@ -1308,7 +1406,11 @@ def _build_noael_for_groups(
                     dl = pw.get("dose_level")
                     if dl is None:
                         continue
-                    if _is_loael_driving_woe(sched_finding, dl, _n_per_group, params.effect_relevance_threshold):
+                    if _is_loael_driving_woe(
+                        sched_finding, dl, _n_per_group, params.effect_relevance_threshold,
+                        sex_findings=sex_findings,
+                        study_pharmacologic_class=study_pharmacologic_class,
+                    ):
                         sched_adverse_levels.add(dl)
             if sched_adverse_levels:
                 scheduled_loael_level = min(sched_adverse_levels)
@@ -1383,6 +1485,7 @@ def _compute_noael_confidence(
     n_adverse_at_loael: int,
     dose_groups: list[dict] | None = None,
     params: ScoringParams | None = None,
+    study_pharmacologic_class: str | None = None,
 ) -> float:
     """Compute NOAEL confidence score (0.0 to 1.0).
 
@@ -1421,7 +1524,11 @@ def _compute_noael_confidence(
                 dl = pw.get("dose_level")
                 if dl is None:
                     continue
-                if _is_loael_driving_woe(f, dl, opp_n_per_group, params.effect_relevance_threshold):
+                if _is_loael_driving_woe(
+                    f, dl, opp_n_per_group, params.effect_relevance_threshold,
+                    sex_findings=opp_findings,
+                    study_pharmacologic_class=study_pharmacologic_class,
+                ):
                     opp_adverse_levels.add(dl)
         opp_loael = min(opp_adverse_levels) if opp_adverse_levels else None
         opp_noael = _prev_dose_level(dose_groups, opp_loael) if dose_groups and opp_loael is not None and opp_loael > 0 else (
@@ -1484,7 +1591,11 @@ def _compute_noael_confidence(
                 dl = pw.get("dose_level")
                 if dl is None or dl <= 0:
                     continue
-                if _is_loael_driving_woe(f, dl, n_per_group, params.effect_relevance_threshold):
+                if _is_loael_driving_woe(
+                    f, dl, n_per_group, params.effect_relevance_threshold,
+                    sex_findings=sex_findings,
+                    study_pharmacologic_class=study_pharmacologic_class,
+                ):
                     loael_findings.append(f)
                     break
         if loael_findings and all(

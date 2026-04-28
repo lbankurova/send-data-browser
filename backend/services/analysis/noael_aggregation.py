@@ -52,6 +52,9 @@ def aggregate_loael_drivers(
     endpoint_class: str,
     n_per_group: int,
     params: ScoringParams,
+    *,
+    sex_findings: list[dict] | None = None,
+    study_pharmacologic_class: str | None = None,
 ) -> dict[str, Any]:
     """Per-(endpoint_label, sex, dose_level) LOAEL aggregation decision.
 
@@ -59,26 +62,34 @@ def aggregate_loael_drivers(
     and sex; each row corresponds to a different timepoint (day_start). The
     function returns the aggregated decision shape consumed by F1a's
     ``endpoint_loael_summary`` emission.
+
+    C7 plumbing (DATA-GAP-NOAEL-ALG-02 2026-04-28): ``sex_findings`` is the
+    broader sex-only filter (NOT the same-endpoint slice ``findings``) that
+    C7 cross-finding queries operate over. ``study_pharmacologic_class`` is
+    the resolved compound-class flag (e.g., ``"ppar_gamma_agonist"``) for
+    mechanism-trigger evaluation. Both default to None for back-compat;
+    when None, C7 silently no-ops (existing C1-C5 behavior preserved).
     """
+    kw = {"sex_findings": sex_findings, "study_pharmacologic_class": study_pharmacologic_class}
     n_timepoints = len(findings)
     if endpoint_class == "BW":
-        return _wrap("p3_terminal_primary", _p3_terminal_primary(findings, dose_level, n_per_group, params))
+        return _wrap("p3_terminal_primary", _p3_terminal_primary(findings, dose_level, n_per_group, params, **kw))
     if endpoint_class in ("LB-multi", "FW") and n_timepoints >= 3:
-        return _wrap("p2_sustained_consecutive", _p2_sustained_consecutive(findings, dose_level, n_per_group, params, M=params.sustained_M))
+        return _wrap("p2_sustained_consecutive", _p2_sustained_consecutive(findings, dose_level, n_per_group, params, M=params.sustained_M, **kw))
     if endpoint_class in ("LB-multi", "FW") and n_timepoints == 2:
-        return _wrap("m1_tightened_c2b", _m1_tightened_c2b(findings, dose_level, n_per_group, params))
+        return _wrap("m1_tightened_c2b", _m1_tightened_c2b(findings, dose_level, n_per_group, params, **kw))
     # F-S1 dispatch correction: 1-timepoint LB at any N is MORE fragile, not
     # less; route to m1_tightened_c2b regardless of timepoint count.
     if endpoint_class in ("LB-single", "FW-single") or (
         endpoint_class in ("LB-multi", "FW") and n_timepoints == 1
     ):
-        return _wrap("m1_tightened_c2b", _m1_tightened_c2b(findings, dose_level, n_per_group, params))
+        return _wrap("m1_tightened_c2b", _m1_tightened_c2b(findings, dose_level, n_per_group, params, **kw))
     if endpoint_class in ("CL", "DS"):
-        return _wrap("single_timepoint_incidence", _single_timepoint_incidence(findings, dose_level, n_per_group, params))
+        return _wrap("single_timepoint_incidence", _single_timepoint_incidence(findings, dose_level, n_per_group, params, **kw))
     if endpoint_class in ("MI", "MA", "OM"):
-        return _wrap("single_timepoint", _single_timepoint(findings, dose_level, n_per_group, params))
+        return _wrap("single_timepoint", _single_timepoint(findings, dose_level, n_per_group, params, **kw))
     # Safe default: single_timepoint with tightened-at-small-N
-    return _wrap("single_timepoint", _single_timepoint(findings, dose_level, n_per_group, params))
+    return _wrap("single_timepoint", _single_timepoint(findings, dose_level, n_per_group, params, **kw))
 
 
 def classify_endpoint(finding: dict, n_timepoints_for_endpoint: int) -> str:
@@ -120,6 +131,9 @@ def _p3_terminal_primary(
     dose_level: int,
     n_per_group: int,
     params: ScoringParams,
+    *,
+    sex_findings: list[dict] | None = None,
+    study_pharmacologic_class: str | None = None,
 ) -> dict[str, Any]:
     """OECD TG 408 §31 BW: terminal value drives LOAEL; per-week supportive only.
 
@@ -132,7 +146,11 @@ def _p3_terminal_primary(
     if not dosing:
         return {"fired": False, "fired_timepoints": [], "suspended": False, "suspended_reason": None, "firing_timepoint_position": "n/a"}
     terminal = max(dosing, key=lambda f: _safe_day_start(f))
-    if _is_loael_driving_woe(terminal, dose_level, n_per_group, params.effect_relevance_threshold):
+    if _is_loael_driving_woe(
+        terminal, dose_level, n_per_group, params.effect_relevance_threshold,
+        sex_findings=sex_findings,
+        study_pharmacologic_class=study_pharmacologic_class,
+    ):
         return {
             "fired": True,
             "fired_timepoints": [_safe_day_start(terminal)],
@@ -150,6 +168,8 @@ def _p2_sustained_consecutive(
     params: ScoringParams,
     *,
     M: int = 2,
+    sex_findings: list[dict] | None = None,
+    study_pharmacologic_class: str | None = None,
 ) -> dict[str, Any]:
     """LB-multi / FW with N_timepoints >= 3: M consecutive firing timepoints.
 
@@ -162,7 +182,11 @@ def _p2_sustained_consecutive(
 
     sorted_findings = sorted(findings, key=_safe_day_start)
     fired_flags = [
-        _is_loael_driving_woe(f, dose_level, n_per_group, params.effect_relevance_threshold)
+        _is_loael_driving_woe(
+            f, dose_level, n_per_group, params.effect_relevance_threshold,
+            sex_findings=sex_findings,
+            study_pharmacologic_class=study_pharmacologic_class,
+        )
         for f in sorted_findings
     ]
     fired_timepoints: list[int] = []
@@ -235,6 +259,9 @@ def _m1_tightened_c2b(
     dose_level: int,
     n_per_group: int,
     params: ScoringParams,
+    *,
+    sex_findings: list[dict] | None = None,
+    study_pharmacologic_class: str | None = None,
 ) -> dict[str, Any]:
     """N_timepoints <= 2 (or single): any timepoint fires under TIGHTENED threshold.
 
@@ -247,7 +274,11 @@ def _m1_tightened_c2b(
     fired_timepoints: list[int] = []
     sorted_findings = sorted(findings, key=_safe_day_start)
     for f in sorted_findings:
-        if _is_loael_driving_woe(f, dose_level, n_per_group, threshold):
+        if _is_loael_driving_woe(
+            f, dose_level, n_per_group, threshold,
+            sex_findings=sex_findings,
+            study_pharmacologic_class=study_pharmacologic_class,
+        ):
             fired_timepoints.append(_safe_day_start(f))
     if not fired_timepoints:
         return {"fired": False, "fired_timepoints": [], "suspended": False, "suspended_reason": None, "firing_timepoint_position": "n/a"}
@@ -266,6 +297,9 @@ def _single_timepoint_incidence(
     dose_level: int,
     n_per_group: int,
     params: ScoringParams,
+    *,
+    sex_findings: list[dict] | None = None,
+    study_pharmacologic_class: str | None = None,
 ) -> dict[str, Any]:
     """CL / DS: any timepoint's incidence finding above the WoE gate fires.
 
@@ -284,7 +318,11 @@ def _single_timepoint_incidence(
     fired_timepoints: list[int] = []
     sorted_findings = sorted(findings, key=_safe_day_start)
     for f in sorted_findings:
-        if _is_loael_driving_woe(f, dose_level, n_per_group, params.effect_relevance_threshold):
+        if _is_loael_driving_woe(
+            f, dose_level, n_per_group, params.effect_relevance_threshold,
+            sex_findings=sex_findings,
+            study_pharmacologic_class=study_pharmacologic_class,
+        ):
             fired_timepoints.append(_safe_day_start(f))
     if not fired_timepoints:
         return {"fired": False, "fired_timepoints": [], "suspended": False, "suspended_reason": None, "firing_timepoint_position": "n/a"}
@@ -302,6 +340,9 @@ def _single_timepoint(
     dose_level: int,
     n_per_group: int,
     params: ScoringParams,
+    *,
+    sex_findings: list[dict] | None = None,
+    study_pharmacologic_class: str | None = None,
 ) -> dict[str, Any]:
     """MI / MA / OM (terminal sacrifice) and unknown-domain default.
 
@@ -313,7 +354,11 @@ def _single_timepoint(
     fired_timepoints: list[int] = []
     sorted_findings = sorted(findings, key=_safe_day_start)
     for f in sorted_findings:
-        if _is_loael_driving_woe(f, dose_level, n_per_group, threshold):
+        if _is_loael_driving_woe(
+            f, dose_level, n_per_group, threshold,
+            sex_findings=sex_findings,
+            study_pharmacologic_class=study_pharmacologic_class,
+        ):
             fired_timepoints.append(_safe_day_start(f))
     if not fired_timepoints:
         return {"fired": False, "fired_timepoints": [], "suspended": False, "suspended_reason": None, "firing_timepoint_position": "n/a"}

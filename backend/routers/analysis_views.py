@@ -275,6 +275,7 @@ def _apply_overrides(data, study_id: str, view_name: str):
                     noael_result = _recompute_noael(
                         overridden, dose_groups, mortality, scoring,
                         noael_result, has_control,
+                        study_id=study_id,
                     )
 
         # Step 2: Apply NOAEL expert overrides AFTER recomputation.
@@ -292,6 +293,7 @@ def _recompute_noael(
     params,
     original_noael: list[dict],
     has_concurrent_control: bool = True,
+    study_id: str | None = None,
 ) -> list[dict]:
     """Full NOAEL recomputation using overridden findings.
 
@@ -299,14 +301,21 @@ def _recompute_noael(
     Re-runs ALL logic: LOAEL identification, NOAEL bracketing, mortality
     cap, confidence penalties, derivation trace.
 
-    Adds provenance to rows where the NOAEL shifted.
+    Adds provenance to rows where the NOAEL shifted. ``study_id`` is
+    plumbed through to resolve study_pharmacologic_class for C7 wiring;
+    when None (e.g., legacy callers), C7 silently no-ops.
     """
     from generator.view_dataframes import build_noael_summary
+    from services.analysis.compound_class import resolve_pharmacologic_class
 
+    study_pharmacologic_class = (
+        resolve_pharmacologic_class(study_id) if study_id else None
+    )
     recomputed = build_noael_summary(
         overridden_findings, dose_groups,
         mortality=mortality, params=params,
         has_concurrent_control=has_concurrent_control,
+        study_pharmacologic_class=study_pharmacologic_class,
     )
 
     # Build lookup of original NOAEL for provenance

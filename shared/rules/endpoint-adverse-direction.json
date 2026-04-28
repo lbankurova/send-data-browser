@@ -5,7 +5,7 @@
     "backend/services/analysis/endpoint_adverse_direction.py (lookup helpers)",
     "backend/generator/view_dataframes.py::_is_loael_driving_woe (C7 application)"
   ],
-  "_status": "content-complete pending toxicologist sign-off per DATA-GAP-NOAEL-ALG-02. All endpoint classes from research RG-NOAEL-ALG-02 are populated: BW (down primary, up via FW/CL/OM/4 compound classes), FW (down primary with palatability_rebound exception, up via BW/2 compound classes), OM (up primary with corroboration via MA/MI), CL_incidence (up only), DS_incidence (up only), LB_per_analyte (defers to per-analyte registry). C7 corroboration matching predicate (RG-NOAEL-ALG-14) and direction_exceptions predicate evaluation are separate downstream-consumer follow-ups.",
+  "_status": "content-complete + WIRED 2026-04-28 (DATA-GAP-NOAEL-ALG-02). All endpoint classes from research RG-NOAEL-ALG-02 are populated: BW (down primary, up via FW/CL/OM/4 compound classes), FW (down primary with palatability_rebound exception, up via BW/2 compound classes), OM (up primary with corroboration via MA/MI), CL_incidence (up only), DS_incidence (up only), LB_per_analyte (defers to per-analyte registry). C7 corroboration evaluator at backend/services/analysis/c7_corroboration.py; direction_exceptions predicate evaluator at backend/services/analysis/c7_predicates.py. Per A4 adjudication 2026-04-28, direction_exceptions.reclassify_to is RATIONALE METADATA (audit-trail field c7_suppression_reason on finding output) -- it does NOT add a value to the finding_class enum. The finding's adversity classification is unchanged when an exception fires; only its LOAEL-driving status is suppressed.",
   "endpoint_classes": {
     "BW": {
       "endpoint_label_patterns": [

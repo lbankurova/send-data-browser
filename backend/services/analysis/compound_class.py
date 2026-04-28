@@ -276,6 +276,64 @@ def _get_study_domains(study_id: str) -> set[str]:
         return set()
 
 
+def resolve_pharmacologic_class(
+    study_id: str,
+    ts_meta: dict | None = None,
+) -> str | None:
+    """Resolve pharmacologic class for NOAEL gate C7 corroboration triggers.
+
+    Returns the ``compound-class-flags.json`` class key (e.g.,
+    ``"ppar_gamma_agonist"``, ``"antipsychotic"``, ``"glucocorticoid"``,
+    ``"biphasic_hormetic"``) or ``None`` when no class matches.
+
+    Distinct from :func:`resolve_active_profile` which returns expected-effect
+    *modality* (mAb, ADC, gene therapy) -- these axes are orthogonal: a
+    pioglitazone study is small-molecule modality but PPAR-gamma pharmacology.
+
+    Resolution order (DATA-GAP-NOAEL-ALG-02 A2 adjudication, 2026-04-28):
+
+    1. **SME override** -- if ``backend/annotations/{study_id}/compound_profile.json``
+       has ``study.pharmacologic_class`` set AND ``study.confirmed_by_sme`` is
+       True, return the override value. Explicit human input wins over
+       inference.
+    2. **Exemplars lookup** -- match ``ts_meta["treatment"]`` (case-insensitive
+       substring) against ``compound-class-flags.json::classes[*].exemplars[]``.
+       First match wins. Reproducible, audit-traceable.
+    3. **None** -- no class triggers fire downstream. Fail-safe: better to not
+       fire than to mis-fire on a misidentified mechanism.
+
+    Schema extension: the ``compound_profile.json`` annotation file gains an
+    optional ``pharmacologic_class`` field alongside the existing
+    ``compound_class`` (modality) field. Both are gated by the existing
+    ``confirmed_by_sme`` flag. Existing annotations without the new field
+    silently return None on the override path and fall through to exemplars.
+    """
+    sme_data = _read_sme_annotation(study_id)
+    if sme_data and sme_data.get("confirmed_by_sme"):
+        sme_class = sme_data.get("pharmacologic_class")
+        if sme_class:
+            return sme_class
+
+    # Self-fetch TS metadata when caller didn't provide it (mirrors
+    # resolve_active_profile's pattern). Treatment-name matching against
+    # exemplars[] requires ts_meta.treatment to be populated.
+    if not ts_meta or not ts_meta.get("treatment"):
+        ts_meta = _read_ts_for_study(study_id, ts_meta)
+    treatment = ((ts_meta or {}).get("treatment") or "").strip().lower()
+    if not treatment:
+        return None
+
+    from services.analysis.endpoint_adverse_direction import (
+        list_compound_classes,
+        compound_class_exemplars,
+    )
+    for class_key in list_compound_classes():
+        for exemplar in compound_class_exemplars(class_key):
+            if exemplar.lower() in treatment:
+                return class_key
+    return None
+
+
 def list_profiles() -> list[dict]:
     """Return summary metadata for all user-selectable profiles.
 

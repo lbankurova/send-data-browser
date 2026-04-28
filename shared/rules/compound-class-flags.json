@@ -2,10 +2,12 @@
   "_comment": "Compound-class flags for NOAEL gate C7 corroboration triggers (RG-NOAEL-ALG-13). Each class names compounds where opposite-direction body-weight effects (or other named adversity asymmetries) carry recognized regulatory significance. Citations are primary literature; toxicologist verification recorded in deferred-defect log per AC-F5-5 pattern.",
   "_schema_version": "1",
   "_consumed_by": [
-    "backend/services/analysis/endpoint_adverse_direction.py (C7 corroboration trigger lookup)",
-    "backend/generator/view_dataframes.py::_is_loael_driving_woe (C7 application)"
+    "backend/services/analysis/endpoint_adverse_direction.py (C7 corroboration trigger lookup + compound_class_exemplars accessor)",
+    "backend/services/analysis/compound_class.py::resolve_pharmacologic_class (study-class resolution: SME annotation override -> exemplars[] match)",
+    "backend/services/analysis/c7_corroboration.py (C7 mechanism trigger evaluation)",
+    "backend/generator/view_dataframes.py::_is_loael_driving_woe (C7 application via study_pharmacologic_class kwarg)"
   ],
-  "_status": "content-complete pending toxicologist sign-off (DATA-GAP-NOAEL-ALG-05 partially resolved 2026-04-27 commit b1f8dea2). All 4 classes (ppar_gamma_agonist, antipsychotic, glucocorticoid, biphasic_hormetic) carry primary citations. Three classes ALSO have full expected-effect profiles in shared/expected-effect-profiles/{ppar_gamma_agonist,antipsychotic,glucocorticoid}.json (biphasic_hormetic has no per-endpoint profile by design — its signature is dose-response shape, not specific organs). Citations remain research-confidence (Kale 2022, Allison 1999, Schacke 2002, Cusi 2010, Nesto 2003, Newcomer 2005, Reynolds & Kirk 2010, Boumpas 1993, Calabrese 2003/2008/2014) not regulatory-verified.",
+  "_status": "content-complete + WIRED 2026-04-28 (DATA-GAP-NOAEL-ALG-02). All 4 classes (ppar_gamma_agonist, antipsychotic, glucocorticoid, biphasic_hormetic) carry primary citations. Three classes ALSO have full expected-effect profiles in shared/expected-effect-profiles/{ppar_gamma_agonist,antipsychotic,glucocorticoid}.json (biphasic_hormetic has no per-endpoint profile by design -- its signature is dose-response shape, not specific organs). resolve_pharmacologic_class consumes the exemplars[] arrays via case-insensitive substring match against study TS-metadata treatment name; SME annotation override at backend/annotations/{study_id}/compound_profile.json::study.pharmacologic_class wins when set. Cusi/Belfort 2006 NEJM citation amended in commit ecc7efd3 (DATA-GAP-NOAEL-ALG-05 audit). Remaining 7 cited-not-read literature stubs (Nesto 2003, Allison 1999, Schacke 2002, Calabrese 2003/2008/2014, Kale 2022) tracked under DATA-GAP-NOAEL-ALG-05 cleanup.",
   "classes": {
     "ppar_gamma_agonist": {
       "name": "PPAR-gamma agonist",

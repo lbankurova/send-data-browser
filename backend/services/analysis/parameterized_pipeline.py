@@ -195,11 +195,20 @@ class ParameterizedAnalysisPipeline:
         from generator.adapters import get_classification_framework
         clf_framework = get_classification_framework(self.study)
 
+        # DATA-GAP-NOAEL-ALG-02 A2: resolve pharmacologic-class flag for C7
+        # corroboration triggers (compound_class:* mechanism path). Order:
+        # SME annotation override -> exemplars[] match against TS treatment
+        # name. None when neither resolves (no class triggers fire downstream
+        # -- fail-safe for misidentified mechanism).
+        from services.analysis.compound_class import resolve_pharmacologic_class
+        study_pharmacologic_class = resolve_pharmacologic_class(self.study.study_id)
+
         noael = build_noael_summary(
             findings, dose_groups, mortality=mortality, params=scoring,
             has_concurrent_control=has_concurrent_control,
             compound_partitions=compound_partitions,
             classification_framework=clf_framework,
+            study_pharmacologic_class=study_pharmacologic_class,
         )
         # F9: build study_context for HCD wiring (strain, species,
         # study_start_year, duration_category). Alpha flag reads from
@@ -238,6 +247,7 @@ class ParameterizedAnalysisPipeline:
         endpoint_loael_summary = build_endpoint_loael_summary(
             findings, dose_groups, params=scoring,
             compound_partitions=compound_partitions,
+            study_pharmacologic_class=study_pharmacologic_class,
         )
 
         unified = {
