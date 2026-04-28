@@ -4,6 +4,18 @@
  * Spec: docs/_internal/incoming/gap-288-stage2-noael-synthesis-spec.md Section 3.2.
  */
 
+/**
+ * Treated dose column metadata for syndrome-rollup table views (gap-288 stage 2).
+ * One column per distinct treated dose_value (controls + recovery satellites
+ * excluded). Sorted ascending. `is_loael` highlights the column matching
+ * `noael_summary.combined.loael_dose_level`.
+ */
+export interface DoseColumn {
+  dose_value: number;
+  label: string;
+  is_loael: boolean;
+}
+
 /** Confidence-bucket counts per syndrome row. */
 export interface SyndromeConfidenceDistribution {
   HIGH: number;
