@@ -97,6 +97,31 @@ describe("buildDomainRows — F4(a) row count grouping", () => {
     expect(rows.find((r) => r.domain === "BW")!.nEndpoints).toBe(1);
     expect(rows.find((r) => r.domain === "OM")!.nEndpoints).toBe(1);
   });
+
+  test("each row carries a separate ctrlCell (for col-w-dose Ctrl alignment with OrganBlock)", () => {
+    const eps: EndpointSummary[] = [
+      baseEndpoint({ endpoint_label: "Liver mass", domain: "MA" }),
+    ];
+    const fs: UnifiedFinding[] = [
+      baseFinding({
+        endpoint_label: "Liver mass",
+        domain: "MA",
+        data_type: "incidence",
+        group_stats: [
+          { dose_level: 0, n: 10, mean: null, sd: null, median: null, affected: 1 },
+          { dose_level: 1, n: 10, mean: null, sd: null, median: null, affected: 3 },
+        ],
+        pairwise: [
+          { dose_level: 1, p_value: 0.4, p_value_adj: 0.4, statistic: null, effect_size: null },
+        ],
+      }),
+    ];
+    const [row] = buildDomainRows(eps, fs, doseColumns, doseLevelByValue);
+    // Ctrl cell carries the control-arm n_affected/n_total from group_stats[dose_level=0]
+    expect(row.ctrlCell).toMatchObject({ content: "1/10", empty: false });
+    // Treated dose cells follow
+    expect(row.cells[0]).toMatchObject({ content: "3/10" });
+  });
 });
 
 // ── F4(b) continuous encoding ───────────────────────────────

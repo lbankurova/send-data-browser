@@ -27,6 +27,11 @@ export interface CellResult {
 export interface DomainRow {
   domain: string;
   nEndpoints: number;
+  /** Control-arm cell (dose_level=0) — separate from treated `cells[]` so the
+   *  first-adverse-dose lookup in `computeFirstAdverseLabel` only considers
+   *  treated doses (dose_level=0 would otherwise trigger spurious below-lowest). */
+  ctrlCell: CellResult;
+  /** Treated dose cells, in the same order as the doseColumns input. */
   cells: CellResult[];
   firstAdverseLabel: string | null;
 }
@@ -68,6 +73,11 @@ export function buildDomainRows(
     const eps = epsByDomain.get(domain)!;
     const fs = findingsByDomain.get(domain) ?? [];
 
+    // Control cell — dose_level 0 always exists when dose_groups carry a
+    // primary control. Its presence anchors the dose colgroup vertically
+    // with OrganBlock's [name][Ctrl][doses…] layout.
+    const ctrlCell = buildCell(domain, eps, fs, 0);
+
     const cells = doseColumns.map((col) => {
       const doseLevel = doseLevelByValue.get(col.dose_value);
       if (doseLevel == null) {
@@ -78,7 +88,7 @@ export function buildDomainRows(
 
     const firstAdverseLabel = computeFirstAdverseLabel(eps, doseColumns);
 
-    return { domain, nEndpoints: eps.length, cells, firstAdverseLabel };
+    return { domain, nEndpoints: eps.length, ctrlCell, cells, firstAdverseLabel };
   });
 }
 

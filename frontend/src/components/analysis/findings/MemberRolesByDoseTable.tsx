@@ -9,6 +9,13 @@
  *   - Severity-graded MI: severity grade label at the dose, else `—`
  *   - Pure-incidence: n_affected/n_total at the dose
  *
+ * Colgroup mirrors OrganBlock.tsx:120 (col-w-* fixed pixel widths) so dose
+ * columns vertically align with DomainDoseRollup, the right-panel rollup,
+ * and the bottom FindingsTable. A-11 spatial anchoring (synthesis Section 1
+ * Architecture). Row label-cell collapses domain prefix + endpoint label
+ * into a single col-w-name (320px) so the per-dose grid lines up with
+ * DomainDoseRollup's [name][Ctrl][doses…] layout.
+ *
  * Phase 2 (onset-day inner sort) descoped per architect SIMPLIFY 2026-04-28
  * — EndpointSummary lacks an onset_day/onset_dose field; reinstating Phase 2
  * is a backend pipeline prerequisite (DATA-GAP-RFC-2).
@@ -80,32 +87,35 @@ export function MemberRolesByDoseTable({
     );
   }
 
-  const colWidthPct = Math.floor(60 / doseColumns.length);
+  // Total cell columns: name + Ctrl + treated doses + spacer.
+  const totalCols = 1 + 1 + doseColumns.length + 1;
 
   return (
     <div className="h-full overflow-auto">
       <table className="organ-tbl">
         <colgroup>
-          <col style={{ width: "12%" }} />
-          <col style={{ width: "28%" }} />
+          <col className="col-w-name" />
+          <col className="col-w-dose" />
           {doseColumns.map((c) => (
-            <col key={c.dose_value} style={{ width: `${colWidthPct}%` }} />
+            <col key={c.dose_value} className="col-w-dose" />
           ))}
+          <col className="col-w-spacer" />
         </colgroup>
         <thead>
           <tr>
-            <th className="organ-tbl-name">Domain</th>
             <th className="organ-tbl-name">Endpoint</th>
+            <th className="organ-tbl-dose">Ctrl</th>
             {doseColumns.map((c) => (
               <th key={c.dose_value} className="organ-tbl-dose">
                 {c.label}
               </th>
             ))}
+            <th />
           </tr>
         </thead>
         <tbody>
-          {renderGroup("Required", groups.required, doseColumns, doseLevelByValue, findingsByEndpoint)}
-          {renderGroup("Supporting", groups.supporting, doseColumns, doseLevelByValue, findingsByEndpoint)}
+          {renderGroup("Required", groups.required, doseColumns, doseLevelByValue, findingsByEndpoint, totalCols)}
+          {renderGroup("Supporting", groups.supporting, doseColumns, doseLevelByValue, findingsByEndpoint, totalCols)}
         </tbody>
       </table>
     </div>
@@ -118,21 +128,28 @@ function renderGroup(
   doseColumns: { dose_value: number }[],
   doseLevelByValue: Map<number, number>,
   findingsByEndpoint: Map<string, UnifiedFinding[]>,
+  totalCols: number,
 ) {
   if (members.length === 0) return null;
   return (
     <>
       <tr>
-        <td colSpan={2 + doseColumns.length} className="bg-muted/40 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <td colSpan={totalCols} className="bg-muted/40 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           {groupTitle} ({members.length})
         </td>
       </tr>
       {members.map((m) => {
         const fs = findingsByEndpoint.get(m.endpointLabel) ?? [];
+        const ctrl = buildPerEndpointCell(m.domain, fs, 0);
         return (
           <tr key={`${m.role}-${m.endpointLabel}`}>
-            <td className="organ-tbl-name text-muted-foreground">{m.domain}</td>
-            <td className="organ-tbl-name">{m.endpointLabel}</td>
+            <td className="organ-tbl-name">
+              <span className="text-[10px] text-muted-foreground">{m.domain}</span>
+              <span className="ml-1.5">{m.endpointLabel}</span>
+            </td>
+            <td className="organ-tbl-dose">
+              {ctrl === "" ? <span className="text-muted-foreground/50">—</span> : ctrl}
+            </td>
             {doseColumns.map((c) => {
               const dl = doseLevelByValue.get(c.dose_value);
               const cell = dl != null ? buildPerEndpointCell(m.domain, fs, dl) : null;
@@ -146,10 +163,10 @@ function renderGroup(
                 </td>
               );
             })}
+            <td />
           </tr>
         );
       })}
     </>
   );
 }
-

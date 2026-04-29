@@ -66,21 +66,26 @@ export function DomainDoseRollup({
     );
   }
 
-  const colWidthPct = Math.floor(60 / doseColumns.length);
-
   return (
     <div className="h-full overflow-auto">
       <table className="organ-tbl">
         <colgroup>
-          <col style={{ width: "16%" }} />
+          {/* Colgroup mirrors OrganBlock.tsx:120 (col-w-* fixed pixel widths)
+              so dose columns vertically align across DomainDoseRollup,
+              the right-panel rollup, and the bottom FindingsTable.
+              A-11 spatial anchoring (synthesis Section 1 Architecture). */}
+          <col className="col-w-name" />
+          <col className="col-w-dose" />
           {doseColumns.map((c) => (
-            <col key={c.dose_value} style={{ width: `${colWidthPct}%` }} />
+            <col key={c.dose_value} className="col-w-dose" />
           ))}
-          <col style={{ width: "20%" }} />
+          <col className="col-w-conf" />
+          <col className="col-w-spacer" />
         </colgroup>
         <thead>
           <tr>
             <th className="organ-tbl-name">Domain</th>
+            <th className="organ-tbl-dose">Ctrl</th>
             {doseColumns.map((c) => {
               const dl = doseLevelByValue.get(c.dose_value);
               return (
@@ -105,6 +110,7 @@ export function DomainDoseRollup({
               );
             })}
             <th className="organ-tbl-summary">First adverse dose</th>
+            <th />
           </tr>
         </thead>
         <tbody>
@@ -124,6 +130,13 @@ export function DomainDoseRollup({
                 <span className="ml-1 text-[10px] text-muted-foreground">
                   ({r.nEndpoints})
                 </span>
+              </td>
+              <td className="organ-tbl-dose">
+                {r.ctrlCell.empty ? (
+                  <span className="text-muted-foreground/50">—</span>
+                ) : (
+                  r.ctrlCell.content
+                )}
               </td>
               {r.cells.map((cell, i) => (
                 <td

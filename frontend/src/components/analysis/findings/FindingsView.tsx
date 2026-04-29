@@ -804,16 +804,21 @@ export function FindingsView() {
                           return (
                             <div className="h-full overflow-auto">
                               <table className="organ-tbl">
+                                {/* Colgroup is OrganBlock.tsx:120 verbatim — A-11
+                                    spatial anchoring for vertical alignment of
+                                    dose columns across DomainDoseRollup, this
+                                    related-syndromes panel, and the bottom
+                                    FindingsTable. */}
                                 <colgroup>
-                                  <col style={{ width: "30%" }} />
-                                  <col style={{ width: "8%" }} />
+                                  <col className="col-w-name" />
+                                  <col className="col-w-dose" />
                                   {doseColumns.map((c) => (
-                                    <col key={c.dose_value} style={{ width: `${Math.floor(50 / doseColumns.length)}%` }} />
+                                    <col key={c.dose_value} className="col-w-dose" />
                                   ))}
-                                  <col style={{ width: "8%" }} />
-                                  <col style={{ width: "8%" }} />
-                                  <col style={{ width: "16%" }} />
-                                  <col />
+                                  <col className="col-w-rec" />
+                                  <col className="col-w-n" />
+                                  <col className="col-w-conf" />
+                                  <col className="col-w-spacer" />
                                 </colgroup>
                                 <thead>
                                   <tr>
