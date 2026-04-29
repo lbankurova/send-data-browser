@@ -739,108 +739,13 @@ if [ -x "$REPO_ROOT/scripts/audit-tokens.sh" ]; then
     echo ""
 fi
 
-# --- Step 5: Bug retrospective check (BLOCKS on fix: commits) -- CLAUDE.md rule 20 ---
-# Bug-fix commits require a BUG-SWEEP.md entry with all 5 retrospective fields.
-# Reference the entry via "Bug-Retro: BUG-XXX" trailer in the commit message,
-# or via env var LATTICE_BUG_RETRO=BUG-XXX before the commit.
-
-COMMIT_MSG_FILE="$REPO_ROOT/.git/COMMIT_EDITMSG"
-COMMIT_MSG=""
-[ -f "$COMMIT_MSG_FILE" ] && COMMIT_MSG=$(cat "$COMMIT_MSG_FILE" 2>/dev/null || echo "")
-
-IS_BUG_FIX=0
-BUG_ID=""
-if echo "$COMMIT_MSG" | head -1 | grep -qE '^fix(\([^)]+\))?:'; then
-    IS_BUG_FIX=1
-fi
-if echo "$COMMIT_MSG" | grep -qE '^Bug-Retro:'; then
-    IS_BUG_FIX=1
-    BUG_ID=$(echo "$COMMIT_MSG" | grep -E '^Bug-Retro:' | head -1 | sed 's/Bug-Retro:[[:space:]]*//' | tr -d ' ')
-fi
-[ -n "${LATTICE_BUG_RETRO:-}" ] && { IS_BUG_FIX=1; BUG_ID="$LATTICE_BUG_RETRO"; }
-
-if [ "$IS_BUG_FIX" -eq 1 ]; then
-    echo "--- Step 5: Bug retrospective (rule 20) ---"
-    BUG_SWEEP="$REPO_ROOT/docs/_internal/BUG-SWEEP.md"
-    if [ ! -f "$BUG_SWEEP" ]; then
-        echo "  ADVISORY: bug-fix commit detected but BUG-SWEEP.md not found; skipping."
-        echo ""
-    elif [ -z "$BUG_ID" ]; then
-        echo "  COMMIT BLOCKED: bug-fix commit (fix: prefix) requires Bug-Retro reference."
-        echo ""
-        echo "  Run /ops:bug-stress (Step 8 -- Retrospective) to write the 5-question retro,"
-        echo "  then re-commit with one of:"
-        echo '    git commit -m "fix: ..." -m "Bug-Retro: BUG-XXX"'
-        echo '    LATTICE_BUG_RETRO=BUG-XXX git commit ...'
-        echo ""
-        echo "  Why: every bug fix is evidence a gate failed. The retro forces the lesson"
-        echo "  back into the framework so the same class doesn't recur. CLAUDE.md rule 20."
-        exit 1
-    else
-        if ! grep -qE "^### $BUG_ID " "$BUG_SWEEP"; then
-            echo "  COMMIT BLOCKED: $BUG_ID entry not found in $BUG_SWEEP"
-            exit 1
-        fi
-        ENTRY=$(awk -v id="$BUG_ID" '
-            $0 ~ "^### "id" " { in_entry=1 }
-            in_entry && /^### BUG-/ && $0 !~ "^### "id" " { in_entry=0 }
-            in_entry { print }
-        ' "$BUG_SWEEP")
-        MISSING=""
-        for field in '1\. \*\*Root cause' '2\. \*\*Genesis' '3\. \*\*Detection gap' '4\. \*\*Prevention class' '5\. \*\*Lattice change'; do
-            if ! echo "$ENTRY" | grep -qE "$field"; then
-                MISSING="$MISSING\n  - missing: $(echo "$field" | sed 's/\\\*//g; s/\\\.//g; s/\\//g')"
-            fi
-        done
-        if [ -n "$MISSING" ]; then
-            echo "  COMMIT BLOCKED: $BUG_ID retrospective is incomplete."
-            echo -e "$MISSING"
-            echo ""
-            echo "  Run /ops:bug-stress Step 8 to fill missing fields, then re-commit."
-            exit 1
-        fi
-        echo "  PASS: $BUG_ID retrospective complete (all 5 fields present)."
-
-        # --- Step 5b: Retro-action attestation (F7 -- BLOCKS) ---
-        # Per spec §9: every retro's "Lattice change" item must be either
-        # (a) implemented in this commit, (b) filed to TODO.md, or (c) filed
-        # to ESCALATION.md. The disposition is recorded as a SIMPLIFY-1
-        # retro-action attestation per bullet (ref-prefix=BUG-XXX).
-        # /ops:bug-stress Question 5 disposition section walks through the
-        # composition path; check-attestation-kind.py verifies it here.
-        if [ -f "$REPO_ROOT/scripts/check-attestation-kind.py" ] && [ -f "$GATE_FILE" ]; then
-            if ! python "$REPO_ROOT/scripts/check-attestation-kind.py" \
-                --gate "$GATE_FILE" \
-                --kind retro-action \
-                --ref-prefix "$BUG_ID" \
-                --min 1 --quiet 2>/dev/null; then
-                echo "  COMMIT BLOCKED: $BUG_ID retrospective has all 5 fields, but no kind=retro-action attestation with ref-prefix=$BUG_ID was found in the gate."
-                echo ""
-                echo "  Per spec §9 (F7 retro action-item tracking): every Lattice-change"
-                echo "  bullet from Question 5 must be dispositioned into one of"
-                echo "  (a) implemented-this-commit, (b) filed-to-todo, (c) filed-to-escalation,"
-                echo "  or (d) not-applicable -- and recorded as a retro-action attestation."
-                echo ""
-                echo "  For each Lattice-change bullet, run:"
-                echo '    bash scripts/append-attestation.sh \'
-                echo "      retro-action \\"
-                echo "      \"$BUG_ID#5.<bullet-N>\" \\"
-                echo "      \"<implemented-this-commit | filed-to-todo | filed-to-escalation | not-applicable>\" \\"
-                echo "      \"<one-line summary identifying bullet AND disposition target>\""
-                echo ""
-                echo "  Then re-run write-review-gate.sh and re-commit."
-                echo ""
-                echo "  Why: rule 20 produces retro action items but nothing previously"
-                echo "  enforced their tracking. Past retros had bullets that were quietly"
-                echo "  dropped. F7 makes the drop an explicit decision rather than implicit"
-                echo "  silence."
-                exit 1
-            fi
-            echo "  PASS: $BUG_ID retro-action attestation(s) present (F7)."
-        fi
-        echo ""
-    fi
-fi
+# --- Step 5+5b moved to .githooks/commit-msg (2026-04-29) ---
+# pre-commit cannot reliably read the commit message: `.git/COMMIT_EDITMSG`
+# retains the previous commit's message when `git commit -m "..."` is used,
+# which silently misclassified non-fix commits as bug-fixes when the prior
+# commit was a fix. The commit-msg hook receives the actual message file
+# path as $1 -- the canonical source. Bug-retro (rule 20) and the F7
+# retro-action attestation check now live there.
 
 # --- Step 6: Staging-drift check (BLOCKS on concurrent autopilot interleave) ---
 # Re-snapshot the staged file set. If new files appeared during the hook run,
@@ -874,15 +779,11 @@ fi
 echo "  PASS: staged file set unchanged during pre-commit run."
 echo ""
 
-# --- Cleanup: Consume the review gate (single-use) ---
-# The gate file is consumed after a successful commit so the NEXT commit
-# requires a fresh /lattice:review pass. This prevents one review from
-# covering multiple commits.
-if [ -f "$GATE_FILE" ]; then
-    rm -f "$GATE_FILE"
-    echo "  Review gate consumed (next commit needs fresh /lattice:review)."
-    echo ""
-fi
+# --- Cleanup: Review gate consumption moved to post-commit (2026-04-29) ---
+# The gate file is consumed after a successful commit, but commit-msg's F7
+# attestation check requires the gate to still exist when commit-msg fires
+# (which is AFTER pre-commit). Removing the gate here would defeat F7.
+# post-commit handles the cleanup once the commit object is created.
 
 echo "========================================"
 echo "  All pre-commit checks passed."

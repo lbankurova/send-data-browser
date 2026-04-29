@@ -17,7 +17,15 @@ set -e
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 INTENT_FILE="$REPO_ROOT/.lattice/commit-intent.txt"
+GATE_FILE="$REPO_ROOT/.lattice/review-gate.json"
 
 if [ -f "$INTENT_FILE" ]; then
     rm -f "$INTENT_FILE"
+fi
+
+# Consume the review gate (single-use) -- moved from pre-commit on 2026-04-29
+# so that commit-msg's F7 retro-action attestation check still has the gate
+# file available. Both intent and gate are post-commit cleanup now.
+if [ -f "$GATE_FILE" ]; then
+    rm -f "$GATE_FILE"
 fi
