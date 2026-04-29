@@ -1,21 +1,35 @@
 topic: fct-lb-bw-band-values
 started: 2026-04-22T00:00:00Z
-phase: build
-current_step: build.2
-revision: 10
-lifecycle_state: paused
-pause_reason: |
-  Zombie at build.2 with 121h+ stale checkpoint as of 2026-04-28.
-  Blueprint phases 0-7 complete; build.0/build.1 shipped registry entries +
-  F5 unit conversion in commit 2eecfc92 (2026-04-23). Build.2 stalled.
-  Pausing to remove from autopilot queue; user decides resume-and-finish
-  vs archive. Cascade SCIENCE-FLAGs to 7 dependent topics (S01/S04/S07/
-  S10/S15/S16/S20/S21/S22/S23/S40) remain visible in coherence — paused
-  state suppresses autopilot pickup but not coherence reporting. Resolve
-  by either resuming build through build.7-complete OR explicit user
-  decision to archive (which would orphan the SF dependents).
-paused_at: 2026-04-28
-paused_by: autopilot
+phase: complete
+current_step: complete
+revision: 11
+resolved_at: 2026-04-28T00:00:00Z
+resolved_by: cycle-dispatcher
+resolution_note: |
+  State desync caught and reconciled 2026-04-28 by user-invoked /lattice:cycle.
+  Root cause: build.2 (review checkpoint) wrote successfully on 2026-04-24
+  (commit 2eecfc92, review PASS) but build.3 (spec-refresh) and the complete
+  step never ran — workflow was interrupted post-review without hitting Layer
+  3 / Layer 4. State YAML froze at current_step=build.2; autopilot tagged it
+  zombie + paused on 2026-04-28T12:30Z (decisions.log line 8, "SF:38" — 38
+  cascading SCIENCE-FLAGs to 7 dependents). Reality: build was complete and
+  reviewed-PASS 4 days earlier. Resolution path: (1) confirmed ship via git
+  show 2eecfc92 + decisions.log lines 531-533 (implement COMPLETED phases:6/6
+  + review PASS + build-cycle COMPLETED); (2) ran missed spec-refresh manually
+  — 4 active dependents in incoming/ (gap-288-stage2-noael-synthesis-spec,
+  hcd-mi-ma-s08-wiring-synthesis, mabel-framework-synthesis,
+  nonlinear-pk-model-sufficiency-synthesis) checked, no field-shape
+  corrections needed (gap-288 references noael_confidence which is the
+  intentional propagation field per blueprint.3.probe scientist sign-off);
+  (3) archived synthesis to incoming/archive/ via git mv (cascade string-match
+  source removed); (4) ran extract-learnings — architecture/fct-registry.md
+  updated with Phase A.5 section + F5 unit-conversion algorithm + open
+  knowledge-graph extraction list (Hy's Law / C-ALP / AST/CK / BUN/CREAT /
+  NHP-BW-stop / rodent-CV deferred to RG-FCT-LB-BW-08/09/11/18/20 pending
+  joint_rule fact_kind schema work). Phase B classify_severity rewire
+  (parent cycle species-magnitude-thresholds-dog-nhp Phase B proper) remains
+  the next step in that lineage and is tracked under the parent topic, not
+  this one.
 completed:
   blueprint.0.impl_context:
     completed: 2026-04-23T09:22:00Z
@@ -93,6 +107,52 @@ completed:
     data_gaps_persisted: 5  # DATA-GAP-FCT-LB-BW-01..05 appended to TODO.md
     registry_stream_entry: docs/_internal/research/REGISTRY.md # new fct-lb-bw-band-values stream added
     auto_decisions: 8  # dedup+lock, impl-context, synthesize, architect-SCIENCE-FLAG (user), probe-SCIENCE-FLAG (user), R1 incorporate, R2 accept, complete
+  build.1.implement:
+    completed: 2026-04-23T22:09:03Z  # decisions.log line 531
+    phases: 6
+    deviations: 4
+    deferred: 0
+    summary: "F1+F2+F3+F5 shipped; F4 regen+diff+signoff doc shipped; both hard gates pass"
+  build.2.review:
+    completed: 2026-04-24T13:18:03Z  # decisions.log line 532
+    verdict: PASS
+    commit_hash: 2eecfc92
+    files: 14
+    deviations: 4
+    deferred: 0
+    byte_parity:
+      legacy_severity: PASS
+      noael_dose_level: PASS
+    studies_validated: 16
+    remediated:
+      - NHP enumeration (4 studies named via TS SPECIES)
+      - sign-mismatch guard (variation+log warning rather than fabricated distance)
+      - hem band notes (Bourges-Abella + rodent-CV caveat)
+      - STP Sellers 2007 citation (NHP BW stopping criterion)
+  build.3.spec_refresh:
+    completed: 2026-04-28T00:00:00Z  # ran during 2026-04-28 reconciliation
+    note: "Originally missed when build interrupted post-review. Ran manually during cycle-state reconciliation."
+    dependents_scanned: 4  # gap-288-stage2-noael-synthesis-spec, hcd-mi-ma-s08-wiring-synthesis, mabel-framework-synthesis, nonlinear-pk-model-sufficiency-synthesis
+    dependents_skipped: 3  # brain-concordance-compound-class, control-side-loo-calibration-simulation, reference-change-values-rcv (still in research/, no incoming/ spec)
+    field_shape_corrections: 0
+    rationale: "gap-288-stage2-noael-synthesis references noael_confidence — intentional propagation field per blueprint.3.probe scientist sign-off, contract preserved. Other 3 active dependents have zero matches for FCT/classification subsystems."
+  build.4.extract_learnings:
+    completed: 2026-04-28T00:00:00Z
+    archived: docs/_internal/incoming/archive/fct-lb-bw-band-values-synthesis.md  # git-mv from incoming/
+    extractions_applied: 1
+    extractions_deferred: 6
+    destinations:
+      - docs/_internal/architecture/fct-registry.md  # Phase A.5 section + F5 unit-conversion algorithm + open knowledge-graph extraction list
+    deferred_extractions:
+      - "Hy's Law as joint_rule fact (RG-FCT-LB-BW-08 — needs fact_kind: joint_rule schema)"
+      - "C-ALP isoenzyme dog discrimination (RG-FCT-LB-BW-09 — joint_rule)"
+      - "AST/CK muscle-origin discrimination (RG-FCT-LB-BW-11 — joint_rule)"
+      - "BUN/CREAT prerenal discrimination (RG-FCT-LB-BW-18 — joint_rule)"
+      - "NHP BW 6%/week stopping criterion (STP Sellers 2007 — fact_kind: regulatory_proxy)"
+      - "Rodent CV 1.5-2× dog CV for WBC/EOS/LYM (RG-FCT-LB-BW-20 — fact_kind: empirical_extrapolation_caveat)"
+  build.complete:
+    completed: 2026-04-28T00:00:00Z
+    note: "Lock release deferred to RESOLVE step (decisions.log row + scripts/release-topic-lock.sh)."
 parent_topic: species-magnitude-thresholds-dog-nhp
 research_artifact: docs/_internal/research/fct-lb-bw-band-values.md
 notes: |

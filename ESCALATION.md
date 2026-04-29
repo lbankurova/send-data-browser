@@ -14,12 +14,13 @@
 
 **Advanced this batch:** 0 (zombie addressed; topic advancement deferred pending direction)
 
-### fct-lb-bw-band-values -- paused (was zombie)
+### fct-lb-bw-band-values -- paused (was zombie) -- RESOLVED 2026-04-28
 
 - **Source:** topic-cycle (build phase, 121h+ stale checkpoint)
 - **Reason:** Build.0/build.1 shipped registry entries + F5 unit conversion (commit 2eecfc92, 2026-04-23); build.2 stalled. Pause registered via `lifecycle_state: paused` in `.lattice/cycle-state/fct-lb-bw-band-values.yaml`.
 - **What I tried:** Added `lifecycle_state: paused` + `pause_reason` block. Verified autopilot.ts:217-219 honors paused state (skips from advancement queue).
 - **What I need:** Decision on **resume-and-finish** (build.2 -> build.7-complete) **vs archive** (orphans 7 dependent topics' SF cascades). The paused state suppresses autopilot pickup but does NOT clear the cascade — it remains visible in coherence and continues to block 7 dependents.
+- **Resolution (2026-04-28, user-invoked /lattice:cycle "Resolve fct-lb-bw-band-values SF:38"):** State desync — build was actually COMPLETED on 2026-04-24 (commit 2eecfc92, review PASS, byte-parity gates PASS across 16 studies — see decisions.log lines 531-533). Build.2 review checkpoint wrote successfully but build.3 (spec-refresh) and the complete checkpoint never ran; YAML froze at `current_step: build.2`; autopilot tagged it zombie 4 days later. Resolution path: (1) ran missed spec-refresh — 4 active dependents in incoming/ scanned, 0 field-shape corrections (gap-288 noael_confidence reference is intentional propagation per blueprint.3.probe sign-off); (2) archived synthesis to incoming/archive/ via `git mv` inside docs/_internal submodule; (3) ran extract-learnings — `architecture/fct-registry.md` updated with Phase A.5 section + F5 unit-conversion algorithm + 6 deferred typed-fact extractions list (Hy's Law / C-ALP / AST-CK / BUN-CREAT / NHP-BW-stop / rodent-CV → RG-FCT-LB-BW-08/09/11/18/20, pending joint_rule fact_kind schema work); (4) YAML reconciled to `phase: complete` + `current_step: complete`, `lifecycle_state: paused` block dropped; (5) topic lock released. Cascade SF:38 across 7 dependents cleared. See decisions.log RESOLVE row 2026-04-29T01:06:52Z and cycle-state YAML revision 11.
 
 ### Cascade -- 7 topics blocked behind fct-lb-bw-band-values + hcd-mi-ma-s08-wiring
 
