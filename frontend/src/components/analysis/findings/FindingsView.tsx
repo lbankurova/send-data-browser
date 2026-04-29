@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Info, EyeOff } from "lucide-react";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
@@ -12,8 +12,13 @@ import { DoseResponseChartPanel } from "./DoseResponseChartPanel";
 import { IsImmunogenicityPanel } from "./IsImmunogenicityPanel";
 import { DayStepper } from "./DayStepper";
 import { SpecimenIncidencePanel } from "./SpecimenIncidencePanel";
-import { GroupForestPlot } from "./GroupForestPlot";
-import { OrganToxicityRadar } from "./OrganToxicityRadar";
+import { ScopeBanner } from "./ScopeBanner";
+import { DomainDoseRollup } from "./DomainDoseRollup";
+import { MemberRolesByDoseTable, type MemberEntry } from "./MemberRolesByDoseTable";
+import { SyndromeDoseStrip } from "@/components/analysis/noael/SyndromeDoseStrip";
+import { buildDoseColumns } from "@/lib/dose-columns";
+import { useNoaelSummary } from "@/hooks/useNoaelSummary";
+import { useSyndromeRollup } from "@/hooks/useSyndromeRollup";
 import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,6 +37,7 @@ import type { RecoveryOverrideAnnotation } from "@/hooks/useRecoveryOverrideActi
 import {
   setFindingsRailCallback,
   getFindingsExcludedCallback,
+  getFindingsSetScopeCallback,
 } from "./findings-bridge";
 
 /** Pick the most-significant finding row: min p-value (primary), max |effect size| (secondary). */
@@ -52,6 +58,7 @@ function pickBestFinding(findings: UnifiedFinding[]): UnifiedFinding {
 export function FindingsView() {
   const { studyId } = useParams<{ studyId: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const { selectStudy } = useSelection();
   const { selectFinding, setEndpointSexes } = useFindingSelection();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -184,7 +191,11 @@ export function FindingsView() {
   // Analytics from Layout-level provider — single derivation shared across view, rail, and context panel
   const { analytics, data, isLoading, isFetching, isPlaceholderData, error } = useFindingsAnalyticsResult();
   const { endpoints: endpointSummaries, syndromes, organCoherence, labMatches,
-          signalScores: signalScoreMap, evidenceScores: evidenceScoreMap, endpointSexes } = analytics;
+          signalScores: signalScoreMap, endpointSexes } = analytics;
+
+  // Noael + syndrome rollup — feed the new ScopeBanner/DomainDoseRollup + RelatedSyndromesTable layout.
+  const { data: noaelData } = useNoaelSummary(studyId);
+  const { data: syndromeRollup } = useSyndromeRollup(studyId);
 
   // Stable ref to data — avoids recreating handleEndpointSelect on every data change,
   // which would cascade into event bus re-registration and rail state re-push.
@@ -272,14 +283,8 @@ export function FindingsView() {
     return endpointSummaries.filter((ep) => visibleLabels.has(ep.endpoint_label));
   }, [endpointSummaries, visibleLabels]);
 
-  // Forest plot: endpoints scoped to the active rail group
+  // Endpoints scoped to the active rail group (DomainDoseRollup + ScopeBanner inputs).
   const scopedEndpoints = railFilteredEndpoints;
-
-  // Radar: highlight the organ systems represented in the active group
-  const radarHighlightOrgans = useMemo(() =>
-    new Set(railFilteredEndpoints.map(ep => ep.organ_system)),
-    [railFilteredEndpoints],
-  );
 
   const scatterEndpoints = useMemo(() => {
     if (excludedEndpoints.size === 0) return railFilteredEndpoints;
@@ -686,7 +691,7 @@ export function FindingsView() {
             />
           </ViewSection>
         ) : scopeType && endpointSummaries.length > 0 ? (
-          /* Grouped scope (organ/specimen/syndrome/collection) → forest plot + sentinel table */
+          /* Grouped scope (organ/syndrome/...) → ScopeBanner + DomainDoseRollup + (RelatedSyndromes | MemberRoles) */
           <ViewSection
             title={sectionTitle}
             headerRight={headerRight}
@@ -695,25 +700,184 @@ export function FindingsView() {
             onResizePointerDown={scatterSection.onPointerDown}
             contentRef={scatterSection.contentRef}
           >
-            <div ref={forestRadarRef} className="flex h-full">
-              {/* Left: forest plot */}
-              <div className="shrink-0 overflow-hidden" style={{ width: `${forestRadarSplit}%` }}>
-                <GroupForestPlot endpoints={scopedEndpoints} />
-              </div>
-              {/* Resize handle */}
-              <div
-                className="w-1 shrink-0 cursor-col-resize bg-border/30 hover:bg-primary/20 active:bg-primary/30"
-                onPointerDown={onForestRadarResize}
-              />
-              {/* Right: organ toxicity radar */}
-              <div className="flex-1 overflow-hidden">
-                <OrganToxicityRadar
-                  endpoints={endpointSummaries}
-                  signalScores={signalScoreMap}
-                  evidenceScores={evidenceScoreMap}
-                  highlightOrgans={radarHighlightOrgans}
-                  organCoherence={organCoherence}
+            <div className="flex h-full flex-col gap-1.5 px-1.5 py-1">
+              {/* Scope banner — full-width above the split */}
+              {(() => {
+                // F8: read route state for back affordance, push scope on back.
+                const backState = (location.state as {
+                  back?: { type: GroupingMode; value: string; label: string };
+                } | null)?.back;
+                const onBack = backState
+                  ? () => {
+                      getFindingsSetScopeCallback()?.({
+                        type: backState.type,
+                        value: backState.value,
+                      });
+                      // Clear consumed state so subsequent re-renders don't loop.
+                      window.history.replaceState({}, "");
+                    }
+                  : undefined;
+
+                if (scopeType === "syndrome") {
+                  const synd = syndromes.find((s) => s.name === scopeLabel);
+                  const sexesSet = new Set(scopedEndpoints.flatMap((e) => e.sexes));
+                  const sexes: "F+M" | "F-only" | "M-only" | "—" =
+                    sexesSet.has("F") && sexesSet.has("M") ? "F+M"
+                      : sexesSet.has("F") ? "F-only"
+                      : sexesSet.has("M") ? "M-only"
+                      : "—";
+                  return (
+                    <ScopeBanner
+                      kind="syndrome"
+                      onBack={onBack}
+                      backLabel={backState?.label}
+                      stats={{
+                        syndromeId: synd?.id ?? "",
+                        syndromeName: scopeLabel ?? "Syndrome",
+                        nEndpoints: scopedEndpoints.length,
+                        nDomains: new Set(scopedEndpoints.map((e) => e.domain)).size,
+                        sexes,
+                        // Classification chip line wired in Phase 5 when SyndromeContextPanel slim ships.
+                        classificationChips: [],
+                      }}
+                    />
+                  );
+                }
+                // organ / domain / pattern / compound — banner with organ-style stats
+                const adverseCount = scopedEndpoints.filter(
+                  (e) => e.worstSeverity === "adverse" && e.treatmentRelated,
+                ).length;
+                const domains = [...new Set(scopedEndpoints.map((e) => e.domain))].sort();
+                const organKey = scopedEndpoints[0]?.organ_system ?? scopeLabel ?? "";
+                return (
+                  <ScopeBanner
+                    kind="organ"
+                    onBack={onBack}
+                    backLabel={backState?.label}
+                    stats={{
+                      organSystem: scopeLabel ?? organKey,
+                      nEndpoints: scopedEndpoints.length,
+                      nDomains: domains.length,
+                      domains,
+                      nAdverse: adverseCount,
+                      noaelLabel: null,        /* organ NOAEL move = Phase 5 (Feature 12) */
+                      nUnscheduledDeaths: 0,    /* mortality wiring deferred */
+                      recoveryStatus: null,
+                    }}
+                  />
+                );
+              })()}
+
+              {/* Split: DomainDoseRollup (left) + (RelatedSyndromes | MemberRoles) (right) */}
+              <div ref={forestRadarRef} className="flex flex-1 min-h-0">
+                <div className="shrink-0 overflow-hidden border-r" style={{ width: `${forestRadarSplit}%` }}>
+                  {data && (
+                    <DomainDoseRollup
+                      endpoints={scopedEndpoints}
+                      findings={tableFindings}
+                      doseGroups={data.dose_groups}
+                      noaelData={noaelData ?? []}
+                    />
+                  )}
+                </div>
+                <div
+                  className="w-1 shrink-0 cursor-col-resize bg-border/30 hover:bg-primary/20 active:bg-primary/30"
+                  onPointerDown={onForestRadarResize}
                 />
+                <div className="flex-1 overflow-hidden">
+                  {data && scopeType === "syndrome"
+                    ? (() => {
+                        const synd = syndromes.find((s) => s.name === scopeLabel);
+                        const members: MemberEntry[] = synd
+                          ? synd.matchedEndpoints.map((m) => ({
+                              endpointLabel: m.endpoint_label,
+                              domain: m.domain,
+                              role: m.role,
+                            }))
+                          : [];
+                        return (
+                          <MemberRolesByDoseTable
+                            members={members}
+                            findings={tableFindings}
+                            doseGroups={data.dose_groups}
+                            noaelData={noaelData ?? []}
+                          />
+                        );
+                      })()
+                    : data && scopeType === "organ"
+                      ? (() => {
+                          const organKey = scopedEndpoints[0]?.organ_system;
+                          const organSyndromes = organKey
+                            ? syndromeRollup?.by_organ[organKey] ?? []
+                            : [];
+                          const doseColumns = buildDoseColumns(data.dose_groups, noaelData ?? []);
+                          if (organSyndromes.length === 0 || doseColumns.length === 0) {
+                            return (
+                              <div className="flex h-full items-center justify-center p-4 text-center text-xs text-muted-foreground">
+                                No related syndromes for this organ.
+                              </div>
+                            );
+                          }
+                          return (
+                            <div className="h-full overflow-auto">
+                              <table className="organ-tbl">
+                                <colgroup>
+                                  <col style={{ width: "30%" }} />
+                                  <col style={{ width: "8%" }} />
+                                  {doseColumns.map((c) => (
+                                    <col key={c.dose_value} style={{ width: `${Math.floor(50 / doseColumns.length)}%` }} />
+                                  ))}
+                                  <col style={{ width: "8%" }} />
+                                  <col style={{ width: "8%" }} />
+                                  <col style={{ width: "16%" }} />
+                                  <col />
+                                </colgroup>
+                                <thead>
+                                  <tr>
+                                    <th className="organ-tbl-name">Related syndrome</th>
+                                    <th className="organ-tbl-dose">Ctrl</th>
+                                    {doseColumns.map((c) => (
+                                      <th key={c.dose_value} className="organ-tbl-dose">{c.label}</th>
+                                    ))}
+                                    <th className="organ-tbl-dose">Rec</th>
+                                    <th className="organ-tbl-n">N</th>
+                                    <th className="organ-tbl-summary">Confidence</th>
+                                    <th />
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <SyndromeDoseStrip
+                                    syndromes={organSyndromes}
+                                    doseColumns={doseColumns}
+                                    onRowClick={(row) => {
+                                      // F8: push scope to rail + route state for ← back.
+                                      const setScope = getFindingsSetScopeCallback();
+                                      if (setScope && organKey) {
+                                        navigate(location.pathname, {
+                                          state: {
+                                            back: {
+                                              type: "organ",
+                                              value: organKey,
+                                              label: scopeLabel ?? organKey,
+                                            },
+                                          },
+                                          replace: false,
+                                        });
+                                        setScope({ type: "syndrome", value: row.syndrome_id });
+                                      }
+                                    }}
+                                  />
+                                </tbody>
+                              </table>
+                            </div>
+                          );
+                        })()
+                      : (
+                        <div className="flex h-full items-center justify-center p-4 text-center text-xs text-muted-foreground">
+                          {scopeType === "specimen" ? null : `${scopeType ?? ""} scope`}
+                        </div>
+                      )}
+                </div>
               </div>
             </div>
           </ViewSection>

@@ -19,9 +19,15 @@ export interface FindingsCallbackState {
   restoreEndpoint?: string;
 }
 
+export interface FindingsSetScope {
+  type: GroupingMode;
+  value: string;
+}
+
 let _findingsRailCallback: ((state: FindingsCallbackState) => void) | null = null;
 let _findingsClearScopeCallback: (() => void) | null = null;
 let _findingsExcludedCallback: ((excluded: ReadonlySet<string>) => void) | null = null;
+let _findingsSetScopeCallback: ((scope: FindingsSetScope) => void) | null = null;
 
 export function setFindingsRailCallback(cb: typeof _findingsRailCallback) {
   _findingsRailCallback = cb;
@@ -40,4 +46,15 @@ export function setFindingsExcludedCallback(cb: typeof _findingsExcludedCallback
 }
 export function getFindingsExcludedCallback() {
   return _findingsExcludedCallback;
+}
+/**
+ * View → rail scope push (cross-scope navigation, F8). View calls this to
+ * switch the rail's active group scope (e.g., organ → syndrome) when a
+ * within-pane row is clicked.
+ */
+export function setFindingsSetScopeCallback(cb: typeof _findingsSetScopeCallback) {
+  _findingsSetScopeCallback = cb;
+}
+export function getFindingsSetScopeCallback() {
+  return _findingsSetScopeCallback;
 }

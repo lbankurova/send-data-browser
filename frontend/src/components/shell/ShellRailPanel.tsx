@@ -5,7 +5,7 @@ import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { PolymorphicRail } from "./PolymorphicRail";
 import { FindingsRail } from "@/components/analysis/findings/FindingsRail";
 import type { RailVisibleState } from "@/components/analysis/findings/FindingsRail";
-import { getFindingsRailCallback, setFindingsClearScopeCallback, setFindingsExcludedCallback } from "@/components/analysis/findings/findings-bridge";
+import { getFindingsRailCallback, setFindingsClearScopeCallback, setFindingsExcludedCallback, setFindingsSetScopeCallback } from "@/components/analysis/findings/findings-bridge";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { ValidationRuleRail } from "@/components/analysis/validation/ValidationRuleRail";
@@ -70,6 +70,20 @@ export function ShellRailPanel() {
 
   // FindingSelectionContext for group selection + bidirectional sync
   const { selectedFinding, selectGroup } = useFindingSelection();
+
+  // Register reverse callback so view can SET a specific scope (cross-scope nav, F8).
+  useEffect(() => {
+    setFindingsSetScopeCallback((scope) => {
+      setGroupScope(scope);
+      setActiveEndpoint(null);
+      if (scope.type === "organ" || scope.type === "syndrome" || scope.type === "specimen") {
+        selectGroup(scope.type, scope.value);
+      } else {
+        selectGroup(null, null);
+      }
+    });
+    return () => setFindingsSetScopeCallback(null);
+  }, [selectGroup]);
 
   // ── View-aware handlers ──
 
