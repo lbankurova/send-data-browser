@@ -4,7 +4,7 @@ import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchFindings } from "@/lib/analysis-api";
 import { fetchLesionSeveritySummary } from "@/lib/analysis-view-api";
-import { Loader2, FileText, Info, AlertTriangle, ChevronRight } from "lucide-react";
+import { Loader2, Info, AlertTriangle } from "lucide-react";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
@@ -15,7 +15,6 @@ import { useDomains } from "@/hooks/useDomains";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
 import { generateStudyReport } from "@/lib/report-generator";
-import { formatNoaelDisplay } from "@/lib/noael-narrative";
 import { useValidationResults } from "@/hooks/useValidationResults";
 import { useAssayValidation } from "@/hooks/useAssayValidation";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
@@ -31,6 +30,20 @@ import { StudyDetailsRail, type StudyDetailsRailItem } from "./StudyDetailsRail"
 import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
+import { useSyndromeRollup } from "@/hooks/useSyndromeRollup";
+import { useRecoveryVerdicts } from "@/hooks/useRecoveryVerdicts";
+import { useLooFragilitySummary } from "@/hooks/useLooFragilitySummary";
+import { findLoaelDriverOrgan } from "@/lib/syndrome-utils";
+import {
+  composeAboutParagraph,
+  composeHeadlineFinding,
+  composeFindingsParagraph,
+} from "@/lib/overview-prose";
+import { OverviewToolbar, type CommentaryMode } from "./overview/OverviewToolbar";
+import { CommentarySections } from "./overview/CommentarySections";
+import { NeedsAttentionList } from "./overview/NeedsAttentionList";
+import { RecentNotesSection } from "./overview/RecentNotesSection";
+import { buildOverviewAttentionItems } from "@/lib/overview-attention";
 
 interface StudyNote {
   text: string;
@@ -182,17 +195,6 @@ export function StudySummaryView() {
             setTab("details");
           }
         }}
-        right={
-          <div className="px-3 py-2">
-            <button
-              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent/50"
-              onClick={() => studyId && generateStudyReport(studyId)}
-            >
-              <FileText className="h-3.5 w-3.5" />
-              Generate report
-            </button>
-          </div>
-        }
       />
 
       {/* Tab content */}
@@ -714,11 +716,21 @@ function DetailsTab({
   const { data: valData, isLoading: valLoading } = useValidationResults(studyId);
   const { data: assayValidation } = useAssayValidation(studyId);
   const { data: pkData } = usePkIntegration(studyId);
+  const { data: syndromeRollup } = useSyndromeRollup(studyId);
+  const { data: recoveryData } = useRecoveryVerdicts(studyId);
+  const looFragility = useLooFragilitySummary(studyId);
   const { excludedSubjects } = useScheduledOnly();
   const [activeSection, setActiveSection] = useSessionState<SectionKey>(
     `pcc.${studyId}.studyDetailsSection`,
     "overview",
     isOneOf(SECTION_KEYS),
+  );
+  // Study-scoped per peer-review F3 — prevents commentary state from leaking
+  // across studies in the same tab session.
+  const [commentary, setCommentary] = useSessionState<CommentaryMode>(
+    `pcc.${studyId}.overview.commentary`,
+    "on",
+    isOneOf(["on", "off"] as const),
   );
   const railResize = useResizePanel(180, {
     min: 140,
@@ -786,7 +798,6 @@ function DetailsTab({
 
   // Computed subject breakdown from dose_groups
   const doseGroups = meta.dose_groups ?? [];
-  const mainStudyN = doseGroups.reduce((s, dg) => s + dg.n_total, 0);
   const tkTotal = doseGroups.reduce((s, dg) => s + (dg.tk_count ?? 0), 0);
   const recoveryTotal = doseGroups.reduce((s, dg) => s + (dg.recovery_n ?? 0), 0);
   const hasTk = tkTotal > 0;
@@ -816,28 +827,15 @@ function DetailsTab({
         : `${studyCtx.recoveryPeriodDays}d rec`)
     : null;
   const routeLabel = meta.route?.toLowerCase() || null;
-  const designSegment = [[durationLabel, studyTypeLabel].filter(Boolean).join(" "), recDur].filter(Boolean).join(", ") || null;
-  const subtitleParts = [speciesStrain, designSegment, routeLabel].filter((x): x is string => !!x);
 
   // Dose group summary for profile
   const nGroups = doseGroups.filter(dg => !dg.is_recovery).length;
 
   // NOAEL / LOAEL from noaelData
   const combinedNoael = noaelData?.find(r => r.sex === "Combined");
-  const noaelLabel = combinedNoael ? formatNoaelDisplay(combinedNoael) : null;
-  const loaelLabel = combinedNoael
-    ? (combinedNoael.loael_dose_level === 0
-        ? "Control"
-        : combinedNoael.loael_label
-          ? combinedNoael.loael_label.split(",").slice(1).join(",").trim().split(" ").slice(0, 2).join(" ")
-          : `Level ${combinedNoael.loael_dose_level}`)
-    : null;
 
-  // Target organ and domain signal counts
+  // Target organ count (drives Headline finding sub-line)
   const targetOrganCount = targetOrgans?.filter(t => t.target_organ_flag).length ?? 0;
-  const domainsWithSignals = new Set(signalData.filter(s => s.treatment_related).map(s => s.domain.toLowerCase())).size;
-  const domainsWithAdverse = new Set(signalData.filter(s => s.severity === "adverse").map(s => s.domain.toLowerCase())).size;
-  const noaelConfidence = combinedNoael?.noael_confidence;
 
   // Data quality derivations
   const domainProfile = getDomainProfile(meta.study_type);
@@ -853,7 +851,6 @@ function DetailsTab({
   // ── Section content builders ───────────────────────────────────────────
   const studyLevelNotes = interpretationNotes.filter(n => n.domain === null);
   const hasPkExposure = pkData?.available && pkData.by_dose_group && pkData.by_dose_group.length > 0;
-  const dataQualityHasIssues = missingRequired.length > 0 || (valData?.summary.errors ?? 0) > 0;
 
   const railItems: StudyDetailsRailItem[] = [
     { key: "overview", label: "Overview" },
@@ -1124,117 +1121,94 @@ function DetailsTab({
     </div>
   );
 
-  // Overview section — summary-card dashboard with click-through (decision 10).
+  // ── Overview section — executive summary layout ─────────────────────────
+  // Replaces the legacy 6-card grid. Spec:
+  //   docs/_internal/incoming/overview-executive-summary-redesign-synthesis.md
+  // Sections:
+  //   1. Header toolbar (chips + Commentary toggle + Notes badge + Generate report)
+  //   2-4. Commentary (About / Headline / Findings) — gated by toggle
+  //   5. Needs attention — always rendered when items exist
+  //   6. Recent notes — rendered when study-level note is non-empty
+
+  const aboutText = composeAboutParagraph(meta, studyCtx);
+
+  // Driver attribution is shared between Headline sub-line and Findings
+  // paragraph — both pass the same flagged-target-organ set so the named
+  // driver is also present in sentence 1's target-organs enumeration.
+  // Without this constraint, Headline could name an organ that the Findings
+  // sentence doesn't list (incoherent prose).
+  const flaggedTargetOrgans = new Set(
+    (targetOrgans ?? [])
+      .filter((t) => t.target_organ_flag)
+      .map((t) => t.organ_system.toLowerCase()),
+  );
+  const drivingOrgan = findLoaelDriverOrgan(syndromeRollup?.by_organ, flaggedTargetOrgans);
+  const loaelEstablished = combinedNoael?.loael_dose_value != null;
+  const headline = composeHeadlineFinding(
+    combinedNoael,
+    targetOrganCount,
+    drivingOrgan,
+    loaelEstablished,
+  );
+
+  const findingsText = composeFindingsParagraph(
+    targetOrgans,
+    syndromeRollup,
+    recoveryData?.per_finding,
+    doseGroups,
+  );
+
+  // Header toolbar chips — atomic values, one concept per chip. Each chip
+  // resolves to null when its source data is missing; the toolbar drops null
+  // entries so we never render dangling separators.
+  const speciesChip = speciesStrain || null;
+  const durationWithRecoveryChip = [durationLabel, recDur].filter(Boolean).join(", ") || null;
+  const groupCountChip = nGroups > 0
+    ? `${nGroups} dose group${nGroups !== 1 ? "s" : ""}`
+    : null;
+  const designChip = meta.design ? meta.design.toLowerCase() : null;
+  const overviewChips: (string | null)[] = [
+    speciesChip,
+    durationWithRecoveryChip,
+    groupCountChip,
+    studyTypeLabel,
+    routeLabel,
+    designChip,
+  ];
+
+  const attentionItems = buildOverviewAttentionItems({
+    studyId,
+    valData,
+    mortalityData,
+    looFragility,
+    pkData,
+  });
+
   const overviewSection = (
-    <div className="grid grid-cols-1 gap-3 p-4 xl:grid-cols-2 2xl:grid-cols-3">
-      {/* NOAEL / LOAEL card */}
-      <OverviewCard
-        title="NOAEL / LOAEL"
-        onClick={() => setActiveSection("noael")}
-        empty={!noaelLabel && !loaelLabel && targetOrganCount === 0}
-      >
-        {noaelLabel && (
-          <div className="text-xs"><span className="font-semibold">NOAEL:</span> {noaelLabel}</div>
-        )}
-        {loaelLabel && (
-          <div className="text-xs"><span className="font-semibold">LOAEL:</span> {loaelLabel}</div>
-        )}
-        {(targetOrganCount > 0 || domainsWithSignals > 0 || noaelConfidence != null) && (
-          <div className="text-[11px] text-muted-foreground">
-            {targetOrganCount > 0 && <>{targetOrganCount} target organ{targetOrganCount !== 1 ? "s" : ""}</>}
-            {targetOrganCount > 0 && domainsWithSignals > 0 && " | "}
-            {domainsWithSignals > 0 && <>{domainsWithSignals} domain{domainsWithSignals !== 1 ? "s" : ""} with signals</>}
-            {(targetOrganCount > 0 || domainsWithSignals > 0) && noaelConfidence != null && " | "}
-            {noaelConfidence != null && <>{Math.round(noaelConfidence * 100)}% confidence</>}
-          </div>
-        )}
-      </OverviewCard>
-
-      {/* Study design card */}
-      <OverviewCard title="Study design" onClick={() => setActiveSection("study-design")}>
-        <div className="text-xs text-muted-foreground">
-          {subtitleParts.map((p, i) => (
-            <span key={i}>
-              {i > 0 && " | "}
-              {p.toLowerCase()}
-            </span>
-          ))}
-        </div>
-        <div className="text-[11px] text-muted-foreground">
-          {nGroups} groups | {mainStudyN + recoveryTotal + tkTotal} subjects
-          {hasRecovery && ` | ${recoveryTotal} recovery`}
-          {hasTk && ` | ${tkTotal} TK`}
-        </div>
-      </OverviewCard>
-
-      {/* Favorites card — placeholder */}
-      <OverviewCard title="Favorites" onClick={() => setActiveSection("favorites")} empty>
-        <div className="text-[11px] text-muted-foreground">No starred entities yet.</div>
-      </OverviewCard>
-
-      {/* Notes card */}
-      <OverviewCard
-        title="Notes"
-        onClick={() => setActiveSection("notes")}
-        empty={studyLevelNotes.length === 0}
-      >
-        {studyLevelNotes.length > 0 ? (
-          <div className="text-[11px] text-muted-foreground line-clamp-2">
-            {studyLevelNotes[0].category}: {studyLevelNotes[0].note}
-          </div>
-        ) : (
-          <div className="text-[11px] text-muted-foreground">No study-level notes.</div>
-        )}
-        {studyLevelNotes.length > 1 && (
-          <div className="text-[10px] text-muted-foreground/70">+{studyLevelNotes.length - 1} more</div>
-        )}
-      </OverviewCard>
-
-      {/* Domains card */}
-      <OverviewCard
-        title={`Domains (${domainRows.length})`}
-        onClick={() => setActiveSection("domains")}
-      >
-        <div className="text-[11px] text-muted-foreground">
-          {domainsWithAdverse} with adverse | {domainsWithSignals} with TR signals
-        </div>
-      </OverviewCard>
-
-      {/* PK Exposure card */}
-      {hasPkExposure && (
-        <OverviewCard title="PK Exposure" onClick={() => setActiveSection("pk-exposure")}>
-          {pkData?.hed && pkData.hed.noael_status !== "at_control" ? (
-            <div className="text-[11px] text-muted-foreground">
-              HED: {pkData.hed.hed_mg_kg} mg/kg | MRSD: {pkData.hed.mrsd_mg_kg} mg/kg
-            </div>
-          ) : (
-            <div className="text-[11px] text-muted-foreground">
-              {pkData?.by_dose_group?.length ?? 0} dose groups with PK data
-            </div>
-          )}
-        </OverviewCard>
+    <div className="flex flex-col">
+      <OverviewToolbar
+        chips={overviewChips}
+        commentary={commentary}
+        onCommentaryChange={setCommentary}
+        hasNote={currentNote.trim().length > 0}
+        onNotesClick={() => setActiveSection("notes")}
+        onGenerate={() => generateStudyReport(studyId)}
+      />
+      <CommentarySections
+        enabled={commentary === "on"}
+        aboutText={aboutText}
+        headline={headline}
+        findingsText={findingsText}
+        onConfidenceClick={() => setActiveSection("noael")}
+      />
+      {attentionItems.length > 0 && <NeedsAttentionList items={attentionItems} />}
+      {currentNote.trim().length > 0 && (
+        <RecentNotesSection
+          noteText={currentNote}
+          lastEdited={lastEdited}
+          onViewAll={() => setActiveSection("notes")}
+        />
       )}
-
-      {/* Data quality card */}
-      <OverviewCard
-        title="Data quality"
-        onClick={() => setActiveSection("data-quality")}
-        warning={dataQualityHasIssues}
-      >
-        {missingRequired.length > 0 && (
-          <div className="text-[11px] font-medium text-foreground">
-            {missingRequired.length} required domain{missingRequired.length !== 1 ? "s" : ""} missing
-          </div>
-        )}
-        {(valData?.summary.errors ?? 0) > 0 && (
-          <div className="text-[11px] font-medium text-foreground">
-            {valData!.summary.errors} validation error{valData!.summary.errors !== 1 ? "s" : ""}
-          </div>
-        )}
-        {!dataQualityHasIssues && (
-          <div className="text-[11px] text-muted-foreground">No exceptions noted.</div>
-        )}
-      </OverviewCard>
     </div>
   );
 
@@ -1294,49 +1268,6 @@ function DetailsTab({
         <div className="flex-1 overflow-auto">{sectionContent[activeSection]}</div>
       </div>
     </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// OverviewCard — compact summary card for the Overview dashboard (decision 10)
-// ---------------------------------------------------------------------------
-
-function OverviewCard({
-  title,
-  onClick,
-  children,
-  empty,
-  warning,
-}: {
-  title: string;
-  onClick: () => void;
-  children?: React.ReactNode;
-  empty?: boolean;
-  warning?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group flex flex-col gap-1 rounded-md border bg-card p-3 text-left transition-colors hover:border-primary/30 hover:bg-accent/20"
-    >
-      <div className="flex items-center justify-between">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {title}
-        </div>
-        {warning && (
-          <span
-            className="inline-block h-1.5 w-1.5 rounded-full"
-            style={{ backgroundColor: "#DC2626" }}
-            aria-label="Has issues"
-          />
-        )}
-        <ChevronRight className="h-3 w-3 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
-      </div>
-      <div className={`flex flex-col gap-0.5 ${empty ? "text-muted-foreground/60" : ""}`}>
-        {children}
-      </div>
-    </button>
   );
 }
 

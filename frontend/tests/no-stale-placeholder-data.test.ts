@@ -43,6 +43,7 @@ const ALLOWLIST = new Set<string>([
   "useTargetOrganSummary.ts",   // study-level organ summary
   "useExclusionPreview.ts",     // exclusion preview keyed by study+endpoint, shape stable
   "useSyndromeRollup.ts",       // study-level syndrome rollup (keyed by studyId only; shape stable)
+  "useLooFragilitySummary.ts",  // study-level findings aggregation, cache-shares with useFindings
 ]);
 
 describe("no-stale-placeholder-data", () => {

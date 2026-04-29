@@ -281,6 +281,11 @@ export interface NoaelSummaryRow {
   /** null when no LOAEL is identifiable (e.g. no adverse findings at all). */
   loael_dose_level: number | null;
   loael_label: string;
+  /** Numeric LOAEL dose value (mg/kg). null when no LOAEL is identifiable.
+   *  Source: backend/generator/view_dataframes.py:1009. */
+  loael_dose_value?: number | null;
+  /** LOAEL dose unit. null when no LOAEL is identifiable. */
+  loael_dose_unit?: string | null;
   n_adverse_at_loael: number;
   adverse_domains_at_loael: string[];
   noael_confidence: number;
@@ -531,6 +536,10 @@ export interface DoseProportionality {
   dose_levels_used: number[];
   non_monotonic?: boolean;
   interpretation?: string | null;
+  /** Dose above which proportionality breaks down. Absent (not null) when
+   *  not determined by the backend; consumers should test with `== null`
+   *  to handle both `undefined` and `null`. */
+  threshold_dose?: number | null;
 }
 
 export interface PkExposureSummary {

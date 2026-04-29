@@ -1,0 +1,81 @@
+topic: overview-executive-summary-redesign
+phase: build
+current_step: build.1
+revision: 8
+plan_review_r2:
+  verdict: FLAWED
+  new_findings: 6  # 3 FLAWED, 3 CONDITIONAL
+  resolved: all-6-via-auto_synthesize
+  classifications:
+    NF1: FACTUAL_DISPUTE-fix-applied  # join replaced with ORGAN_SYSTEM_MAP
+    NF2: FACTUAL_DISPUTE-fix-applied  # === null -> == null
+    NF3: PRESENTATION_ONLY-fix-applied  # AC-7 + test-strategy aligned with AC-4
+    NF4: PRESENTATION_ONLY-fix-applied  # data-gap-1 stale fallback removed
+    NF5: FACTUAL_DISPUTE-doc-only  # documented as known limitation + persisted to research-gap-4
+    NF6: PRESENTATION_ONLY-fix-applied  # line-9 per-user -> per-session
+build_plan_validated: true
+gaps_persisted:
+  research_registry:
+    - overview-redesign-followups (RG-OVR-01..04)
+  todo_md:
+    - DATA-GAP-OVERVIEW-01-recovery-verdict-taxonomy
+    - DATA-GAP-OVERVIEW-02-corroboration-status-enum
+    - DATA-GAP-OVERVIEW-03-recovery-join-coverage
+    - DATA-GAP-OVERVIEW-04-threshold-dose-absent-vs-null
+plan_review_r1:
+  verdict: FLAWED
+  findings: 10  # 5 FLAWED, 4 CONDITIONAL, 1 SOUND
+  flawed_addressed:
+    - F3-toggle-key-now-study-scoped
+    - F4-notes-badge-binary-not-count
+    - F5-recovery-numerator-denominator-share-evaluable-population
+    - F6-corroboration-field-value-positive-not-corroborated
+    - F7-worked-example-rederived-cardiovascular-renal-only
+  conditional_addressed:
+    - F1-navigation-model-section-added
+    - F2-spec-value-audit-pending-validation-with-30-day-telemetry-clause
+    - F8-loo-denominator-parenthetical-corrected
+    - F9-pk-fallback-no-misleading-dose-attribution
+    - F10-per-user-renamed-to-per-session-per-study
+  also_tightened:
+    - secondary-organs-grade-strict-strong-not-moderate-or-strong
+probe:
+  verdict: SAFE  # no BREAKS, no SCIENCE-FLAG, 2 intentional PROPAGATES
+  report: .lattice/cycle-state/overview-executive-summary-redesign-step3-probe.md
+  persisted_findings: 0  # nothing to add to REGISTRY.md or TODO.md
+architect_round_2:
+  verdict: PASS
+  pre_build_fix: data-gap-2-wrong-field-path-corrected-line-310
+synthesis_section_gate: PASS  # 6 mandatory sections present after edit at blueprint.1
+architect_round_1:
+  verdict: SIMPLIFY
+  blocking: 2  # pairwise_context-doesnt-exist, recovery-per-finding-is-dict-not-list
+  non_blocking: 4  # session-state-not-new-hook, extract-findLoaelDriverOrgan, worked-example-wrong-organs, useSyndromeRollup-missing
+  applied: all-6  # auto-applied per protocol
+entry_condition: hand-authored-spec
+notes: |
+  No /lattice:research-cycle was run for this topic. User authored a spec from a redesign
+  prompt + screenshot pass against live PointCross Overview, then explicitly chose
+  /lattice:cycle blueprint after the dispatcher logged signals=[spike-shape:yes,
+  spec-exists:yes,no-engine-work,no-scientific-method-decisions,4-open-questions]
+  mode=ambiguous-awaiting-confirmation. Blueprint validates the existing spec
+  (skipping the synthesize-from-research step) via architect gate + probe + R1/R2.
+synthesis_path: docs/_internal/incoming/overview-executive-summary-redesign-synthesis.md
+research_path: null  # not applicable for hand-authored entry
+key_decisions:
+  - prose-driven-overview-with-toggle
+  - confidence-chip-links-to-noael-rail
+  - notes-scoped-to-study-notes-schema-only
+  - via-mechanism-clause-deferred
+  - cross-schema-notes-aggregation-is-separate-epic
+constraints:
+  - claude-md-rule-5-reuse-existing-hooks  # useStudyMetadata, useNoaelSummary, etc.
+  - claude-md-rule-19-cross-study-defensibility  # 5 study verification list
+  - claude-md-rule-21-confidence-as-advisor-not-gate
+  - claude-md-rule-22-mechanism-mapping-belongs-in-knowledge-graph
+output: docs/_internal/incoming/overview-executive-summary-redesign-synthesis.md
+next_needs:
+  - architect-review
+  - probe
+  - plan-review-r1
+  - plan-review-r2
