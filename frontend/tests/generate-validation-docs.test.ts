@@ -73,6 +73,10 @@ interface RefAssertion {
   expected_value?: number | string | null;
   // target_organs_flagged: list of organ_system names that must have target_organ_flag=true.
   expected_organs?: string[];
+  // target_organs_flagged: when true, flagged organs MUST equal expected_organs exactly
+  // (no missing, no extras). When true, expected_organs: [] means "expect zero flagged" --
+  // useful for no-control studies and biologic studies where the GROUND_TRUTH is "no targets."
+  expect_only?: boolean;
   // cross_domain_concordance: WoE integration check on target_organ_summary.json.
   organ_system?: string;
   min_domains?: number;
@@ -624,18 +628,37 @@ function checkAssertion(
       const targets = loadJson<TargetOrganRow[]>(studyDir, "target_organ_summary.json");
       if (!targets) return { assertion, passed: false, actual: "target_organ_summary.json not found" };
       const expected = assertion.expected_organs ?? [];
-      if (expected.length === 0) {
-        return { assertion, passed: false, actual: "[missing expected_organs in YAML]" };
+      const expectOnly = assertion.expect_only === true;
+      // Empty list without expect_only=true is missing config -- a YAML drafted without
+      // expected_organs is silent on the question, not asserting "zero flagged."
+      if (expected.length === 0 && !expectOnly) {
+        return {
+          assertion, passed: false,
+          actual: "[missing expected_organs in YAML; set expect_only: true to assert zero flagged]",
+        };
       }
       const flagged = new Set(targets.filter((t) => t.target_organ_flag).map((t) => t.organ_system.toLowerCase()));
-      const missing = expected.filter((o) => !flagged.has(o.toLowerCase()));
-      return {
-        assertion,
-        passed: missing.length === 0,
-        actual: missing.length === 0
-          ? `all ${expected.length} expected organs flagged: ${expected.join(", ")}`
-          : `MISSING: ${missing.join(", ")} (flagged: ${[...flagged].join(", ") || "none"})`,
-      };
+      const expectedSet = new Set(expected.map((o) => o.toLowerCase()));
+      const missing = [...expectedSet].filter((o) => !flagged.has(o));
+      const extra = expectOnly ? [...flagged].filter((o) => !expectedSet.has(o)) : [];
+      const passed = missing.length === 0 && extra.length === 0;
+      let actual: string;
+      if (passed) {
+        if (expected.length === 0) {
+          actual = "0 organs flagged (expect_only)";
+        } else if (expectOnly) {
+          actual = `exact set of ${expected.length} flagged: ${expected.join(", ")}`;
+        } else {
+          actual = `all ${expected.length} expected organs flagged: ${expected.join(", ")}`;
+        }
+      } else {
+        const parts: string[] = [];
+        if (missing.length) parts.push(`MISSING: ${missing.join(", ")}`);
+        if (extra.length) parts.push(`UNEXPECTED: ${extra.join(", ")}`);
+        parts.push(`flagged: ${[...flagged].join(", ") || "none"}`);
+        actual = parts.join("; ");
+      }
+      return { assertion, passed, actual };
     }
     case "cross_domain_concordance": {
       if (!studyDir) return { assertion, passed: false, actual: "no study dir" };

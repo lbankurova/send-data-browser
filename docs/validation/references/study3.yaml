@@ -72,9 +72,7 @@ assertions:
     description: "mortality_loael = null (zero deaths; engine must NOT invent a mortality LOAEL from non-mortality findings)"
     expected_value: null
 
-  # NOTE: target_organs_flagged not encoded here -- the current matcher
-  # requires expected_organs.length > 0. For Study3 the GROUND_TRUTH is "zero
-  # organs flagged" which the existing matcher cannot express. Phase 3 should
-  # extend the matcher (e.g., expect_only: true OR allow expected_organs: []
-  # with explicit semantics) so this assertion can land mechanically. The
-  # zero_adverse assertion above covers the structurally-related claim.
+  - type: "target_organs_flagged"
+    description: "Zero target organs flagged -- report's 'no adverse findings' must surface as empty target_organ_summary"
+    expected_organs: []
+    expect_only: true

@@ -1,5 +1,35 @@
 [
   {
+    "study_id": "CBER-POC-Pilot-Study2-Vaccine_xpt",
+    "type": "loael_combined",
+    "description": "Combined LOAEL = null (no findings deemed adverse by report; SCIENCE-FLAG vs engine output)"
+  },
+  {
+    "study_id": "CBER-POC-Pilot-Study2-Vaccine_xpt",
+    "type": "noael_combined",
+    "description": "Combined NOAEL = 1 (treatment dose tolerated per report; engine over-classifies absent compound-class context)"
+  },
+  {
+    "study_id": "CBER-POC-Pilot-Study2-Vaccine_xpt",
+    "type": "target_organs_flagged",
+    "description": "Zero target organs (report: pharmacology, not toxicity; SCIENCE-FLAG vs engine 5-organ flagging)"
+  },
+  {
+    "study_id": "CBER-POC-Pilot-Study4-Vaccine",
+    "type": "loael_combined",
+    "description": "Combined LOAEL = null (no findings deemed adverse by report; SCIENCE-FLAG)"
+  },
+  {
+    "study_id": "CBER-POC-Pilot-Study4-Vaccine",
+    "type": "noael_combined",
+    "description": "Combined NOAEL = 2 (highest vaccine dose tolerated per report; engine over-classifies)"
+  },
+  {
+    "study_id": "CBER-POC-Pilot-Study4-Vaccine",
+    "type": "target_organs_flagged",
+    "description": "Zero target organs (report: pharmacology; SCIENCE-FLAG vs engine 5-organ flagging)"
+  },
+  {
     "study_id": "CBER-POC-Pilot-Study5",
     "type": "crossover_design",
     "description": "Latin square crossover correctly parsed — 4 treatments, 6 animals, within-subject"

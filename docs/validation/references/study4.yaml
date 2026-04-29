@@ -89,4 +89,40 @@ injected_signals:
     specimen_pattern: "adipose|abdominal"
     note: "Gelatinous abdominal adipose tissue (F), correlating with edema at microscopy. Both vaccines. (report p.10)"
 
-assertions: []
+assertions:
+  # ---- GROUND_TRUTH equality assertions (Phase 1 audit) ---------------------
+  # Authored from rabbivi.pdf pp.10-12. 3-group design (Control + SENDVACC10 +
+  # SENDVACC99). Investigators classified ALL vaccine findings (CRP/fibrinogen
+  # elevation, spleen + LN hyperplasia, transient BW/FW changes, injection-site
+  # reaction, abdominal adipose edema) as pharmacology-related and non-adverse.
+  #
+  # GROUND_TRUTH per the credentialed reviewer's call:
+  #   noael_combined = 2   (highest tested vaccine dose tolerated)
+  #   loael_combined = null (no findings deemed adverse)
+  #   mortality_loael = null (zero deaths)
+  #   target_organs_flagged = []  (no targets per investigators)
+  #
+  # ENGINE DISAGREEMENT (expected at time of authoring):
+  #   Same SCIENCE-FLAG pattern as Study2: engine returns noael=null, loael=1,
+  #   5 organs flagged because compound-class context is absent. Encoding the
+  #   report's call as GROUND_TRUTH per the audit-plan directive; baseline
+  #   captures the failures as SCIENCE-FLAG, not author error. Both vaccine
+  #   studies (Study2, Study4) trace to the same engine gap; D9 compound
+  #   profile scoring is the resolution path.
+
+  - type: "noael_combined"
+    description: "Combined NOAEL = 2 (highest vaccine dose tolerated per report; engine over-classifies)"
+    expected_value: 2
+
+  - type: "loael_combined"
+    description: "Combined LOAEL = null (no findings deemed adverse by report; SCIENCE-FLAG)"
+    expected_value: null
+
+  - type: "mortality_loael"
+    description: "mortality_loael = null (zero deaths)"
+    expected_value: null
+
+  - type: "target_organs_flagged"
+    description: "Zero target organs (report: pharmacology; SCIENCE-FLAG vs engine 5-organ flagging)"
+    expected_organs: []
+    expect_only: true

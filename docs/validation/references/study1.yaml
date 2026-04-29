@@ -27,7 +27,34 @@ target_organs: {}
 injected_signals: []
 
 assertions:
+  # ---- Existing concrete assertions (kept) ----------------------------------
   - type: "zero_adverse"
-    description: "No tr_adverse findings — single-arm, no control, not a tox study"
+    description: "No tr_adverse findings -- single-arm, no control, not a tox study"
   - type: "no_concurrent_control"
     description: "has_concurrent_control = false"
+
+  # ---- GROUND_TRUTH equality assertions (Phase 1 audit) ---------------------
+  # Authored from Covance study 8326556 nSDRG. Single-arm immunogenicity
+  # characterization (not a tox study), 4 female cynos, 20 ug/dose IM, no
+  # control group, no mortality endpoint, 135 raw findings all classified as
+  # not_assessed (no statistical comparison possible without control). NOAEL
+  # claim would require either a baseline cohort or a sister-study comparator
+  # the harness does not currently bridge -- engine correctly returns null.
+  # These four assertions mechanically protect that defensible "null" output.
+
+  - type: "noael_combined"
+    description: "Combined NOAEL = null (no concurrent control -> no defensible NOAEL)"
+    expected_value: null
+
+  - type: "loael_combined"
+    description: "Combined LOAEL = null (no concurrent control -> no defensible LOAEL)"
+    expected_value: null
+
+  - type: "mortality_loael"
+    description: "mortality_loael = null (zero deaths; no mortality endpoint in study design)"
+    expected_value: null
+
+  - type: "target_organs_flagged"
+    description: "Zero target organs -- no statistical adversity calls possible without a control"
+    expected_organs: []
+    expect_only: true

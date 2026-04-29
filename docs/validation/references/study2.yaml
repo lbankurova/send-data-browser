@@ -90,4 +90,43 @@ injected_signals:
     specimen_pattern: "site.*application|injection|administration|muscle.*skeletal"
     note: "Inflammation, necrosis, hemorrhage in striated muscle/fascia. SEND specimen: 'SITE, APPLICATION'. Engine classifies as not_treatment_related — known gap (injection site findings lack dose-response in 2-group design). (report p.9)"
 
-assertions: []
+assertions:
+  # ---- GROUND_TRUTH equality assertions (Phase 1 audit) ---------------------
+  # Authored from CBER-POC.pdf pp.9-12. Investigators classified ALL findings
+  # as pharmacology-related and non-adverse (CRP/fibrinogen/globulin elevation,
+  # spleen + LN hyperplasia, injection site reaction): an immunological
+  # response signature, not toxicity.
+  #
+  # GROUND_TRUTH per the credentialed reviewer's call:
+  #   noael_combined = 1   (treatment dose tolerated; no adverse findings)
+  #   loael_combined = null (no LOAEL -- no findings deemed adverse)
+  #   mortality_loael = null (zero deaths)
+  #   target_organs_flagged = []  (no targets per investigators)
+  #
+  # ENGINE DISAGREEMENT (expected at time of authoring):
+  #   Engine produces noael=null, loael=1, 5 organs flagged because it lacks
+  #   compound-class context (this is a vaccine; immunological elevations are
+  #   pharmacology, not toxicity). The 3-of-4 disagreement is the SCIENCE-FLAG.
+  #   Encoding the toxicologist's call as the GROUND_TRUTH is per CLAUDE.md
+  #   rule 21 (algorithm-as-advisor; credentialed reviewer's call is final)
+  #   and the audit plan's "do not weaken assertion to make engine pass"
+  #   directive. The disagreement is documented in the commit message and
+  #   added to .assertion-baseline.json as known-failures (SCIENCE-FLAG, not
+  #   author error). Resolution requires compound-class profile scoring (D9).
+
+  - type: "noael_combined"
+    description: "Combined NOAEL = 1 (treatment dose tolerated per report; engine over-classifies absent compound-class context)"
+    expected_value: 1
+
+  - type: "loael_combined"
+    description: "Combined LOAEL = null (no findings deemed adverse by report; SCIENCE-FLAG vs engine output)"
+    expected_value: null
+
+  - type: "mortality_loael"
+    description: "mortality_loael = null (zero deaths; report says no mortality concerns)"
+    expected_value: null
+
+  - type: "target_organs_flagged"
+    description: "Zero target organs (report: pharmacology, not toxicity; SCIENCE-FLAG vs engine 5-organ flagging)"
+    expected_organs: []
+    expect_only: true
