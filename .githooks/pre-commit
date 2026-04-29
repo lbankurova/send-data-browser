@@ -469,6 +469,33 @@ if [ "$STAGED_ALGO" -gt 0 ] && [ "$STAGED_FRONTEND" -eq 0 ]; then
     fi
 fi
 
+# --- Step 0g: Reuse-anchor drift check (CLAUDE.md rule 5 with teeth) ---
+# When a spec under docs/_internal/incoming/ is staged AND that spec contains
+# `file.ext:LINE` reuse-anchor citations, audit-spec-reuse.py verifies the
+# staged diff actually imports the cited files (or modifies them directly).
+# Mismatches (REUSE-ANCHOR-DRIFT) usually mean the implementation copied
+# structure from the cited file without consuming it -- the colgroup-with-
+# percentages-instead-of-col-w-classes failure mode (2026-04-29 retro).
+#
+# Advisory in v1: prints the drift report but does NOT block. Promote to
+# blocking after the baseline file is tuned and the false-positive rate
+# drops below ~5%. Track promotion via `LATTICE_REUSE_ANCHOR_BLOCK=1` env
+# var override or by removing this paragraph + wiring `--strict`.
+
+if [ -f "$REPO_ROOT/scripts/audit-spec-reuse.py" ]; then
+    SPEC_STAGED=$(echo "$STAGED_FILES" | grep -c "^docs/_internal/incoming/[^/]*\.md$" || true)
+    SPEC_NOT_ARCHIVE=$(echo "$STAGED_FILES" | grep -E "^docs/_internal/incoming/[^/]*\.md$" | grep -vc "/archive/" || true)
+    if [ "$SPEC_NOT_ARCHIVE" -gt 0 ]; then
+        echo "--- Step 0g: Reuse-anchor drift check (advisory) ---"
+        if [ "${LATTICE_REUSE_ANCHOR_BLOCK:-0}" = "1" ]; then
+            python "$REPO_ROOT/scripts/audit-spec-reuse.py" --strict || exit 1
+        else
+            python "$REPO_ROOT/scripts/audit-spec-reuse.py" 2>&1 | sed 's/^/  /' || true
+        fi
+        echo ""
+    fi
+fi
+
 # --- Step 0b: Doc generator freshness (BLOCKS if stale) ---
 # Checks that the 3 doc generators were run after source changes.
 # Only blocks if engine/analysis files are staged (the files that
