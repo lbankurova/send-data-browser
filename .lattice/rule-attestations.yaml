@@ -1,0 +1,136 @@
+# .lattice/rule-attestations.yaml
+#
+# Mechanical encoding of CLAUDE.md rules. Read by:
+#   .githooks/pre-commit Step 0h  -- resolves require kinds {any-touch, block}
+#   .githooks/commit-msg          -- resolves require kinds {trailer, trailer-forbidden}
+#
+# Path B of the mechanical-rules consolidation. Each rule below replaces
+# what would otherwise be a hand-written bash block. New rules become new
+# rows here, not new pre-commit steps.
+#
+# Schema (see scripts/check-rule-attestations.py for the dispatcher):
+#   rules:
+#     - id:      <stable-id>            # used in LATTICE_RULE_ATTESTATIONS_SKIP env var
+#       rule:    <CLAUDE.md number>     # cross-reference, not load-bearing
+#       summary: <one-line description>
+#       when:                            # trigger predicate
+#         kind: path-glob | new-file | new-dir-prefix | path-archive-move | always
+#         <kind-specific fields>
+#       require:                         # what's needed to clear the rule
+#         kind: trailer | trailer-forbidden | any-touch | block
+#         <kind-specific fields>
+#         hint: <multi-line text shown when violated>
+#
+# Glob semantics: fnmatch, repo-relative paths. `*` matches across `/`.
+#
+# Rules NOT yet mechanized (deferred -- need submodule-side dispatcher):
+#   - Rule 3  (view spec approval):    docs/_internal/views/*.md     [submodule]
+#   - Rule 6  (doc lifecycle):         docs/_internal/incoming -> archive [submodule]
+#   - Rule 11 (new spec -> ROADMAP):   docs/_internal/incoming/*.md   [submodule]
+#   - Rule 17 (spec value audit):      docs/_internal/incoming/*.md   [submodule]
+#   - Rule 1  (design system *.md):    docs/_internal/design-system/*.md [submodule]
+#   The trigger paths live in the docs/_internal git submodule, which has
+#   its own pre-commit boundary. Same dispatcher script will deploy there
+#   once the submodule's hooks are wired (TODO entry to be filed).
+
+rules:
+
+  # ----------------------------------------------------------- Rule 4
+  - id: rule-4-no-claude-coauthor
+    rule: 4
+    summary: Never add Claude as commit co-author.
+    when:
+      kind: always
+    require:
+      kind: trailer-forbidden
+      name: Co-Authored-By
+      value_pattern: '(?i)claude|anthropic'
+      hint: |
+        Rule 4 (CLAUDE.md): never add Claude as commit co-author.
+        Detected: a Co-Authored-By trailer references Claude/Anthropic.
+        Remove the trailer. Human co-authors are fine; Claude is not.
+
+  # ----------------------------------------------------------- Rule 8
+  - id: rule-8-no-top-level-sprawl
+    rule: 8
+    summary: No new top-level directories without proposing to user first.
+    when:
+      kind: new-dir-prefix
+      locations:
+        # Repo root: only existing tracked top-level entries are allowed.
+        - parent: ""
+          allow:
+            - .claude
+            - .dockerignore
+            - .githooks
+            - .gitignore
+            - .gitmodules
+            - .lattice
+            - .mcp.json
+            - ARCHITECTURE.md
+            - CLAUDE.md
+            - Dockerfile
+            - ESCALATION.md
+            - LICENSE
+            - NOTICE
+            - README.md
+            - backend
+            - docs
+            - frontend
+            - scripts
+            - send
+            - shared
+        # docs/ level: only the submodule subdir is tracked.
+        - parent: docs
+          allow:
+            - _internal
+    require:
+      kind: block
+      hint: |
+        Rule 8 (CLAUDE.md): no new top-level directory without prior user proposal.
+        New internal docs go into an existing docs/_internal/ subfolder.
+        If this directory is genuinely warranted, propose to the user first AND
+        add the new top-level segment to the allow list in
+        .lattice/rule-attestations.yaml.
+
+  # ----------------------------------------------------------- Rule 1 (parent-side)
+  - id: rule-1-design-system-approval-parent
+    rule: 1
+    summary: Design-system code changes require explicit user approval.
+    when:
+      kind: path-glob
+      paths:
+        - frontend/src/lib/design-tokens.ts
+        - frontend/src/index.css
+    require:
+      kind: trailer
+      name: Design-System-Approved
+      pattern: '.+'
+      hint: |
+        Rule 1 (CLAUDE.md): design-system code (design-tokens.ts, index.css)
+        cannot be modified without explicit user approval.
+        Add a trailer to the commit message attesting to the approval:
+            Design-System-Approved: <user-or-yes-with-context>
+        If the user has not approved this change yet, propose it first and wait.
+
+  # ----------------------------------------------------------- Rule 15
+  - id: rule-15-impact-analysis
+    rule: 15
+    summary: Shared-code changes require impact analysis attestation.
+    when:
+      kind: path-glob
+      paths:
+        - frontend/src/lib/*.ts
+        - frontend/src/lib/**/*.ts
+        - backend/services/analysis/*.py
+        - backend/services/analysis/**/*.py
+    require:
+      kind: trailer
+      name: Impact-Analysis
+      pattern: '^(reviewed|skip:.+)$'
+      hint: |
+        Rule 15 (CLAUDE.md): files in frontend/src/lib/ or backend/services/analysis/
+        are shared code consumed by 3+ files. Modifying them requires impact analysis.
+        Add a trailer to the commit message:
+            Impact-Analysis: reviewed         (after running /ops:impact)
+            Impact-Analysis: skip: <reason>   (only for trivial changes -- typo, comment)

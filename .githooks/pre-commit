@@ -496,6 +496,46 @@ if [ -f "$REPO_ROOT/scripts/audit-spec-reuse.py" ]; then
     fi
 fi
 
+# --- Step 0h: Rule-attestations dispatcher -- pre-commit phase (BLOCKS) ---
+# Reads .lattice/rule-attestations.yaml and evaluates each rule's predicate
+# against the staged diff. This step resolves require kinds {block, any-touch};
+# the commit-msg hook handles {trailer, trailer-forbidden}.
+#
+# Path B of the mechanical-rules consolidation: instead of one bash block per
+# rule, we have one dispatcher + a YAML config. Adding a new mechanical rule
+# becomes a YAML row, not a new pre-commit step.
+#
+# Bypass for a specific rule: LATTICE_RULE_ATTESTATIONS_SKIP=rule-id1,rule-id2
+# Print-but-don't-block (debug):  LATTICE_RULE_ATTESTATIONS_ADVISORY=1
+
+if [ -f "$REPO_ROOT/scripts/check-rule-attestations.py" ] \
+    && [ -f "$REPO_ROOT/.lattice/rule-attestations.yaml" ]; then
+    echo "--- Step 0h: Rule-attestations dispatcher (pre-commit phase) ---"
+    # Prefer the backend venv (PyYAML is reliably installed there); fall back
+    # to system `python` if no venv exists.
+    PYBIN="python"
+    if [ -x "$REPO_ROOT/backend/venv/Scripts/python.exe" ]; then
+        PYBIN="$REPO_ROOT/backend/venv/Scripts/python.exe"
+    elif [ -x "$REPO_ROOT/backend/venv/bin/python" ]; then
+        PYBIN="$REPO_ROOT/backend/venv/bin/python"
+    fi
+    if "$PYBIN" "$REPO_ROOT/scripts/check-rule-attestations.py" --phase pre-commit; then
+        echo "  PASS: no rule violations in staged diff."
+        echo ""
+    else
+        RC=$?
+        if [ "$RC" = "2" ]; then
+            echo ""
+            echo "  COMMIT BLOCKED: rule-attestations dispatcher configuration error."
+            echo "  Fix the error above (likely missing pyyaml or malformed YAML)."
+            exit 1
+        fi
+        echo ""
+        echo "  COMMIT BLOCKED: see rule violations above."
+        exit 1
+    fi
+fi
+
 # --- Step 0b: Doc generator freshness (BLOCKS if stale) ---
 # Checks that the 3 doc generators were run after source changes.
 # Only blocks if engine/analysis files are staged (the files that

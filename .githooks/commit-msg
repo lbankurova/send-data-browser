@@ -24,6 +24,41 @@ MSG_FILE="$1"
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 GATE_FILE="$REPO_ROOT/.lattice/review-gate.json"
 
+# --- Rule-attestations dispatcher -- commit-msg phase (BLOCKS) ---
+# Resolves require kinds {trailer, trailer-forbidden} from
+# .lattice/rule-attestations.yaml against the commit message.
+# The pre-commit Step 0h has already handled {block, any-touch}; this is
+# the trailer half of the same Path B dispatcher.
+#
+# Bypass for a specific rule: LATTICE_RULE_ATTESTATIONS_SKIP=rule-id1,rule-id2
+if [ -f "$REPO_ROOT/scripts/check-rule-attestations.py" ] \
+    && [ -f "$REPO_ROOT/.lattice/rule-attestations.yaml" ]; then
+    echo "--- commit-msg: Rule-attestations dispatcher (commit-msg phase) ---"
+    # Prefer the backend venv (PyYAML is reliably installed there); fall back
+    # to system `python` if no venv exists.
+    PYBIN="python"
+    if [ -x "$REPO_ROOT/backend/venv/Scripts/python.exe" ]; then
+        PYBIN="$REPO_ROOT/backend/venv/Scripts/python.exe"
+    elif [ -x "$REPO_ROOT/backend/venv/bin/python" ]; then
+        PYBIN="$REPO_ROOT/backend/venv/bin/python"
+    fi
+    if "$PYBIN" "$REPO_ROOT/scripts/check-rule-attestations.py" \
+            --phase commit-msg --message-file "$MSG_FILE"; then
+        echo "  PASS: required trailers present, forbidden trailers absent."
+        echo ""
+    else
+        RC=$?
+        if [ "$RC" = "2" ]; then
+            echo ""
+            echo "  COMMIT BLOCKED: rule-attestations dispatcher configuration error."
+            exit 1
+        fi
+        echo ""
+        echo "  COMMIT BLOCKED: see rule violations above."
+        exit 1
+    fi
+fi
+
 # Strip git's comment lines (anything starting with #) -- otherwise a message
 # template comment containing "fix:" could trigger a false positive.
 COMMIT_MSG=$(grep -v '^#' "$MSG_FILE" || true)
