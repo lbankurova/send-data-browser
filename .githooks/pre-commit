@@ -420,6 +420,55 @@ if [ "$STAGED_ALGO" -gt 0 ] && [ -d "$REPO_ROOT/backend/tests/approval-baselines
     echo ""
 fi
 
+# --- Step 0f: Validation harness regression check (BLOCKS on algorithmic-path commits) ---
+# When algorithmic-path files are staged but no frontend file is, Step 1's
+# `npm test` does NOT fire -- so the validation harness (which compares engine
+# output to docs/validation/references/*.yaml ground truth) wouldn't run and a
+# backend-only engine change could ship without the harness checking it.
+# This step closes that gap. Skipped when STAGED_FRONTEND > 0 because Step 1
+# already covers it.
+#
+# This is CLAUDE.md rule 19 with teeth: the harness fails on regression vs the
+# .assertion-baseline.json snapshot. New assertion failures (study + type +
+# description that wasn't in the baseline) print and abort the commit.
+#
+# Failure mode prevented: GAP-304 retro -- a backend engine change that would
+# have produced "insufficient evidence" on PointCross while the reference card
+# asserts mortality_loael=3 + HCC concordance.
+
+if [ "$STAGED_ALGO" -gt 0 ] && [ "$STAGED_FRONTEND" -eq 0 ]; then
+    echo "--- Step 0f: Validation harness regression check ---"
+    echo "  $STAGED_ALGO algorithmic-paths file(s) staged; running validation harness"
+    echo "  (compares engine output to docs/validation/references/*.yaml ground truth)."
+    echo ""
+
+    if (cd "$FRONTEND_DIR" && npx vitest run tests/generate-validation-docs.test.ts 2>&1); then
+        echo ""
+        echo "  Validation harness passed -- no regressions vs .assertion-baseline.json."
+        echo ""
+    else
+        echo ""
+        echo "========================================"
+        echo "  COMMIT BLOCKED: validation harness detected a regression."
+        echo "  Engine output diverged from a reference-card assertion that"
+        echo "  was not in .assertion-baseline.json."
+        echo ""
+        echo "  Resolve (in order of preference):"
+        echo "    1. Fix the engine bug. The regression line above names the"
+        echo "       study, assertion type, and description."
+        echo "    2. If the reference card is wrong (rare -- requires evidence),"
+        echo "       update docs/validation/references/<study>.yaml and document"
+        echo "       why in the commit message."
+        echo "    3. If the new failure is genuinely intended and accepted,"
+        echo "       refresh the baseline:"
+        echo "         cd frontend && UPDATE_BASELINE=1 npx vitest run tests/generate-validation-docs.test.ts"
+        echo "       Stage the updated .assertion-baseline.json and explain in"
+        echo "       the commit message why the change was accepted."
+        echo "========================================"
+        exit 1
+    fi
+fi
+
 # --- Step 0b: Doc generator freshness (BLOCKS if stale) ---
 # Checks that the 3 doc generators were run after source changes.
 # Only blocks if engine/analysis files are staged (the files that
