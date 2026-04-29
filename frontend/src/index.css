@@ -250,7 +250,7 @@ table.organ-tbl tbody td.organ-tbl-summary {
 .col-w-spacer { width: auto; }
 
 /* Heatmap-style cell: neutral at rest, hover tint. Dose cells inside per-organ
-   tables use this class. C-22 + K-03 + OrganGroupedHeatmap convention. */
+   tables use this class. C-22 + K-03 convention. */
 .heat-cell {
   background: rgba(0, 0, 0, 0.04);
   transition: background 0.15s;

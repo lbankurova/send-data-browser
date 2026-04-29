@@ -1001,6 +1001,8 @@ export function getSyndromeTermReport(
       role: term.role,
       tag: term.tag,
       status: "not_measured",
+      termDirection: term.direction,
+      displayLabel: buildTermDisplayLabel(term),
     };
 
     // Pass 1: Full match (identity + direction + severity gate)
@@ -1142,6 +1144,27 @@ export function getSyndromeTermReport(
     }
   }
 
+  // Compute requiredMet via the same logic the detection pipeline uses
+  // (cross-domain-syndromes.ts:646). For "any" / "compound", reuse
+  // evaluateRequiredLogic with the matched-tag set; for "all", every required
+  // term must be matched (status "matched" or "trend").
+  const matchedRequiredTags = new Set<string>();
+  for (const e of requiredEntries) {
+    if ((e.status === "matched" || e.status === "trend") && e.tag) {
+      matchedRequiredTags.add(e.tag);
+    }
+  }
+  let requiredMet: boolean;
+  if (def.requiredLogic.type === "all") {
+    const requiredTags = requiredEntries.map((e) => e.tag).filter((t): t is string => !!t);
+    requiredMet = requiredTags.every((t) => matchedRequiredTags.has(t));
+  } else {
+    requiredMet = evaluateRequiredLogic(def.requiredLogic, matchedRequiredTags);
+  }
+  // Path indicator — mirrors the OR in the detection condition:
+  //   (requiredMet && meetsMinDomains) || (!requiredMet && supportCount >= 3)
+  const firedViaSupporting = !requiredMet && supportingMetCount >= 3;
+
   return {
     requiredEntries,
     supportingEntries,
@@ -1157,7 +1180,41 @@ export function getSyndromeTermReport(
     requiredLogicType: def.requiredLogic.type,
     satisfiedClause,
     promotedSupportingTags,
+    minDomains: def.minDomains,
+    firedViaSupporting,
   };
+}
+
+/**
+ * Build the canonical UPPERCASE display form for a term — used by the
+ * MemberRolesByDoseTable Endpoint cell so matched and not-measured rows render
+ * in the same shape (no sentence-case "Liver hypertrophy" mixed with uppercase
+ * "LIVER — HYPERTROPHY"). No direction arrow — caller appends one.
+ *
+ *  - testCodes present (LB / BW)         -> "ALT", "ALAT"
+ *  - specimenTerms (MI / MA)             -> "LIVER — NECROSIS"
+ *  - organWeightTerms (OM)               -> "LIVER (WEIGHT)"
+ *  - canonicalLabels fallback            -> "BILIRUBIN"
+ */
+export function buildTermDisplayLabel(term: SyndromeTermMatch): string {
+  if (term.testCodes && term.testCodes.length > 0) {
+    return term.testCodes[0];
+  }
+  if (term.specimenTerms) {
+    const spec = term.specimenTerms.specimen?.[0]?.toUpperCase() ?? "";
+    const find = term.specimenTerms.finding?.[0]?.toUpperCase() ?? "";
+    if (spec && find) return `${spec} — ${find}`;
+    if (find) return find;
+    if (spec) return spec;
+  }
+  if (term.organWeightTerms) {
+    const spec = term.organWeightTerms.specimen?.[0]?.toUpperCase() ?? "";
+    return spec ? `${spec} (WEIGHT)` : "ORGAN WEIGHT";
+  }
+  if (term.canonicalLabels && term.canonicalLabels.length > 0) {
+    return term.canonicalLabels[0].toUpperCase();
+  }
+  return (term.tag ?? "").toUpperCase();
 }
 
 /**

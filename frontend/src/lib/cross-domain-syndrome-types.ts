@@ -117,7 +117,7 @@ export interface MagnitudeFloor {
 // ─── Term report types ─────────────────────────────────────
 
 export interface TermReportEntry {
-  label: string;        // "ALT ↑", "Bone marrow hypocellularity"
+  label: string;        // "ALT ↑", "Bone marrow hypocellularity" (legacy / banner)
   domain: string;       // "LB", "MI", "OM"
   role: "required" | "supporting";
   tag?: string;
@@ -127,6 +127,16 @@ export interface TermReportEntry {
   severity?: string;
   /** Direction of the found endpoint (for opposite status display) */
   foundDirection?: "up" | "down" | "none" | null;
+  /** Term-spec direction — single source of truth for the arrow regardless of
+   *  whether the entry matched. "up"/"down" yield the arrow; "any"/null yield none. */
+  termDirection?: "up" | "down" | "any" | null;
+  /** Canonical UPPERCASE display form for the term — testCode for LB/BW
+   *  (e.g. "ALT"), specimen — finding for MI/MA (e.g. "LIVER — NECROSIS"),
+   *  "LIVER (WEIGHT)" for OM organ-weight terms, etc. Used by the
+   *  MemberRolesByDoseTable Endpoint cell when the term is not matched (ensures
+   *  not-measured cells render in the same shape as matched cells, no sentence
+   *  case). Excludes the direction arrow — caller appends. */
+  displayLabel?: string;
   /** Sex tag when syndrome detected for one sex only (e.g. "M" or "F") */
   sex?: string | null;
   /** REM-27: Note when magnitude floor prevented a match (null = not applicable or passed) */
@@ -154,6 +164,14 @@ export interface SyndromeTermReport {
   satisfiedClause: string | null;
   /** REM-26: Tags of supporting terms that participated in compound required logic (promoted S→R) */
   promotedSupportingTags: string[];
+  /** Lifted from SyndromeDefinition.minDomains — banner uses this in the
+   *  "AND >= N domains" suffix without re-fetching the definition. */
+  minDomains: number;
+  /** True when the syndrome fires via the supporting-fallback path
+   *  (requiredLogic NOT met AND supportingMetCount >= 3). False when fired
+   *  via the required-logic path. The banner uses this to choose between
+   *  "Met: <rule>" and "Met via supporting evidence: ..." phrasing. */
+  firedViaSupporting: boolean;
 }
 
 // ─── Near-miss types ───────────────────────────────────────

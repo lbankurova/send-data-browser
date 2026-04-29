@@ -1,6 +1,6 @@
 # Syndrome Engine Reference
 
-**Generated:** 2026-04-27  
+**Generated:** 2026-04-29  
 **Source:** Live code extraction via `generate-engine-reference.test.ts`  
 **Syndromes:** 33  
 **Magnitude floor classes:** 14 + 3 organ weight subclasses  
@@ -876,13 +876,7 @@ interface MagnitudeFloor {
 }
 ```
 
-### 8.2 Aggregation surfaces
-
-Per-subject syndrome matches live in `backend/generated/{study}/subject_syndromes.json`. That file remains the source of truth -- one record per subject with the full syndrome list, confidence, match type, and matched/missing terms.
-
-For per-study consumers (the GAP-288 NOAEL/LOAEL synthesis page in particular), `backend/generated/{study}/syndrome_rollup.json` is the canonical aggregation surface. The rollup is a pure function of `subject_syndromes.json` + `subject_context.json` + `noael_summary.json`; it is byte-equal regenerable (audited by `scripts/audit-syndrome-rollup.py`). Consumers MUST read the rollup rather than re-aggregating per-subject data on the client. See `docs/_internal/architecture/noael-synthesis-page.md` for the data flow.
-
-### 8.3 Key functions
+### 8.2 Key functions
 
 | Function | Module | Input | Output |
 |----------|--------|-------|--------|

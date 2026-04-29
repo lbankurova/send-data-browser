@@ -21,170 +21,22 @@ import { CollapsiblePane } from "./CollapsiblePane";
 import { ContextPanelHeader } from "./ContextPanelHeader";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import type { SubjectProfile, SubjectMeasurement, SubjectObservation, SubjectFinding } from "@/types/timecourse";
-import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";
-import { sigmoidTransform } from "@/lib/g-lower";
 import {
   CIWhisker, AxisHeader, signedSigmoid,
-} from "@/components/analysis/findings/GroupForestPlot";
-import type { WhiskerMarkerStyle } from "@/components/analysis/findings/GroupForestPlot";
+} from "@/components/analysis/findings/forest-plot-primitives";
+import type { WhiskerMarkerStyle } from "@/components/analysis/findings/forest-plot-primitives";
 import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
 import type { EndpointSummary } from "@/lib/derive-summaries";
-import {
-  computeSubjectConcordance,
-  organSystemOrder,
-} from "@/lib/subject-concordance";
+import { computeSubjectConcordance } from "@/lib/subject-concordance";
 import type { OrganScatterPoint } from "@/lib/subject-concordance";
 
 // ─── Organ Concordance (FP-2) ──────────────────────────
-// Radar (default) + Forest plot (detail) toggle.
-// Patterns reused from OrganToxicityRadar.tsx and GroupForestPlot.tsx.
+// Forest-plot detail mode is the default-only display after the radar removal
+// (radar-forest-cleanup, 2026-04-28). The mixed-domain radar paradigm is
+// scientifically indefensible per cross-domain-effect-commensurability.md;
+// the per-row whisker keeps each effect on its own domain's terms.
 
-const RADAR_COLOR = "#78716c"; // stone-500 — neutral, no reserved colors
-const RADAR_ENVELOPE = "#78716c";
-
-/** Short spoke label for radar. Mirrors OrganToxicityRadar. */
-const ORGAN_SHORT: Record<string, string> = {
-  hepatic: "Hepatic", renal: "Renal", hematologic: "Hemato",
-  cardiovascular: "CV", respiratory: "Resp", endocrine: "Endo",
-  reproductive: "Repro", gastrointestinal: "GI", musculoskeletal: "MSK",
-  neurological: "Neuro", integumentary: "Dermal", ocular: "Ocular",
-  electrolyte: "Electro", metabolic: "Metab", general: "General",
-};
-
-/** Map a concordance point to a raw magnitude (unsigned).
- *  Continuous: |log2(foldChange)|, Incidence: severity grade. */
-function rawMagnitude(p: OrganScatterPoint): number {
-  return p.type === "continuous" ? Math.abs(Math.log2(p.value)) : p.value;
-}
-
-// ─── Subject Radar ─────────────────────────────────────
-
-function SubjectRadar({ points }: { points: OrganScatterPoint[] }) {
-  const organData = useMemo(() => {
-    const byOrgan = new Map<string, OrganScatterPoint[]>();
-    for (const p of points) {
-      let arr = byOrgan.get(p.organSystem);
-      if (!arr) { arr = []; byOrgan.set(p.organSystem, arr); }
-      arr.push(p);
-    }
-    // Sort by canonical order, include only organs with data
-    return [...byOrgan.entries()]
-      .sort((a, b) => organSystemOrder(a[0]) - organSystemOrder(b[0]))
-      .map(([organ, pts]) => {
-        const maxRaw = Math.max(...pts.map(rawMagnitude));
-        return {
-          organ,
-          value: sigmoidTransform(maxRaw),
-          rawMax: maxRaw,
-          count: pts.length,
-          dots: pts.map((p) => ({
-            label: p.type === "continuous" ? p.label : `${p.label}: ${p.finding ?? ""}`,
-            raw: rawMagnitude(p),
-            sigmoid: sigmoidTransform(rawMagnitude(p)),
-            tooltip: p.type === "continuous"
-              ? `${p.label}: ${p.value.toFixed(2)}x ctrl`
-              : `${p.label}: ${p.finding ?? ""} (${p.severity ?? ""})`,
-          })),
-        };
-      });
-  }, [points]);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const option = useMemo<any>(() => {
-    if (organData.length < 2) return {};
-    const SCALE = 4.0;
-
-    const indicators = organData.map((d) => ({
-      name: `${ORGAN_SHORT[d.organ] ?? d.organ} (${d.count})`,
-      max: SCALE,
-    }));
-
-    // Envelope polygon
-    const values = organData.map((d) => d.value);
-
-    // Individual dots along spokes
-    const dotEntries: { value: number[]; tooltip: string }[] = [];
-    for (let i = 0; i < organData.length; i++) {
-      for (const dot of organData[i].dots) {
-        const vals = new Array(organData.length).fill(0);
-        vals[i] = dot.sigmoid;
-        dotEntries.push({ value: vals, tooltip: dot.tooltip });
-      }
-    }
-
-    return {
-      radar: {
-        indicator: indicators,
-        shape: "polygon",
-        radius: "60%",
-        axisName: { fontSize: 9, color: "#9ca3af" },
-        splitNumber: 1,
-        splitArea: { show: false },
-        splitLine: { lineStyle: { color: "#e5e7eb" } },
-        axisLine: { lineStyle: { color: "#e5e7eb" } },
-      },
-      series: [
-        // Reference ring at medium effect (0.5)
-        {
-          type: "radar",
-          silent: true,
-          data: [{
-            value: new Array(organData.length).fill(sigmoidTransform(0.5)),
-            lineStyle: { color: "#d1d5db", width: 1, type: "dashed" },
-            areaStyle: { opacity: 0 },
-            itemStyle: { opacity: 0 },
-            symbol: "none",
-          }],
-        },
-        // Envelope: max effect per organ
-        {
-          type: "radar",
-          silent: true,
-          data: [{
-            value: values,
-            lineStyle: { color: RADAR_ENVELOPE, width: 2 },
-            areaStyle: { color: RADAR_ENVELOPE, opacity: 0.08 },
-            symbol: "none",
-          }],
-        },
-        // Dots: individual endpoints
-        {
-          type: "radar",
-          data: dotEntries.map((d) => ({
-            value: d.value,
-            name: d.tooltip,
-            lineStyle: { width: 0, opacity: 0 },
-            areaStyle: { opacity: 0 },
-            itemStyle: { color: RADAR_COLOR, opacity: 0.6 },
-            symbol: "circle",
-            symbolSize: 4,
-          })),
-        },
-      ],
-      tooltip: {
-        trigger: "item",
-        textStyle: { fontSize: 10 },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        formatter: (params: any) => {
-          if (params.seriesIndex !== 2) return "";
-          return params.name || "";
-        },
-      },
-    };
-  }, [organData]);
-
-  if (organData.length < 2) {
-    return (
-      <div className="py-3 text-center text-[10px] text-muted-foreground">
-        Single organ system -- use detail view
-      </div>
-    );
-  }
-
-  return <EChartsWrapper option={option} style={{ width: "100%", height: 200 }} />;
-}
-
-// ─── Subject Forest Plot (reuses GroupForestPlot components) ─
+// ─── Subject Forest Plot (reuses forest-plot-primitives) ─
 
 /** Match a concordance point to its group-level EndpointSummary for marker encoding. */
 function matchEndpoint(p: OrganScatterPoint, endpoints: EndpointSummary[]): EndpointSummary | undefined {
@@ -304,43 +156,6 @@ function SubjectForestPlot({ points, endpoints }: { points: OrganScatterPoint[];
           </tbody>
         </table>
       </div>
-    </div>
-  );
-}
-
-// ─── Concordance Pane (toggle wrapper) ─────────────────
-
-type ConcordanceMode = "radar" | "forest";
-
-function ConcordancePane({ points, endpoints }: { points: OrganScatterPoint[]; endpoints: EndpointSummary[] }) {
-  const [mode, setMode] = useState<ConcordanceMode>("radar");
-
-  return (
-    <div>
-      <div className="mb-2 flex items-center gap-1">
-        {(["radar", "forest"] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => setMode(m)}
-            className={cn(
-              "rounded px-2 py-0.5 text-[10px] font-medium transition-colors",
-              mode === m
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {m === "radar" ? "Radar" : "Detail"}
-          </button>
-        ))}
-        <span className="ml-auto text-[9px] text-muted-foreground">
-          {points.length} endpoints
-        </span>
-      </div>
-      {mode === "radar"
-        ? <SubjectRadar points={points} />
-        : <SubjectForestPlot points={points} endpoints={endpoints} />
-      }
     </div>
   );
 }
@@ -1290,7 +1105,7 @@ function SubjectProfileContent({
             collapseAll={collapseGen}
             summary={`${concordancePoints.length} deviating endpoints`}
           >
-            <ConcordancePane points={concordancePoints} endpoints={endpointSummaries} />
+            <SubjectForestPlot points={concordancePoints} endpoints={endpointSummaries} />
           </CollapsiblePane>
         )}
 

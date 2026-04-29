@@ -24,6 +24,7 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { setFindingsToggleDomainFilterCallback } from "./findings-bridge";
 import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
 import { usePrefetchFindingContext } from "@/hooks/usePrefetchFindingContext";
 import {
@@ -183,6 +184,21 @@ export function FindingsRail({
       setRailFilters(EMPTY_RAIL_FILTERS);
     }
   }, [studyId]);
+
+  // F8: register reverse callback so DomainDoseRollup row clicks toggle a
+  // domain in this rail's filter set (additive multi-select).
+  useEffect(() => {
+    setFindingsToggleDomainFilterCallback((domain) => {
+      setRailFilters((prev) => {
+        const current = prev.domains;
+        const next = new Set<string>(current ?? []);
+        if (next.has(domain)) next.delete(domain);
+        else next.add(domain);
+        return { ...prev, domains: next.size > 0 ? next : null };
+      });
+    });
+    return () => setFindingsToggleDomainFilterCallback(null);
+  }, []);
 
   // ── Rail-specific derived data ──────
   const endpointsWithSignal = useMemo(

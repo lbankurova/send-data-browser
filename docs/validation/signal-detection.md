@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `ed90e2bb` (2026-04-29)
-**Generated:** 2026-04-29T02:02:35.475Z
+**Engine:** commit `b2ba39f2` (2026-04-29)
+**Generated:** 2026-04-29T23:34:25.792Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -26,8 +26,12 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Assertion | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
-| zero_adverse | No tr_adverse findings — single-arm, no control, not a tox study | 0 tr_adverse findings (135 total) | **MATCH** |
+| zero_adverse | No tr_adverse findings -- single-arm, no control, not a tox study | 0 tr_adverse findings (135 total) | **MATCH** |
 | no_concurrent_control | has_concurrent_control = false | has_concurrent_control = false | **MATCH** |
+| noael_combined | Combined NOAEL = null (no concurrent control -> no defensible NOAEL) | noael_combined=null (expected null) | **MATCH** |
+| loael_combined | Combined LOAEL = null (no concurrent control -> no defensible LOAEL) | loael_combined=null (expected null) | **MATCH** |
+| mortality_loael | mortality_loael = null (zero deaths; no mortality endpoint in study design) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
+| target_organs_flagged | Zero target organs -- no statistical adversity calls possible without a control | 0 organs flagged (expect_only) | **MATCH** |
 
 ---
 
@@ -60,6 +64,15 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | Recovery | Yes | Yes (2 groups) | **MATCH** |
 | NOAEL (Combined) | Not established | Not established | **MATCH** |
 
+### Assertions
+
+| Assertion | Expected | Actual | Verdict |
+|-----------|----------|--------|---------|
+| noael_combined | Combined NOAEL = 1 (treatment dose tolerated per report; engine over-classifies absent compound-class context) | noael_combined=null (expected 1) | **MISMATCH** |
+| loael_combined | Combined LOAEL = null (no findings deemed adverse by report; SCIENCE-FLAG vs engine output) | loael_combined=1 (expected null) | **MISMATCH** |
+| mortality_loael | mortality_loael = null (zero deaths; report says no mortality concerns) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
+| target_organs_flagged | Zero target organs (report: pharmacology, not toxicity; SCIENCE-FLAG vs engine 5-organ flagging) | UNEXPECTED: hematologic, hepatic, general, cardiovascular, renal; flagged: hematologic, hepatic, general, cardiovascular, renal | **MISMATCH** |
+
 ---
 
 ## CBER-POC-Pilot-Study3-Gene-Therapy (synthetic) -- Signals: --
@@ -80,8 +93,12 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Assertion | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
-| zero_adverse | No tr_adverse findings — no concurrent control, report states 'no adverse test article-related findings' | 0 tr_adverse findings (593 total) | **MATCH** |
+| zero_adverse | No tr_adverse findings -- no concurrent control, report states 'no adverse test article-related findings' | 0 tr_adverse findings (593 total) | **MATCH** |
 | no_concurrent_control | has_concurrent_control = false | has_concurrent_control = false | **MATCH** |
+| noael_combined | Combined NOAEL = null (no concurrent control -> no defensible NOAEL) | noael_combined=null (expected null) | **MATCH** |
+| loael_combined | Combined LOAEL = null (no concurrent control -> no defensible LOAEL) | loael_combined=null (expected null) | **MATCH** |
+| mortality_loael | mortality_loael = null (zero deaths; engine must NOT invent a mortality LOAEL from non-mortality findings) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
+| target_organs_flagged | Zero target organs flagged -- report's 'no adverse findings' must surface as empty target_organ_summary | 0 organs flagged (expect_only) | **MATCH** |
 
 ---
 
@@ -114,6 +131,15 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | Doses | 0, 12.5, 12.5 mg/dose | 0, 12.5, 12.5 mg/dose | **MATCH** |
 | Recovery | Yes | Yes (3 groups) | **MATCH** |
 | NOAEL (Combined) | Not established | Not established | **MATCH** |
+
+### Assertions
+
+| Assertion | Expected | Actual | Verdict |
+|-----------|----------|--------|---------|
+| noael_combined | Combined NOAEL = 2 (highest vaccine dose tolerated per report; engine over-classifies) | noael_combined=null (expected 2) | **MISMATCH** |
+| loael_combined | Combined LOAEL = null (no findings deemed adverse by report; SCIENCE-FLAG) | loael_combined=1 (expected null) | **MISMATCH** |
+| mortality_loael | mortality_loael = null (zero deaths) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
+| target_organs_flagged | Zero target organs (report: pharmacology; SCIENCE-FLAG vs engine 5-organ flagging) | UNEXPECTED: general, hepatic, hematologic, cardiovascular, renal; flagged: general, hepatic, hematologic, cardiovascular, renal | **MISMATCH** |
 
 ---
 
