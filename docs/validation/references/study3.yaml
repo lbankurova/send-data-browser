@@ -41,7 +41,40 @@ injected_signals: []
   # Without a control group, cannot distinguish from background incidence.
 
 assertions:
+  # ---- Existing concrete assertions (kept) ----------------------------------
   - type: "zero_adverse"
-    description: "No tr_adverse findings — no concurrent control, report states 'no adverse test article-related findings'"
+    description: "No tr_adverse findings -- no concurrent control, report states 'no adverse test article-related findings'"
   - type: "no_concurrent_control"
     description: "has_concurrent_control = false"
+
+  # ---- GROUND_TRUTH equality assertions (Phase 1 audit) ---------------------
+  # Authored from VECTORSTUDYU1_RedactedSummaryReport.pdf + nSDRG. The report
+  # explicitly states "the test article was considered to be tolerated; no
+  # adverse test article-related findings were noted." With no concurrent
+  # control, the engine cannot derive NOAEL/LOAEL via per-finding adversity
+  # statistics -- noael_summary.json combined row is (null, null), which is
+  # the *correct* output: a NOAEL or LOAEL claim would be indefensible without
+  # a baseline cohort.
+  #
+  # These three assertions mechanically protect that defensible "null" output
+  # against a future engine change that fabricates a NOAEL by, e.g., comparing
+  # vector A vs vector B as if one were a control.
+
+  - type: "noael_combined"
+    description: "Combined NOAEL = null (no concurrent control -> no defensible NOAEL)"
+    expected_value: null
+
+  - type: "loael_combined"
+    description: "Combined LOAEL = null (no concurrent control -> no defensible LOAEL)"
+    expected_value: null
+
+  - type: "mortality_loael"
+    description: "mortality_loael = null (zero deaths; engine must NOT invent a mortality LOAEL from non-mortality findings)"
+    expected_value: null
+
+  # NOTE: target_organs_flagged not encoded here -- the current matcher
+  # requires expected_organs.length > 0. For Study3 the GROUND_TRUTH is "zero
+  # organs flagged" which the existing matcher cannot express. Phase 3 should
+  # extend the matcher (e.g., expect_only: true OR allow expected_organs: []
+  # with explicit semantics) so this assertion can land mechanically. The
+  # zero_adverse assertion above covers the structurally-related claim.
