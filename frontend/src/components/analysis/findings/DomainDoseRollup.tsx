@@ -22,7 +22,7 @@
  */
 
 import { useMemo } from "react";
-import { buildDoseColumns } from "@/lib/dose-columns";
+import { buildDoseColumns, buildDoseLevelMap } from "@/lib/dose-columns";
 import { buildDomainRows } from "@/lib/domain-rollup-aggregator";
 import type { EndpointSummary } from "@/lib/derive-summaries";
 import type { UnifiedFinding } from "@/types/analysis";
@@ -51,15 +51,7 @@ export function DomainDoseRollup({
     [doseGroups, noaelData],
   );
 
-  const doseLevelByValue = useMemo(() => {
-    const m = new Map<number, number>();
-    for (const dg of doseGroups) {
-      if (dg.is_recovery) continue;
-      if (dg.dose_value == null) continue;
-      if (!m.has(dg.dose_value)) m.set(dg.dose_value, dg.dose_level);
-    }
-    return m;
-  }, [doseGroups]);
+  const doseLevelByValue = useMemo(() => buildDoseLevelMap(doseGroups), [doseGroups]);
 
   const rows = useMemo(
     () => buildDomainRows(endpoints, findings, doseColumns, doseLevelByValue),

@@ -15,7 +15,7 @@
  */
 
 import { useMemo } from "react";
-import { buildDoseColumns } from "@/lib/dose-columns";
+import { buildDoseColumns, buildDoseLevelMap } from "@/lib/dose-columns";
 import { buildPerEndpointCell } from "@/lib/domain-rollup-aggregator";
 import type { UnifiedFinding } from "@/types/analysis";
 import type { DoseGroup } from "@/types";
@@ -45,15 +45,7 @@ export function MemberRolesByDoseTable({
     [doseGroups, noaelData],
   );
 
-  const doseLevelByValue = useMemo(() => {
-    const m = new Map<number, number>();
-    for (const dg of doseGroups) {
-      if (dg.is_recovery) continue;
-      if (dg.dose_value == null) continue;
-      if (!m.has(dg.dose_value)) m.set(dg.dose_value, dg.dose_level);
-    }
-    return m;
-  }, [doseGroups]);
+  const doseLevelByValue = useMemo(() => buildDoseLevelMap(doseGroups), [doseGroups]);
 
   const findingsByEndpoint = useMemo(() => {
     const m = new Map<string, UnifiedFinding[]>();

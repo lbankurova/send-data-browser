@@ -11,6 +11,23 @@
 import type { DoseGroup } from "@/types";
 import type { DoseColumn } from "@/types/syndrome-rollup";
 
+/**
+ * Map dose_value → dose_level for the current dose-group set, excluding
+ * recovery satellites and null doses. Shared by DomainDoseRollup and
+ * MemberRolesByDoseTable so the two panels never diverge on which doses
+ * map to which levels.
+ */
+export function buildDoseLevelMap(doseGroups: DoseGroup[] | null | undefined): Map<number, number> {
+  const m = new Map<number, number>();
+  if (!doseGroups) return m;
+  for (const dg of doseGroups) {
+    if (dg.is_recovery) continue;
+    if (dg.dose_value == null) continue;
+    if (!m.has(dg.dose_value)) m.set(dg.dose_value, dg.dose_level);
+  }
+  return m;
+}
+
 export function buildDoseColumns(
   doseGroups: DoseGroup[] | null | undefined,
   noaelData: { sex: string; loael_dose_level: number | null }[] | undefined,

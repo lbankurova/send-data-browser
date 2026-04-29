@@ -17,6 +17,7 @@ import { DomainDoseRollup } from "./DomainDoseRollup";
 import { MemberRolesByDoseTable, type MemberEntry } from "./MemberRolesByDoseTable";
 import { SyndromeDoseStrip } from "@/components/analysis/noael/SyndromeDoseStrip";
 import { buildDoseColumns } from "@/lib/dose-columns";
+import { deriveOrganScopeStats, deriveSyndromeScopeStats } from "@/lib/scope-stats";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useSyndromeRollup } from "@/hooks/useSyndromeRollup";
 import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
@@ -719,24 +720,14 @@ export function FindingsView() {
                   : undefined;
 
                 if (scopeType === "syndrome") {
-                  const synd = syndromes.find((s) => s.name === scopeLabel);
-                  const sexesSet = new Set(scopedEndpoints.flatMap((e) => e.sexes));
-                  const sexes: "F+M" | "F-only" | "M-only" | "—" =
-                    sexesSet.has("F") && sexesSet.has("M") ? "F+M"
-                      : sexesSet.has("F") ? "F-only"
-                      : sexesSet.has("M") ? "M-only"
-                      : "—";
+                  const stats = deriveSyndromeScopeStats(syndromes, scopedEndpoints, scopeLabel);
                   return (
                     <ScopeBanner
                       kind="syndrome"
                       onBack={onBack}
                       backLabel={backState?.label}
                       stats={{
-                        syndromeId: synd?.id ?? "",
-                        syndromeName: scopeLabel ?? "Syndrome",
-                        nEndpoints: scopedEndpoints.length,
-                        nDomains: new Set(scopedEndpoints.map((e) => e.domain)).size,
-                        sexes,
+                        ...stats,
                         // Classification chip line wired in Phase 5 when SyndromeContextPanel slim ships.
                         classificationChips: [],
                       }}
@@ -744,22 +735,14 @@ export function FindingsView() {
                   );
                 }
                 // organ / domain / pattern / compound — banner with organ-style stats
-                const adverseCount = scopedEndpoints.filter(
-                  (e) => e.worstSeverity === "adverse" && e.treatmentRelated,
-                ).length;
-                const domains = [...new Set(scopedEndpoints.map((e) => e.domain))].sort();
-                const organKey = scopedEndpoints[0]?.organ_system ?? scopeLabel ?? "";
+                const stats = deriveOrganScopeStats(scopedEndpoints, scopeLabel);
                 return (
                   <ScopeBanner
                     kind="organ"
                     onBack={onBack}
                     backLabel={backState?.label}
                     stats={{
-                      organSystem: scopeLabel ?? organKey,
-                      nEndpoints: scopedEndpoints.length,
-                      nDomains: domains.length,
-                      domains,
-                      nAdverse: adverseCount,
+                      ...stats,
                       noaelLabel: null,        /* organ NOAEL move = Phase 5 (Feature 12) */
                       nUnscheduledDeaths: 0,    /* mortality wiring deferred */
                       recoveryStatus: null,
