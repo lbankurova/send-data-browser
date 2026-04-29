@@ -68,6 +68,19 @@ interface RefSignal {
 interface RefAssertion {
   type: string;
   description: string;
+  // Equality match for primitive-valued assertions (mortality_loael, noael_combined, ...).
+  // null is a meaningful value (e.g., "NOAEL not established") — distinct from absent.
+  expected_value?: number | string | null;
+  // target_organs_flagged: list of organ_system names that must have target_organ_flag=true.
+  expected_organs?: string[];
+  // cross_domain_concordance: WoE integration check on target_organ_summary.json.
+  organ_system?: string;
+  min_domains?: number;
+  min_groups_converging?: number;
+  // mortality_cause_concordance: walks study_mortality.json deaths[] for cause-pattern hits at a dose.
+  expected_dose_level?: number;
+  min_count?: number;
+  cause_pattern?: string;
 }
 
 interface RefNoael {
@@ -491,6 +504,22 @@ interface AssertionResult {
   actual: string;
 }
 
+// Engine-output JSON shapes consumed by checkAssertion(). Local to this matcher so
+// adding a new assertion type and the JSON it reads stays in one diff.
+interface MortalityJson {
+  mortality_loael: number | null;
+  total_deaths: number;
+  total_accidental: number;
+  deaths?: { USUBJID: string; dose_level: number; cause: string | null; is_recovery: boolean }[];
+}
+interface TargetOrganRow {
+  organ_system: string;
+  target_organ_flag: boolean;
+  n_domains: number;
+  domains: string[];
+  evidence_quality?: { convergence?: { groups?: number } };
+}
+
 function checkAssertion(
   assertion: RefAssertion,
   findings: Finding[],
@@ -518,31 +547,139 @@ function checkAssertion(
     }
     case "multi_compound_detected": {
       loadJson<ProvenanceMsg[]>(findStudyDir(meta?.treatment ?? "") ?? "", "provenance_messages.json");
-      // Check dose groups for multi-compound indicators
-      return {
-        assertion,
-        passed: true, // Verified by design-only check
-        actual: "multi-compound study detected",
-      };
-    }
-    case "trend_suppressed": {
+      // TODO(tighten): currently always-pass — needs provenance-based check (e.g., MULTI_COMPOUND_DETECTED rule_id present).
       return {
         assertion,
         passed: true,
-        actual: "trend suppression active",
+        actual: "multi-compound study detected (not machine-verified — TODO)",
       };
     }
-    case "mortality_loael": {
-      const mortality = studyDir ? loadJson<{ mortality_loael: number | null; total_deaths: number; total_accidental: number }>(studyDir, "study_mortality.json") : null;
-      if (!mortality) return { assertion, passed: false, actual: "study_mortality.json not found" };
+    case "trend_suppressed": {
+      // TODO(tighten): currently always-pass — needs provenance check for TREND_SUPPRESSED rule fire.
       return {
         assertion,
-        passed: mortality.mortality_loael != null,
-        actual: `mortality_loael=${mortality.mortality_loael}, ${mortality.total_deaths} deaths + ${mortality.total_accidental} accidental`,
+        passed: true,
+        actual: "trend suppression active (not machine-verified — TODO)",
+      };
+    }
+    case "design_groups":
+    case "no_dose_response": {
+      // Description-only assertions (covered by checkDesign). Pass through.
+      return { assertion, passed: true, actual: "covered by design check" };
+    }
+    case "mortality_loael": {
+      const mortality = studyDir ? loadJson<MortalityJson>(studyDir, "study_mortality.json") : null;
+      if (!mortality) return { assertion, passed: false, actual: "study_mortality.json not found" };
+      const actual = mortality.mortality_loael;
+      const summary = `mortality_loael=${actual}, ${mortality.total_deaths} deaths + ${mortality.total_accidental} accidental`;
+      // If reference card declares expected_value, check equality. null is meaningful (no LOAEL).
+      if (assertion.expected_value !== undefined) {
+        const passed = actual === assertion.expected_value;
+        return { assertion, passed, actual: `${summary} (expected ${assertion.expected_value})` };
+      }
+      // Legacy: reference card hasn't been tightened yet — fall back to non-null check, flag in actual.
+      return { assertion, passed: actual != null, actual: `${summary} [LEGACY: no expected_value]` };
+    }
+    case "noael_combined": {
+      if (!noael) return { assertion, passed: false, actual: "noael_summary.json not found" };
+      const combinedRows = noael.filter((n) => n.sex === "Combined");
+      if (combinedRows.length === 0) return { assertion, passed: false, actual: "no Combined NOAEL row" };
+      // Multi-compound: take the most conservative (lowest) NOAEL.
+      const combined = combinedRows.reduce((a, b) => {
+        const aDl = a.noael_dose_level ?? -Infinity;
+        const bDl = b.noael_dose_level ?? -Infinity;
+        return aDl <= bDl ? a : b;
+      });
+      const actual = combined.noael_dose_level;
+      if (assertion.expected_value === undefined) {
+        return { assertion, passed: false, actual: `noael_combined=${actual} [missing expected_value in YAML]` };
+      }
+      return {
+        assertion,
+        passed: actual === assertion.expected_value,
+        actual: `noael_combined=${actual} (expected ${assertion.expected_value})`,
+      };
+    }
+    case "loael_combined": {
+      if (!noael) return { assertion, passed: false, actual: "noael_summary.json not found" };
+      const combinedRows = noael.filter((n) => n.sex === "Combined");
+      if (combinedRows.length === 0) return { assertion, passed: false, actual: "no Combined NOAEL row" };
+      const combined = combinedRows.reduce((a, b) => {
+        const aLo = a.loael_dose_level ?? Infinity;
+        const bLo = b.loael_dose_level ?? Infinity;
+        return aLo <= bLo ? a : b;
+      });
+      const actual = combined.loael_dose_level;
+      if (assertion.expected_value === undefined) {
+        return { assertion, passed: false, actual: `loael_combined=${actual} [missing expected_value in YAML]` };
+      }
+      return {
+        assertion,
+        passed: actual === assertion.expected_value,
+        actual: `loael_combined=${actual} (expected ${assertion.expected_value})`,
+      };
+    }
+    case "target_organs_flagged": {
+      if (!studyDir) return { assertion, passed: false, actual: "no study dir" };
+      const targets = loadJson<TargetOrganRow[]>(studyDir, "target_organ_summary.json");
+      if (!targets) return { assertion, passed: false, actual: "target_organ_summary.json not found" };
+      const expected = assertion.expected_organs ?? [];
+      if (expected.length === 0) {
+        return { assertion, passed: false, actual: "[missing expected_organs in YAML]" };
+      }
+      const flagged = new Set(targets.filter((t) => t.target_organ_flag).map((t) => t.organ_system.toLowerCase()));
+      const missing = expected.filter((o) => !flagged.has(o.toLowerCase()));
+      return {
+        assertion,
+        passed: missing.length === 0,
+        actual: missing.length === 0
+          ? `all ${expected.length} expected organs flagged: ${expected.join(", ")}`
+          : `MISSING: ${missing.join(", ")} (flagged: ${[...flagged].join(", ") || "none"})`,
+      };
+    }
+    case "cross_domain_concordance": {
+      if (!studyDir) return { assertion, passed: false, actual: "no study dir" };
+      const targets = loadJson<TargetOrganRow[]>(studyDir, "target_organ_summary.json");
+      if (!targets) return { assertion, passed: false, actual: "target_organ_summary.json not found" };
+      const organ = assertion.organ_system?.toLowerCase();
+      if (!organ) return { assertion, passed: false, actual: "[missing organ_system in YAML]" };
+      const row = targets.find((t) => t.organ_system.toLowerCase() === organ);
+      if (!row) return { assertion, passed: false, actual: `organ_system '${organ}' not in target_organ_summary` };
+      const minDomains = assertion.min_domains ?? 0;
+      const minGroups = assertion.min_groups_converging ?? 0;
+      const actualDomains = row.n_domains;
+      const actualGroups = row.evidence_quality?.convergence?.groups ?? 0;
+      const passed = actualDomains >= minDomains && actualGroups >= minGroups && row.target_organ_flag;
+      return {
+        assertion,
+        passed,
+        actual: `${organ}: flag=${row.target_organ_flag}, n_domains=${actualDomains} (need >=${minDomains}, [${row.domains.join(",")}]), convergence_groups=${actualGroups} (need >=${minGroups})`,
+      };
+    }
+    case "mortality_cause_concordance": {
+      const mortality = studyDir ? loadJson<MortalityJson>(studyDir, "study_mortality.json") : null;
+      if (!mortality) return { assertion, passed: false, actual: "study_mortality.json not found" };
+      const dl = assertion.expected_dose_level;
+      const minCount = assertion.min_count ?? 1;
+      const pattern = assertion.cause_pattern;
+      if (dl === undefined || !pattern) {
+        return { assertion, passed: false, actual: "[missing expected_dose_level or cause_pattern in YAML]" };
+      }
+      const re = new RegExp(pattern, "i");
+      const matches = (mortality.deaths ?? []).filter((d) => d.dose_level === dl && d.cause != null && re.test(d.cause));
+      return {
+        assertion,
+        passed: matches.length >= minCount,
+        actual: `${matches.length} death(s) at dose_level=${dl} matching /${pattern}/i (need >=${minCount}); subjects: ${matches.map((m) => m.USUBJID).join(",") || "none"}`,
       };
     }
     default:
-      return { assertion, passed: true, actual: "assertion type not machine-verifiable" };
+      // Strict default: unknown types fail loud rather than silently passing.
+      return {
+        assertion,
+        passed: false,
+        actual: `unknown assertion type '${assertion.type}' — strict default refuses to silently pass`,
+      };
   }
 }
 
@@ -930,6 +1067,42 @@ function generateSummary(scores: StudyScore[]): string {
 
 // ─── Test harness ───────────────────────────────────────────
 
+// ─── Baseline regression gate ───────────────────────────────
+//
+// The matcher above can now FAIL on assertion mismatches that previously passed silently.
+// To avoid the entire corpus going red on day one, we snapshot today's failures into
+// .assertion-baseline.json. Test fails on REGRESSIONS (new failures) but tolerates baselined
+// failures. Bootstrap or refresh: UPDATE_BASELINE=1 npm test -- generate-validation-docs.
+// Fixes (baseline entry that now passes) print but don't fail; rerun with UPDATE_BASELINE=1
+// to drop them so they can't regress silently.
+
+const BASELINE_PATH = resolve(OUTPUT, ".assertion-baseline.json");
+
+interface BaselineEntry {
+  study_id: string;
+  type: string;
+  description: string;
+}
+
+function key(e: BaselineEntry): string {
+  return `${e.study_id}::${e.type}::${e.description}`;
+}
+
+function loadBaseline(): BaselineEntry[] {
+  if (!existsSync(BASELINE_PATH)) return [];
+  return JSON.parse(readFileSync(BASELINE_PATH, "utf-8")) as BaselineEntry[];
+}
+
+function currentFailures(scores: StudyScore[]): BaselineEntry[] {
+  return scores
+    .flatMap((s) =>
+      s.assertionDetails
+        .filter((a) => !a.passed)
+        .map<BaselineEntry>((a) => ({ study_id: s.study_id, type: a.assertion.type, description: a.assertion.description }))
+    )
+    .sort((a, b) => key(a).localeCompare(key(b)));
+}
+
 describe("Validation Document Generator", () => {
   test("generates validation documents", () => {
     const cards = loadRefCards();
@@ -961,9 +1134,40 @@ describe("Validation Document Generator", () => {
     console.log(`  ✓ Summary written to: ${summaryPath}`);
     console.log(`    ${cards.length} studies, ${detectedSignals}/${totalSignals} signals, ${matchedDesign}/${totalDesign} design checks`);
 
-    // The test passes if generation succeeds — detection failures are reported in the docs
     expect(engineOutput.length).toBeGreaterThan(100);
     expect(signalDetection.length).toBeGreaterThan(100);
     expect(summary.length).toBeGreaterThan(100);
+  });
+
+  test("assertion failures are subset of baseline (no regressions)", () => {
+    const cards = loadRefCards();
+    const { scores } = generateSignalDetection(cards);
+    const current = currentFailures(scores);
+    const updateMode = process.env.UPDATE_BASELINE === "1";
+
+    if (updateMode) {
+      writeFileSync(BASELINE_PATH, JSON.stringify(current, null, 2) + "\n", "utf-8");
+      console.log(`  ✓ Baseline updated: ${BASELINE_PATH} (${current.length} known failures)`);
+      return;
+    }
+
+    const baseline = loadBaseline();
+    const baselineKeys = new Set(baseline.map(key));
+    const currentKeys = new Set(current.map(key));
+
+    const regressions = current.filter((e) => !baselineKeys.has(key(e)));
+    const fixes = baseline.filter((e) => !currentKeys.has(key(e)));
+
+    if (fixes.length > 0) {
+      console.log(`  ℹ ${fixes.length} baselined failure(s) now PASS — refresh baseline with UPDATE_BASELINE=1:`);
+      for (const f of fixes) console.log(`    + ${f.study_id} :: ${f.type} :: ${f.description}`);
+    }
+
+    if (regressions.length > 0) {
+      console.log(`  ✗ ${regressions.length} REGRESSION(s) — assertion now fails that wasn't in baseline:`);
+      for (const r of regressions) console.log(`    - ${r.study_id} :: ${r.type} :: ${r.description}`);
+    }
+
+    expect(regressions, `New assertion failures: ${regressions.map(key).join("; ")}`).toEqual([]);
   });
 });

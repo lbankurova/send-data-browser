@@ -1,7 +1,7 @@
 # Engine Output
 
-**Engine:** commit `48f93339` (2026-04-28)
-**Generated:** 2026-04-28T14:29:07.104Z
+**Engine:** commit `ed90e2bb` (2026-04-29)
+**Generated:** 2026-04-29T02:02:35.097Z
 
 Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regenerate with `/regen-validation`.
 
@@ -737,9 +737,9 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
 |-----|-------|-------|-----------|---------|------------|--------|
-| M | Not established | Group 2,2 mg/kg PCDRUG | 9 | BW, LB, OM | 0.80 | below_tested_range |
+| M | Not established | Group 2,2 mg/kg PCDRUG | 10 | BG, BW, LB, OM | 0.80 | below_tested_range |
 | F | Not established | Group 2,2 mg/kg PCDRUG | 3 | BW, LB | 0.80 | below_tested_range |
-| Combined | Not established | Group 2,2 mg/kg PCDRUG | 12 | BW, LB, OM | 0.80 | below_tested_range |
+| Combined | Not established | Group 2,2 mg/kg PCDRUG | 13 | BG, BW, LB, OM | 0.80 | below_tested_range |
 
 ### Target Organs
 

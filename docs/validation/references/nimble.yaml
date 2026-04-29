@@ -32,3 +32,17 @@ assertions:
     description: "2 groups correctly parsed"
   - type: "no_dose_response"
     description: "Single treatment dose — no dose-response pattern possible"
+
+  # Control-mortality-critical case: Combined NOAEL must be suppressed (null) per
+  # CTRL_MORT_CRITICAL qualification (control mortality 28% > 10% threshold). The
+  # engine cannot establish a NOAEL when the control cohort itself is unhealthy.
+  - type: "noael_combined"
+    description: "Combined NOAEL = null (suppressed by CTRL_MORT_CRITICAL — 28% control mortality)"
+    expected_value: null
+
+  # Mortality LOAEL: 1/50 treatment deaths is mechanically captured at dose_level 1,
+  # but the BIG signal is the 14/50 control mortality flagging study validity.
+  # Encoding both as expectations forces the engine to keep producing this output.
+  - type: "mortality_loael"
+    description: "mortality_loael = 1 (treatment-cohort death captured) — but study validity questioned"
+    expected_value: 1

@@ -104,5 +104,42 @@ injected_signals:
     note: "Adenoma + carcinoma"
 
 assertions:
+  # Mortality LOAEL: top-dose HCC deaths drive a treatment-related mortality call.
+  # GAP-304 retro: a single-signal PEG architecture would output null here. This assertion
+  # blocks that regression mechanically — engine must produce mortality_loael === 3.
   - type: "mortality_loael"
-    description: "mortality_loael = 3 (Group 4) in study_mortality.json. 2 HCC moribund sacrifices (4003 M day 90, 4113 F day 100) + 1 accidental (gavage error, control)."
+    description: "mortality_loael = 3 (Group 4) — 2 HCC moribund sacrifices (4003 M day 90, 4113 F day 100, latter in recovery cohort)"
+    expected_value: 3
+
+  # Cause concordance: ≥2 HCC at top dose across main+recovery is the toxicologist's
+  # primary call for "treatment-related." Engine must surface both deaths regardless
+  # of cohort. Excluding recovery from the count drops to 1, which fails this gate.
+  - type: "mortality_cause_concordance"
+    description: ">=2 hepatocellular carcinoma deaths at dose_level 3 (main + recovery cohort)"
+    expected_dose_level: 3
+    min_count: 2
+    cause_pattern: "hepatocellular carcinoma|hcc"
+
+  # NOAEL/LOAEL: combined NOAEL not established (LOAEL at lowest active dose per nSDRG).
+  - type: "noael_combined"
+    description: "Combined NOAEL = null (not established — LOAEL at Group 2)"
+    expected_value: null
+  - type: "loael_combined"
+    description: "Combined LOAEL = 1 (Group 2, 2 mg/kg)"
+    expected_value: 1
+
+  # Target organs: hepatic must be flagged. nSDRG Section 6.2 documents 4 hepatic
+  # signals (LB ALT/AST/ALP, OM liver weight, MA macroscopic, MI hypertrophy + tumors).
+  - type: "target_organs_flagged"
+    description: "hepatic and hematologic flagged as target organs"
+    expected_organs: ["hepatic", "hematologic"]
+
+  # Cross-domain WoE: hepatic finding must show convergence across ≥3 domains.
+  # This is the mechanical encoding of "weight of evidence" — engine cannot pass
+  # by detecting one domain in isolation. PointCross hepatic actually has 4 domains
+  # (LB, MA, MI, OM) converging across 3 dose groups.
+  - type: "cross_domain_concordance"
+    description: "hepatic: >=3 domains converging across >=2 dose groups (WoE integration)"
+    organ_system: "hepatic"
+    min_domains: 3
+    min_groups_converging: 2

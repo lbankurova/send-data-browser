@@ -1,0 +1,77 @@
+[
+  {
+    "study_id": "CBER-POC-Pilot-Study5",
+    "type": "crossover_design",
+    "description": "Latin square crossover correctly parsed — 4 treatments, 6 animals, within-subject"
+  },
+  {
+    "study_id": "CBER-POC-Pilot-Study5",
+    "type": "no_noael",
+    "description": "NOAEL not established — CV effects at all doses tested (LOEL = 20 mg/kg)"
+  },
+  {
+    "study_id": "CJ16050-xptonly",
+    "type": "non_monotonic_detected",
+    "description": "Engine should detect non-monotonic dose-response pattern"
+  },
+  {
+    "study_id": "CJ16050-xptonly",
+    "type": "parallel_design",
+    "description": "3 parallel groups correctly parsed"
+  },
+  {
+    "study_id": "CJUGSEND00",
+    "type": "design_escalation",
+    "description": "Dose escalation crossover correctly parsed — 4 dose levels, within-subject"
+  },
+  {
+    "study_id": "CJUGSEND00",
+    "type": "endpoint_count",
+    "description": "CV (768 records) + EG (960 records) present"
+  },
+  {
+    "study_id": "instem",
+    "type": "dual_control",
+    "description": "Dual control (Vehicle primary, Negative secondary) correctly detected"
+  },
+  {
+    "study_id": "instem",
+    "type": "recovery_all_groups",
+    "description": "All 5 groups have recovery arms"
+  },
+  {
+    "study_id": "instem",
+    "type": "tk_excluded",
+    "description": "TK satellites (~18/group) excluded from analysis"
+  },
+  {
+    "study_id": "PDS",
+    "type": "recovery_detected",
+    "description": "2 recovery pairs (Vehicle + High) detected"
+  },
+  {
+    "study_id": "PDS",
+    "type": "sex_stratified_merge",
+    "description": "Recovery arms merged into pooled N of 18M/18F for Vehicle and High"
+  },
+  {
+    "study_id": "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt",
+    "type": "sex_divergent_noael",
+    "description": "NOAEL differs by sex — M at control, F at 25 mg/kg/day"
+  },
+  {
+    "study_id": "TOXSCI-24-0062--87497 1 month rat- Compound B-xpt",
+    "type": "noael_above_control",
+    "description": "NOAEL at Low dose (25 mg/kg/day), not at control"
+  },
+  {
+    "study_id": "TOXSCI-24-0062--87497 1 month rat- Compound B-xpt",
+    "type": "tk_excluded",
+    "description": "TK satellites (~18/treated group) excluded from analysis"
+  },
+  {
+    "study_id": "TOXSCI-24-0062--96298 1 month rat- Compound A xpt",
+    "type": "no_recovery",
+    "description": "No recovery period"
+  }
+]

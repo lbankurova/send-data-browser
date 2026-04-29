@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `48f93339` (2026-04-28)
-**Generated:** 2026-04-28T14:29:08.248Z
+**Engine:** commit `ed90e2bb` (2026-04-29)
+**Generated:** 2026-04-29T02:02:35.475Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -147,8 +147,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Assertion | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
-| crossover_design | Latin square crossover correctly parsed — 4 treatments, 6 animals, within-subject | assertion type not machine-verifiable | **MATCH** |
-| no_noael | NOAEL not established — CV effects at all doses tested (LOEL = 20 mg/kg) | assertion type not machine-verifiable | **MATCH** |
+| crossover_design | Latin square crossover correctly parsed — 4 treatments, 6 animals, within-subject | unknown assertion type 'crossover_design' — strict default refuses to silently pass | **MISMATCH** |
+| no_noael | NOAEL not established — CV effects at all doses tested (LOEL = 20 mg/kg) | unknown assertion type 'no_noael' — strict default refuses to silently pass | **MISMATCH** |
 
 ---
 
@@ -181,8 +181,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Assertion | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
-| parallel_design | 3 parallel groups correctly parsed | assertion type not machine-verifiable | **MATCH** |
-| non_monotonic_detected | Engine should detect non-monotonic dose-response pattern | assertion type not machine-verifiable | **MATCH** |
+| parallel_design | 3 parallel groups correctly parsed | unknown assertion type 'parallel_design' — strict default refuses to silently pass | **MISMATCH** |
+| non_monotonic_detected | Engine should detect non-monotonic dose-response pattern | unknown assertion type 'non_monotonic_detected' — strict default refuses to silently pass | **MISMATCH** |
 
 ---
 
@@ -212,8 +212,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Assertion | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
-| design_escalation | Dose escalation crossover correctly parsed — 4 dose levels, within-subject | assertion type not machine-verifiable | **MATCH** |
-| endpoint_count | CV (768 records) + EG (960 records) present | assertion type not machine-verifiable | **MATCH** |
+| design_escalation | Dose escalation crossover correctly parsed — 4 dose levels, within-subject | unknown assertion type 'design_escalation' — strict default refuses to silently pass | **MISMATCH** |
+| endpoint_count | CV (768 records) + EG (960 records) present | unknown assertion type 'endpoint_count' — strict default refuses to silently pass | **MISMATCH** |
 
 ---
 
@@ -235,8 +235,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Assertion | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
-| multi_compound_detected | is_multi_compound = true, 3 compounds detected | multi-compound study detected | **MATCH** |
-| trend_suppressed | JT trend across compounds suppressed (meaningless across different test articles) | trend suppression active | **MATCH** |
+| multi_compound_detected | is_multi_compound = true, 3 compounds detected | multi-compound study detected (not machine-verified — TODO) | **MATCH** |
+| trend_suppressed | JT trend across compounds suppressed (meaningless across different test articles) | trend suppression active (not machine-verified — TODO) | **MATCH** |
 
 ---
 
@@ -258,9 +258,9 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Assertion | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
-| dual_control | Dual control (Vehicle primary, Negative secondary) correctly detected | assertion type not machine-verifiable | **MATCH** |
-| recovery_all_groups | All 5 groups have recovery arms | assertion type not machine-verifiable | **MATCH** |
-| tk_excluded | TK satellites (~18/group) excluded from analysis | assertion type not machine-verifiable | **MATCH** |
+| dual_control | Dual control (Vehicle primary, Negative secondary) correctly detected | unknown assertion type 'dual_control' — strict default refuses to silently pass | **MISMATCH** |
+| recovery_all_groups | All 5 groups have recovery arms | unknown assertion type 'recovery_all_groups' — strict default refuses to silently pass | **MISMATCH** |
+| tk_excluded | TK satellites (~18/group) excluded from analysis | unknown assertion type 'tk_excluded' — strict default refuses to silently pass | **MISMATCH** |
 
 ---
 
@@ -282,8 +282,10 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Assertion | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
-| design_groups | 2 groups correctly parsed | assertion type not machine-verifiable | **MATCH** |
-| no_dose_response | Single treatment dose — no dose-response pattern possible | assertion type not machine-verifiable | **MATCH** |
+| design_groups | 2 groups correctly parsed | covered by design check | **MATCH** |
+| no_dose_response | Single treatment dose — no dose-response pattern possible | covered by design check | **MATCH** |
+| noael_combined | Combined NOAEL = null (suppressed by CTRL_MORT_CRITICAL — 28% control mortality) | noael_combined=null (expected null) | **MATCH** |
+| mortality_loael | mortality_loael = 1 (treatment-cohort death captured) — but study validity questioned | mortality_loael=1, 15 deaths + 11 accidental (expected 1) | **MATCH** |
 
 ---
 
@@ -305,9 +307,9 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Assertion | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
-| design_groups | 4 groups correctly parsed with vehicle control | assertion type not machine-verifiable | **MATCH** |
-| recovery_detected | 2 recovery pairs (Vehicle + High) detected | assertion type not machine-verifiable | **MATCH** |
-| sex_stratified_merge | Recovery arms merged into pooled N of 18M/18F for Vehicle and High | assertion type not machine-verifiable | **MATCH** |
+| design_groups | 4 groups correctly parsed with vehicle control | covered by design check | **MATCH** |
+| recovery_detected | 2 recovery pairs (Vehicle + High) detected | unknown assertion type 'recovery_detected' — strict default refuses to silently pass | **MISMATCH** |
+| sex_stratified_merge | Recovery arms merged into pooled N of 18M/18F for Vehicle and High | unknown assertion type 'sex_stratified_merge' — strict default refuses to silently pass | **MISMATCH** |
 
 ---
 
@@ -349,7 +351,12 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Assertion | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
-| mortality_loael | mortality_loael = 3 (Group 4) in study_mortality.json. 2 HCC moribund sacrifices (4003 M day 90, 4113 F day 100) + 1 accidental (gavage error, control). | mortality_loael=3, 1 deaths + 1 accidental | **MATCH** |
+| mortality_loael | mortality_loael = 3 (Group 4) — 2 HCC moribund sacrifices (4003 M day 90, 4113 F day 100, latter in recovery cohort) | mortality_loael=3, 1 deaths + 1 accidental (expected 3) | **MATCH** |
+| mortality_cause_concordance | >=2 hepatocellular carcinoma deaths at dose_level 3 (main + recovery cohort) | 2 death(s) at dose_level=3 matching /hepatocellular carcinoma|hcc/i (need >=2); subjects: PC201708-4003,PC201708-4113 | **MATCH** |
+| noael_combined | Combined NOAEL = null (not established — LOAEL at Group 2) | noael_combined=null (expected null) | **MATCH** |
+| loael_combined | Combined LOAEL = 1 (Group 2, 2 mg/kg) | loael_combined=1 (expected 1) | **MATCH** |
+| target_organs_flagged | hepatic and hematologic flagged as target organs | all 2 expected organs flagged: hepatic, hematologic | **MATCH** |
+| cross_domain_concordance | hepatic: >=3 domains converging across >=2 dose groups (WoE integration) | hepatic: flag=true, n_domains=4 (need >=3, [LB,MA,MI,OM]), convergence_groups=3 (need >=2) | **MATCH** |
 
 ---
 
@@ -371,7 +378,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Assertion | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
-| design_groups | 4 groups with vehicle control and 2 recovery pairs | assertion type not machine-verifiable | **MATCH** |
+| design_groups | 4 groups with vehicle control and 2 recovery pairs | covered by design check | **MATCH** |
 
 ---
 
@@ -393,8 +400,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Assertion | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
-| design_groups | 4 groups with 3 recovery pairs | assertion type not machine-verifiable | **MATCH** |
-| sex_divergent_noael | NOAEL differs by sex — M at control, F at 25 mg/kg/day | assertion type not machine-verifiable | **MATCH** |
+| design_groups | 4 groups with 3 recovery pairs | covered by design check | **MATCH** |
+| sex_divergent_noael | NOAEL differs by sex — M at control, F at 25 mg/kg/day | unknown assertion type 'sex_divergent_noael' — strict default refuses to silently pass | **MISMATCH** |
 
 ---
 
@@ -416,9 +423,9 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Assertion | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
-| design_groups | 4 groups, unequal N (control 26, treated 20) | assertion type not machine-verifiable | **MATCH** |
-| tk_excluded | TK satellites (~18/treated group) excluded from analysis | assertion type not machine-verifiable | **MATCH** |
-| noael_above_control | NOAEL at Low dose (25 mg/kg/day), not at control | assertion type not machine-verifiable | **MATCH** |
+| design_groups | 4 groups, unequal N (control 26, treated 20) | covered by design check | **MATCH** |
+| tk_excluded | TK satellites (~18/treated group) excluded from analysis | unknown assertion type 'tk_excluded' — strict default refuses to silently pass | **MISMATCH** |
+| noael_above_control | NOAEL at Low dose (25 mg/kg/day), not at control | unknown assertion type 'noael_above_control' — strict default refuses to silently pass | **MISMATCH** |
 
 ---
 
@@ -440,7 +447,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Assertion | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
-| design_groups | 4 groups with unequal N (Low=20, others=30) | assertion type not machine-verifiable | **MATCH** |
-| no_recovery | No recovery period | assertion type not machine-verifiable | **MATCH** |
+| design_groups | 4 groups with unequal N (Low=20, others=30) | covered by design check | **MATCH** |
+| no_recovery | No recovery period | unknown assertion type 'no_recovery' — strict default refuses to silently pass | **MISMATCH** |
 
 ---
