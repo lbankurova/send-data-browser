@@ -1144,10 +1144,11 @@ export function getSyndromeTermReport(
     }
   }
 
-  // Compute requiredMet via the same logic the detection pipeline uses
-  // (cross-domain-syndromes.ts:646). For "any" / "compound", reuse
-  // evaluateRequiredLogic with the matched-tag set; for "all", every required
-  // term must be matched (status "matched" or "trend").
+  // Compute requiredMet via the same three-branch logic the detection pipeline
+  // uses (cross-domain-syndromes.ts:636-647). The "all" branch must guard on
+  // requiredTags.size > 0 (otherwise vacuous-truth `every()` returns true);
+  // the "compound" branch (REM-12) evaluates against the union of required and
+  // supporting matched tags because compound expressions can reference both.
   const matchedRequiredTags = new Set<string>();
   for (const e of requiredEntries) {
     if ((e.status === "matched" || e.status === "trend") && e.tag) {
@@ -1157,7 +1158,16 @@ export function getSyndromeTermReport(
   let requiredMet: boolean;
   if (def.requiredLogic.type === "all") {
     const requiredTags = requiredEntries.map((e) => e.tag).filter((t): t is string => !!t);
-    requiredMet = requiredTags.every((t) => matchedRequiredTags.has(t));
+    requiredMet = requiredTags.length > 0 && requiredTags.every((t) => matchedRequiredTags.has(t));
+  } else if (def.requiredLogic.type === "compound") {
+    const matchedSupportingTags = new Set<string>();
+    for (const e of supportingEntries) {
+      if ((e.status === "matched" || e.status === "trend") && e.tag) {
+        matchedSupportingTags.add(e.tag);
+      }
+    }
+    const allMatchedTags = new Set([...matchedRequiredTags, ...matchedSupportingTags]);
+    requiredMet = evaluateRequiredLogic(def.requiredLogic, allMatchedTags);
   } else {
     requiredMet = evaluateRequiredLogic(def.requiredLogic, matchedRequiredTags);
   }

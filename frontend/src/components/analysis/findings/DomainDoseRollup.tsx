@@ -22,10 +22,11 @@
  * to that specific dose cell has looStability < 0.8 OR endpointConfidence
  * integrated grade === 'low'.
  *
- * Rightmost column "1st adv. dose": lowest dose where any endpoint in the
- * domain has worstSeverity='adverse' AND treatmentRelated=true. `<= {dose}`
+ * Rightmost column "First adverse dose": lowest dose where any endpoint in
+ * the domain has worstSeverity='adverse' AND treatmentRelated=true. `<= {dose}`
  * prefix when the lowest tested dose is itself adverse (BUG-031 below-lowest
- * case).
+ * case). Spec F2 R1: header text is unambiguously LOAEL semantics, no
+ * NOAEL/LOAEL nomenclature confusion.
  */
 
 import { useMemo, useRef } from "react";
@@ -225,7 +226,7 @@ export function DomainDoseRollup({
         id: "firstAdverse",
         header: () => (
           <span title="Lowest dose at which any endpoint in this domain shows worstSeverity='adverse' AND treatmentRelated=true. ≤ prefix when the lowest tested dose is itself adverse.">
-            1st adv. dose
+            First adverse dose
           </span>
         ),
         size: 100,
