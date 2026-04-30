@@ -24,10 +24,10 @@ This file catalogs Phase 1 disagreements between authored GROUND_TRUTH (the cred
 |---|---|
 | Studies with class_distribution authored | 14 / 16 |
 | Skipped (no doc authority / multi-compound) | 2 (CJUGSEND00, FFU) |
-| MATCH | 11 |
-| SCIENCE-FLAG | 3 |
+| MATCH | 12 (was 11; +1 after Stream 3 retraction) |
+| SCIENCE-FLAG | 2 (was 3; -1 after Stream 3 retraction) |
 
-3 new flags surfaced. 2 reinforce the existing D9 stream (Study2 + Study4 tr_adverse > 0 at the source level — was previously visible only at the noael/loael/target_organs level). 1 is a NEW root-cause family: **safety-pharm small-N under-classification** (Study5). Cumulative SCIENCE-FLAGs: 11 (was 8); 3 root-cause families (was 2).
+3 flags initially surfaced; 1 retracted as MEASUREMENT_ARTIFACT (Stream 3 -- see falsification below). Final flags from this matcher: 2 reinforce the existing D9 stream (Study2 + Study4 tr_adverse > 0 at the source level — was previously visible only at the noael/loael/target_organs level). Cumulative SCIENCE-FLAGs: **10** (was 11 pre-retraction); root-cause families: **2** (was 3 pre-retraction).
 
 ---
 
@@ -80,7 +80,27 @@ This file catalogs Phase 1 disagreements between authored GROUND_TRUTH (the cred
 
 ---
 
-## Research stream 3: Safety-pharm small-N under-classification
+## Research stream 3: ~~Safety-pharm small-N under-classification~~ — RETRACTED 2026-04-30
+
+**Status:** RETRACTED. Background-agent investigation (`research-stream-3-safety-pharm-investigation.md`) falsified the hypothesis. Verdict: MEASUREMENT_ARTIFACT.
+
+**What happened:** The `class_distribution` matcher reported Study5 `tr_adverse=0` against `expected: { tr_adverse: { min: 1 } }`. Filed as a third root-cause family. Investigation found that ICH S7B safety-pharm CV studies (Study5, CJUGSEND00) route through a different classification framework (NOEL: `treatment_related_concerning`) than ECETOC (`tr_adverse`), per `shared/study-types/safety-pharm-cardiovascular.json:18` and `backend/services/analysis/classification.py:1126-1162`. The engine correctly classifies Study5's QTCSAG aggregate as `treatment_related_concerning` (`min_p_adj=0.0074`, `max_effect=1.93`, `+32 ms mean shift` exceeding the ICH-S7B 10 ms QTc concern threshold). The matcher's YAML expectation was authored against the wrong vocabulary; the engine had the right answer all along.
+
+**What it teaches us about the audit process:**
+
+1. **String-match matchers must be framework-aware.** Future Phase-3 matchers that read `finding_class` must either union both vocabularies or scope by domain/study-type. Logged for the matcher-hardening backlog (see "Recommended next action 5" in the investigation note).
+2. **Self-documentation is load-bearing.** `docs/validation/signal-detection.md:158` already noted "(treatment_related, treatment_related_concerning, expected tr_adverse)" — the encoding gap was visible in the regenerated harness output before the false flag was filed. Future authoring should grep the existing harness output before encoding a new SCIENCE-FLAG.
+3. **Per CLAUDE.md rule 21**, the credentialed reviewer's call IS the GROUND_TRUTH — but rule 21 cuts both ways: when the engine and reviewer agree (as here, modulo vocabulary), the matcher is what's wrong, not the engine. The audit plan's clearance protocol option 3 ("genuinely ambiguous re-classification") covers this case.
+
+**What WAS preserved:** Study5 `class_distribution` re-authored to assert `treatment_related_concerning >= 1` and `treatment_related >= 1` — a regression guard for the engine's correct behavior under the NOEL framework.
+
+**Genuine adjacent gap (separate from Stream 3, NOT a SCIENCE-FLAG):** the NOEL `treatment_related_concerning` value does not propagate downstream to `target_organ_summary.json` or `noael_summary.json` with the same prominence as ECETOC `tr_adverse`. Per CLAUDE.md rule 18 (contract triangle hygiene), this is a declaration-vs-consumption mismatch that warrants its own audit pass. Filed as a TODO candidate; not part of the scientific-defensibility audit findings.
+
+---
+
+## ~~Original Stream 3 hypothesis (preserved for retrospective)~~
+
+The text below is the original Stream 3 framing, kept here for the audit record. All numeric claims are superseded by the falsification above.
 
 **Hypothesis:** Engine's statistical adversity classification is conservative at small-N (telemetry safety-pharm studies typically run N=4-6). When statistical significance can't be established due to power limitations, findings get classified as `equivocal` or `not_treatment_related` even when a credentialed reviewer's interpretation is `tr_adverse`.
 
@@ -145,3 +165,5 @@ Each clearance MUST update `.assertion-baseline.json`. The baseline file is a lo
 | 2026-04-30 | Phase 1 completion (final 6: CJ16050, CJUGSEND00, FFU, instem, PDS, Study5) | 0 new flags |
 | 2026-04-30 | Phase 1 disposition (this file authored) | 8 flags grouped into 2 research streams |
 | 2026-04-30 | Phase 3 first matcher (`class_distribution`) authored across 14/16 studies | +3 flags (Study2/4 reinforcement; Study5 NEW family); cumulative 11 flags / 3 streams |
+| 2026-04-30 | Stream 3 falsified by background-agent investigation (vocabulary mismatch, not algorithmic gap) | -1 flag (Study5 retracted); cumulative 10 flags / 2 streams |
+| 2026-04-30 | Phase 3 matcher #2 (`severity_distribution`) shipped + PointCross hepatic min:3 authored | 0 new flags; cumulative remains 10 / 2 |

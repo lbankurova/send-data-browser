@@ -41,11 +41,6 @@
   },
   {
     "study_id": "CBER-POC-Pilot-Study5",
-    "type": "class_distribution",
-    "description": "QTc prolongation IS adverse per report; SCIENCE-FLAG vs engine 0 tr_adverse (small-N safety-pharm under-classification)"
-  },
-  {
-    "study_id": "CBER-POC-Pilot-Study5",
     "type": "crossover_design",
     "description": "Latin square crossover correctly parsed — 4 treatments, 6 animals, within-subject"
   },

@@ -117,14 +117,21 @@ assertions:
     expected_organs: ["cardiovascular"]
     expect_only: true
 
-  # Class distribution: report explicitly identifies CV adverse findings
-  # (QTc prolongation at 150 mg/kg, p<0.05 at 2h+3h). Engine produces ZERO
-  # tr_adverse on this study -- 13 equivocal + 26 not_treatment_related instead.
-  # GROUND_TRUTH per the credentialed reviewer is that QTc prolongation IS
-  # adverse; engine's small-N statistical conservatism mis-classifies this as
-  # equivocal. NEW SCIENCE-FLAG family: safety-pharm small-N under-classification.
-  # Distinct from D9 (Study2/4 over-classification) and low-dose severity (87497).
+  # Class distribution: ICH S7B safety-pharm CV studies route through the NOEL
+  # classification framework (per shared/study-types/safety-pharm-cardiovascular.json:18
+  # and backend/services/analysis/classification.py:1126-1162) which emits
+  # `treatment_related` / `treatment_related_concerning` -- NOT the ECETOC
+  # `tr_adverse` vocabulary. The QTCSAG aggregate finding is correctly classified
+  # `treatment_related_concerning` (min_p_adj=0.0074, max_effect=1.93, +32 ms
+  # mean shift exceeding the 10 ms ICH-S7B QTc concern threshold).
+  #
+  # Earlier draft of this assertion read `tr_adverse: { min: 1 }` against the
+  # wrong framework, surfacing as a false SCIENCE-FLAG ("Stream 3"). Background
+  # agent investigation 2026-04-30 falsified that hypothesis -- engine's call
+  # IS correct, the matcher's assertion was reading the wrong vocabulary. See
+  # .lattice/research-stream-3-safety-pharm-investigation.md.
   - type: "class_distribution"
-    description: "QTc prolongation IS adverse per report; SCIENCE-FLAG vs engine 0 tr_adverse (small-N safety-pharm under-classification)"
+    description: "QTCSAG correctly classified treatment_related_concerning (NOEL framework); ICH S7B QTc concern threshold met (+32ms > 10ms)"
     expected_classes:
-      tr_adverse: { min: 1 }
+      treatment_related_concerning: { min: 1 }
+      treatment_related: { min: 1 }
