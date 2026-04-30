@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `0e841314` (2026-04-30)
-**Generated:** 2026-04-30T19:59:19.847Z
+**Engine:** commit `9cc15db8` (2026-04-30)
+**Generated:** 2026-04-30T21:12:11.916Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -419,6 +419,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | severity_distribution | Hepatic max_severity >= 3 (hypertrophy + adenoma + carcinoma per nSDRG 6.2) | all 1 severity constraint(s) match: hepatic=3 | **MATCH** |
 | tumor_detected | Liver adenoma + liver carcinoma both detected (nSDRG 6.2 engineered tumors) | 3 tumor check(s) match: has_tumors=true, LIVER+/ADENOMA/i=2, LIVER+/CARCINOMA/i=1 | **MATCH** |
 | compound_class_flag | Compound modality = small_molecule (oral 13-wk rat tox; engine baseline) | pk_integration.compound_class = "small_molecule" (expected "small_molecule") | **MATCH** |
+| recovery_verdict | MED hepatic hypertrophy: anomaly verdict (engine correct -- finding emerges only in recovery) | 10 anomaly verdict(s) (>=10) at dose_level=2, domain=MI, specimen=/LIVER/i, finding=/HYPERTROPHY/i; 10 records scanned; distribution: anomaly=10 | **MATCH** |
+| recovery_verdict | HIGH hepatic hypertrophy: persistent verdict (main arm 9/10 sev 2.56; engine reports anomaly -- SCIENCE-FLAG) | VIOLATION: 0 persistent verdict(s) at dose_level=3, domain=MI, specimen=/LIVER/i, finding=/HYPERTROPHY/i (expected >=10); 10 records scanned; distribution: anomaly=10 | **MISMATCH** |
 
 ---
 

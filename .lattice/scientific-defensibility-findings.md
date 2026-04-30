@@ -99,6 +99,37 @@ This file catalogs Phase 1 disagreements between authored GROUND_TRUTH (the cred
 
 ---
 
+## Research stream 4: Recovery verdict — per-subject vs cohort-aggregate semantics
+
+**Hypothesis:** The engine's recovery-verdict logic appears to read `main_severity` from each individual recovery animal's main-arm record (which doesn't exist — recovery animals are kept alive past the main-arm sacrifice, so they have no main-arm severity), rather than the cohort aggregate at the same dose group. This causes findings that genuinely persist from main-arm to recovery to be mislabeled as `anomaly` (verdict semantics: "appeared in recovery only") instead of `persistent` or `partially_reversed`.
+
+**Affected studies** (1 SCIENCE-FLAG so far; matcher only authored on PointCross):
+
+| Study | Surface | Engine | GROUND_TRUTH | Source |
+|---|---|---|---|---|
+| PointCross | recovery_verdict (HIGH dose hepatic hypertrophy) | 10 anomaly | 10 persistent | `unified_findings.json` group_stats[3]: 9/10 affected at avg_severity=2.56; recovery cohort still shows finding at sev 2.0 |
+
+**Smoking gun:** `recovery_verdicts.json:per_subject:{HIGH-recovery subject}.findings[].main_severity = null` even when the cohort aggregate at the same dose group shows 9/10 affected. The per-subject schema field appears semantically misaligned: it's named `main_severity` but is computed from this-subject's main-arm record (always null for recovery-arm subjects) rather than the cohort aggregate. The verdict logic then concludes `null vs 2.0 = anomaly`.
+
+**Distinct from streams 1+2:**
+- Stream 1 (compound class): false-positive adversity calls due to missing pharmacology context
+- Stream 2 (low-dose severity): false-positive LOAEL anchoring at low-magnitude doses
+- Stream 4 (recovery verdict): false-anomaly verdicts on persistent findings, due to per-subject vs cohort-aggregate schema mismatch in recovery_verdicts.json
+
+**Resolution path:**
+- Trace `backend/services/analysis/recovery_verdicts.py` (or wherever the verdict logic lives — needs grep) to determine where main_severity is sourced
+- If it reads the individual's main-arm record, change to read cohort-aggregate from `unified_findings.json:group_stats[dose_level].avg_severity`
+- Re-run harness; verify HIGH hepatic hypertrophy verdict flips from anomaly to persistent
+- Consider whether MED-dose `anomaly` verdict (engine correct) survives the schema change — it should, because MED main-arm aggregate is null for hypertrophy
+
+**MED case is engine-correct:** PointCross MED-dose hepatic hypertrophy genuinely emerges only in recovery (main arm group_stats shows 0/10 affected at MED). The matcher's MED `anomaly>=10` assertion is a MATCH and serves as a regression guard for the correctly-fired engine path.
+
+**Priority signal:** matcher only authored on PointCross so far — broader leverage check requires authoring across the other 4 recovery-bearing studies (TOXSCI-35449, instem, PDS, Study4). Suspected affects all studies with persistent histopath findings at top dose. Wide blast radius across recovery-bearing tox studies.
+
+**Surfaced by:** `recovery_verdict` matcher (Phase 3 matcher #6, AUDIT-5, this commit).
+
+---
+
 ## ~~Original Stream 3 hypothesis (preserved for retrospective)~~
 
 The text below is the original Stream 3 framing, kept here for the audit record. All numeric claims are superseded by the falsification above.
@@ -171,6 +202,7 @@ Each clearance MUST update `.assertion-baseline.json`. The baseline file is a lo
 | 2026-04-30 | Phase 3 matcher #3 (`tumor_detected`) shipped + PointCross + Nimble authored | 0 new flags; cumulative remains 10 / 2 |
 | 2026-04-30 | Phase 3 sex extension (AUDIT-9): noael_combined gains optional `sex` field; TOXSCI-43066 M+F authored | +1 flag (F-NOAEL — Stream 2 evidence); cumulative 11 flags / 2 streams |
 | 2026-04-30 | Phase 3 matcher #5 (`compound_class_flag`, AUDIT-7) shipped; PointCross + 4 CBER studies authored | +4 flags (Study1/2/3/4 — D9 Stream 1 root cause captured at source); cumulative 15 flags / 2 streams |
+| 2026-04-30 | Phase 3 matcher #6 (`recovery_verdict`, AUDIT-5) shipped; PointCross hepatic hypertrophy MED + HIGH authored | +1 flag (HIGH dose persistent mislabeled as anomaly — Stream 4 NEW: recovery verdict per-subject vs cohort-aggregate schema); MED match is regression guard for correct engine path; cumulative 16 flags / 3 streams |
 
 ---
 
@@ -184,6 +216,7 @@ Single source of truth for audit-related work outstanding. Action items separate
 |---|---|---|---|
 | **AUDIT-1** | D9 compound-class profile scoring | Stream 1 (10 flags: Study2/4 noael+loael+target_organs+class_distribution; Study1/2/3/4 compound_class_flag — AUDIT-7 captures the gap at source) | engine work, multi-day |
 | **AUDIT-2** | Low-dose severity gating | Stream 2 (2 flags: TOXSCI-87497) | likely shares with GAP-22 phase-3 magnitude-escape, already research-validated; may already be in flight |
+| **AUDIT-18** | Recovery-verdict per-subject vs cohort-aggregate schema | Stream 4 (1 flag: PointCross HIGH hepatic hypertrophy; suspected wider blast radius pending matcher expansion) | Trace `recovery_verdicts.py` main_severity sourcing; change to read cohort-aggregate from `unified_findings.json:group_stats[dose_level].avg_severity` rather than this-subject's main-arm record; ~1-2 days. |
 
 ### Engine work — adjacent issues surfaced by audit (NOT SCIENCE-FLAGs)
 
@@ -196,7 +229,7 @@ Single source of truth for audit-related work outstanding. Action items separate
 
 | ID | Title | Notes |
 |---|---|---|
-| **AUDIT-5** | `recovery_verdict` matcher | Tier 2, recovery-bearing studies (PointCross, TOXSCI-35449, instem, PDS, Study4) currently UNCOVERED |
+| ~~**AUDIT-5**~~ | ~~`recovery_verdict` matcher~~ | DONE 2026-04-30 — matcher shipped; PointCross MED hepatic hypertrophy MATCH (anomaly>=10, regression guard for correctly-fired engine emergence path) + HIGH hepatic hypertrophy SCIENCE-FLAG (persistent>=10 expected, engine reports anomaly=10 — Stream 4 NEW root cause: per-subject vs cohort-aggregate schema in recovery_verdicts.json). 4 other recovery-bearing studies (TOXSCI-35449, instem, PDS, Study4) still uncovered — captured as AUDIT-17 expansion. |
 | **AUDIT-6** | `hcd_score` matcher | Tier 3, knowledge-graph-backed; complements the existing parity tests |
 | ~~**AUDIT-7**~~ | ~~`compound_class_flag` matcher~~ | DONE 2026-04-30 — `pk_integration.json:compound_class` matcher shipped; PointCross MATCH (small_molecule baseline) + Study1/2/3/4 SCIENCE-FLAG (engine has no vaccine/gene_therapy classifier in pk_integration.py modality-detection path). 4 new flags reinforce Stream 1 at the source rather than via downstream class_distribution proxy. AUDIT-15-style per-study expansion (other 11 studies) deferred. |
 | **AUDIT-8** | `onset_concordance` matcher | Tier 3, multi-timepoint studies |
@@ -223,3 +256,4 @@ Single source of truth for audit-related work outstanding. Action items separate
 |---|---|---|
 | **AUDIT-15** | Expand `severity_distribution` per-study | Currently only PointCross. Other studies need per-study doc re-read to author defensible severity claims. |
 | **AUDIT-16** | Expand `tumor_detected` per-study | Currently PointCross + Nimble. 14 other studies have tumor_summary.json data with documented expectations (mostly `expected_has_tumors: false` for short-duration studies, plus TOXSCI-87497 with background incidence). |
+| **AUDIT-17** | Expand `recovery_verdict` per-study | Currently PointCross only. 4 other recovery-bearing studies (TOXSCI-35449, instem, PDS, Study4) have recovery_verdicts.json data; per-study authoring will reveal whether the Stream 4 schema mismatch reproduces beyond PointCross hepatic. |

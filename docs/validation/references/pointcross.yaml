@@ -191,3 +191,40 @@ assertions:
   - type: "compound_class_flag"
     description: "Compound modality = small_molecule (oral 13-wk rat tox; engine baseline)"
     expected_compound_class: "small_molecule"
+
+  # Recovery verdict (Phase 3 matcher #6 -- AUDIT-5). Sources:
+  #   1. unified_findings.json group_stats for LIVER HYPERTROPHY (F/M, dose_response_pattern=threshold_increase):
+  #      - dose_level 0/1/2 (control/low/MED): 0/10 affected
+  #      - dose_level 3 (HIGH): 9/10 affected, avg_severity=2.56
+  #      MED main arm has NO hypertrophy; HIGH main arm has 9/10 with grade-2-to-3 severity.
+  #   2. recovery_verdicts.json per_subject:
+  #      - 10 MED-recovery (3R) subjects: HYPERTROPHY rec_severity=2.0, verdict=anomaly
+  #      - 10 HIGH-recovery (4R) subjects: HYPERTROPHY rec_severity=2.0, verdict=anomaly
+  #
+  # MED anomaly is correct: hypertrophy emerges only in recovery (no main-arm
+  # finding at MED), so verdict=anomaly is the right call.
+  #
+  # HIGH anomaly is wrong: main arm shows 9/10 at sev 2.56, recovery shows the
+  # finding at sev 2.0 -- that is PERSISTENT (or partially_reversed), not anomaly.
+  # The engine's per-subject main_severity=null on HIGH-recovery records suggests
+  # the recovery-verdict logic reads this individual's main-arm severity
+  # (undefined for recovery animals) rather than the cohort aggregate at the
+  # same dose. Encoding the toxicologist's call (persistent) per CLAUDE.md
+  # rule 21 (algorithm-as-advisor) and audit-plan "do not weaken assertion to
+  # make engine pass."
+  - type: "recovery_verdict"
+    description: "MED hepatic hypertrophy: anomaly verdict (engine correct -- finding emerges only in recovery)"
+    dose_level: 2
+    domain: "MI"
+    specimen_pattern: "LIVER"
+    finding_pattern: "HYPERTROPHY"
+    expected_verdict: "anomaly"
+    min_count: 10
+  - type: "recovery_verdict"
+    description: "HIGH hepatic hypertrophy: persistent verdict (main arm 9/10 sev 2.56; engine reports anomaly -- SCIENCE-FLAG)"
+    dose_level: 3
+    domain: "MI"
+    specimen_pattern: "LIVER"
+    finding_pattern: "HYPERTROPHY"
+    expected_verdict: "persistent"
+    min_count: 10

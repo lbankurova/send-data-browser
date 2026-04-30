@@ -123,6 +123,24 @@ interface RefAssertion {
   // is meaningful (REGRESSION_PIN of absence). Phase 3 matcher targeting the
   // compound-class root cause (Stream 1).
   expected_compound_class?: string | null;
+  // recovery_verdict: assertion over recovery_verdicts.json per_subject records.
+  // Filters per-subject finding records by (dose_level, domain, specimen regex,
+  // finding regex), counts those matching `expected_verdict`, asserts the
+  // count meets `min_count`. dose_level is the unified_findings dose-group index
+  // (0=control through n=top-dose), resolved per-subject via subject_context.json
+  // DOSE_GROUP_ORDER. Verdict vocabulary per engine emit: reversed,
+  // partially_reversed, persistent, progressing, anomaly, insufficient_n,
+  // low_power, not_examined. Reuses pre-existing fields: `domain` (line 94,
+  // shared with class_distribution), `min_count` (line 86, shared with
+  // mortality_cause_concordance). Phase 3 matcher targeting recovery semantics:
+  // exemplar pair on PointCross hepatic hypertrophy -- MED dose anomaly verdict
+  // (engine correct: emerges only in recovery) vs HIGH dose where engine reports
+  // anomaly but cohort aggregate (9/10 affected, sev 2.56) means it should be
+  // persistent.
+  dose_level?: number;
+  specimen_pattern?: string;
+  finding_pattern?: string;
+  expected_verdict?: string;
 }
 
 interface RefNoael {
@@ -886,6 +904,70 @@ function checkAssertion(
         ? `${scoped.length} findings ${scope}; ` +
           Object.entries(expected).map(([cls]) => `${cls}=${counts[cls] ?? 0}`).join(", ")
         : `VIOLATIONS (${scope}, ${scoped.length} findings): ${violations.join("; ")}`;
+      return { assertion, passed, actual };
+    }
+    case "recovery_verdict": {
+      // Filters recovery_verdicts.json per-subject finding records by
+      // (dose_level, domain, specimen regex, finding regex), counts records
+      // whose verdict matches expected_verdict, asserts >= min_count.
+      // dose_level resolution requires subject_context.json:DOSE_GROUP_ORDER.
+      // Engine surface: backend/services/analysis/recovery_verdicts.py.
+      // PointCross exemplar: MED hepatic hypertrophy anomaly>=10 (engine
+      // correct) vs HIGH hepatic hypertrophy persistent>=10 (engine reports
+      // anomaly -- SCIENCE-FLAG: per-subject main_severity=null schema appears
+      // to read this individual's main-arm reading rather than the cohort
+      // aggregate, mislabeling true persistence as anomaly).
+      if (!studyDir) return { assertion, passed: false, actual: "no study dir" };
+      const expectedVerdict = assertion.expected_verdict;
+      const minCount = assertion.min_count;
+      if (!expectedVerdict || minCount === undefined) {
+        return { assertion, passed: false, actual: "[missing expected_verdict or min_count in YAML]" };
+      }
+      const rv = loadJson<{
+        per_subject?: Record<string, {
+          findings?: { domain?: string; specimen?: string; finding?: string; verdict?: string }[];
+        }>;
+      }>(studyDir, "recovery_verdicts.json");
+      if (!rv) return { assertion, passed: false, actual: "recovery_verdicts.json not found" };
+      const ctxList = loadJson<{ USUBJID: string; DOSE_GROUP_ORDER?: number }[]>(studyDir, "subject_context.json");
+      const subToOrder = new Map<string, number>();
+      for (const c of ctxList ?? []) {
+        if (typeof c.DOSE_GROUP_ORDER === "number") subToOrder.set(c.USUBJID, c.DOSE_GROUP_ORDER);
+      }
+      const specRe = assertion.specimen_pattern ? new RegExp(assertion.specimen_pattern, "i") : null;
+      const findRe = assertion.finding_pattern ? new RegExp(assertion.finding_pattern, "i") : null;
+      let matchCount = 0;
+      let totalScanned = 0;
+      const verdictDistribution: Record<string, number> = {};
+      for (const [sid, sub] of Object.entries(rv.per_subject ?? {})) {
+        if (assertion.dose_level !== undefined) {
+          const ord = subToOrder.get(sid);
+          if (ord !== assertion.dose_level) continue;
+        }
+        for (const f of sub.findings ?? []) {
+          if (assertion.domain && f.domain !== assertion.domain) continue;
+          if (specRe && !specRe.test(f.specimen ?? "")) continue;
+          if (findRe && !findRe.test(f.finding ?? "")) continue;
+          totalScanned += 1;
+          const v = f.verdict ?? "null";
+          verdictDistribution[v] = (verdictDistribution[v] ?? 0) + 1;
+          if (v === expectedVerdict) matchCount += 1;
+        }
+      }
+      const passed = matchCount >= minCount;
+      const filterDesc = [
+        assertion.dose_level !== undefined ? `dose_level=${assertion.dose_level}` : null,
+        assertion.domain ? `domain=${assertion.domain}` : null,
+        assertion.specimen_pattern ? `specimen=/${assertion.specimen_pattern}/i` : null,
+        assertion.finding_pattern ? `finding=/${assertion.finding_pattern}/i` : null,
+      ].filter(Boolean).join(", ");
+      const distSummary = Object.entries(verdictDistribution)
+        .sort((a, b) => b[1] - a[1])
+        .map(([v, c]) => `${v}=${c}`)
+        .join(", ");
+      const actual = passed
+        ? `${matchCount} ${expectedVerdict} verdict(s) (>=${minCount}) at ${filterDesc}; ${totalScanned} records scanned; distribution: ${distSummary || "none"}`
+        : `VIOLATION: ${matchCount} ${expectedVerdict} verdict(s) at ${filterDesc} (expected >=${minCount}); ${totalScanned} records scanned; distribution: ${distSummary || "none"}`;
       return { assertion, passed, actual };
     }
     case "compound_class_flag": {

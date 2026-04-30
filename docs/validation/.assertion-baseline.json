@@ -145,6 +145,11 @@
     "description": "TK satellites (~18/treated group) excluded from analysis"
   },
   {
+    "study_id": "PointCross",
+    "type": "recovery_verdict",
+    "description": "HIGH hepatic hypertrophy: persistent verdict (main arm 9/10 sev 2.56; engine reports anomaly -- SCIENCE-FLAG)"
+  },
+  {
     "study_id": "TOXSCI-24-0062--96298 1 month rat- Compound A xpt",
     "type": "no_recovery",
     "description": "No recovery period"
