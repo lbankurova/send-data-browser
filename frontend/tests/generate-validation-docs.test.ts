@@ -169,6 +169,40 @@ interface RefAssertion {
   // min_count (line 86, mortality_cause_concordance + recovery_verdict).
   expected_syndrome_id?: string;
   max_count?: number;
+  // onset_concordance: assertion over subject_onset_days.json:subjects.
+  // Engine surface: per-subject onset_day map, keyed by composite finding
+  // identifier ("LB:AST", "CL:ALOPECIA", "MI:LIVER:HYPERTROPHY"). Computed
+  // by generator/onset_recovery.py with domain-specific semantics:
+  //   - CL: extracted from raw_subject_onset_days (data preservation;
+  //     onset_day = documented day of clinical observation per SEND record)
+  //   - LB: first measurement day where subject value > 2x control mean
+  //     (algorithmic threshold)
+  //   - MI/MA: sacrifice-day proxy (uninformative -- always = SACRIFICE_DY
+  //     for any subject in an affected dose group; skip these for assertions)
+  //
+  // Frontend consumer: filter-engine.ts:323 `evalOnsetDay` -- the Cohort
+  // view's onset_day predicate ("subjects with onset for finding X in
+  // day-range [min, max]"). The matcher encodes the toxicologist's
+  // expectation of how many subjects that filter should return.
+  //
+  // Filter shape: dose_level (subject's DOSE_GROUP_ORDER from
+  // subject_context.json) + domain (key prefix, e.g. "LB:") + finding_pattern
+  // (regex against the suffix after "{domain}:"). Counts subjects whose
+  // recorded onset_day for any matching key satisfies onset_day <=
+  // max_onset_day; asserts count >= min_count.
+  //
+  // Use cases:
+  // - Regression pin: min_count = current engine emit, locks data
+  //   preservation (CL) or threshold detection (LB) at known-good levels.
+  // - SCIENCE-FLAG: min_count = toxicologist's expected count given the
+  //   cohort-level adversity call. Higher than engine emit if the algorithmic
+  //   threshold under-detects (e.g. LB 2x rule misses cohort-level
+  //   adversity at <2x per-subject).
+  //
+  // Reuses: dose_level (line 140), domain (line 94), finding_pattern (line
+  // 142, recovery_verdict's regex against record.finding -- here it regexes
+  // against the post-domain key suffix), min_count (line 86).
+  max_onset_day?: number;
 }
 
 interface RefNoael {
@@ -1094,6 +1128,66 @@ function checkAssertion(
       const actual = passed
         ? `cross_organ_syndromes length=${n} satisfies constraints; ${summary}`
         : `VIOLATION: ${issues.join("; ")}; ${summary}`;
+      return { assertion, passed, actual };
+    }
+    case "onset_concordance": {
+      // Reads subject_onset_days.json:subjects -- per-subject map of
+      // {DOMAIN}:{TEST_OR_FINDING} -> first detected onset_day. Joined with
+      // subject_context.json:DOSE_GROUP_ORDER for dose-level filtering.
+      // Counts subjects whose onset_day for any key matching (domain prefix +
+      // finding_pattern) satisfies onset_day <= max_onset_day, asserts
+      // count >= min_count. See RefAssertion type comment for domain
+      // semantics + frontend consumer.
+      if (!studyDir) return { assertion, passed: false, actual: "no study dir" };
+      const minCount = assertion.min_count;
+      const maxOnsetDay = assertion.max_onset_day;
+      const domainFilter = assertion.domain;
+      const findRe = assertion.finding_pattern ? new RegExp(assertion.finding_pattern, "i") : null;
+      if (minCount === undefined || maxOnsetDay === undefined) {
+        return { assertion, passed: false, actual: "[missing min_count or max_onset_day in YAML]" };
+      }
+      const od = loadJson<{ subjects?: Record<string, Record<string, number>> }>(studyDir, "subject_onset_days.json");
+      if (!od) return { assertion, passed: false, actual: "subject_onset_days.json not found" };
+      const ctxList = loadJson<{ USUBJID: string; DOSE_GROUP_ORDER?: number }[]>(studyDir, "subject_context.json");
+      const subToOrder = new Map<string, number>();
+      for (const c of ctxList ?? []) {
+        if (typeof c.DOSE_GROUP_ORDER === "number") subToOrder.set(c.USUBJID, c.DOSE_GROUP_ORDER);
+      }
+      let matchSubjects = 0;
+      let scannedSubjects = 0;
+      const matchedKeys = new Set<string>();
+      for (const [sid, keyMap] of Object.entries(od.subjects ?? {})) {
+        if (assertion.dose_level !== undefined) {
+          const ord = subToOrder.get(sid);
+          if (ord !== assertion.dose_level) continue;
+        }
+        if (!keyMap || typeof keyMap !== "object") continue;
+        scannedSubjects += 1;
+        let hit = false;
+        for (const [key, day] of Object.entries(keyMap)) {
+          if (domainFilter && !key.startsWith(`${domainFilter}:`)) continue;
+          if (findRe) {
+            const suffix = domainFilter ? key.slice(domainFilter.length + 1) : key;
+            if (!findRe.test(suffix)) continue;
+          }
+          if (typeof day === "number" && day <= maxOnsetDay) {
+            hit = true;
+            matchedKeys.add(key);
+          }
+        }
+        if (hit) matchSubjects += 1;
+      }
+      const passed = matchSubjects >= minCount;
+      const filterDesc = [
+        assertion.dose_level !== undefined ? `dose_level=${assertion.dose_level}` : null,
+        domainFilter ? `domain=${domainFilter}` : null,
+        assertion.finding_pattern ? `finding=/${assertion.finding_pattern}/i` : null,
+        `onset_day<=${maxOnsetDay}`,
+      ].filter(Boolean).join(", ");
+      const keysSample = matchedKeys.size === 0 ? "none" : [...matchedKeys].sort().slice(0, 5).join(", ");
+      const actual = passed
+        ? `${matchSubjects} subject(s) (>=${minCount}) match (${filterDesc}); ${scannedSubjects} subjects scanned in dose stratum; matched keys: ${keysSample}`
+        : `VIOLATION: ${matchSubjects} subject(s) match (${filterDesc}; expected >=${minCount}); ${scannedSubjects} subjects scanned in dose stratum; matched keys: ${keysSample}`;
       return { assertion, passed, actual };
     }
     default:

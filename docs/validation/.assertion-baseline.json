@@ -151,6 +151,11 @@
   },
   {
     "study_id": "PointCross",
+    "type": "onset_concordance",
+    "description": "HIGH AST onset registered for >=5 of 10 affected subjects by day 92 (cohort 1.41x M / 1.56x F -- engine emits 1/10 SCIENCE-FLAG Stream 6)"
+  },
+  {
+    "study_id": "PointCross",
     "type": "recovery_verdict",
     "description": "HIGH hepatic hypertrophy: persistent verdict (main arm 9/10 sev 2.56; engine reports anomaly -- SCIENCE-FLAG)"
   },

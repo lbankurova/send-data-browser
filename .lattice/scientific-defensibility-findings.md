@@ -162,6 +162,37 @@ This file catalogs Phase 1 disagreements between authored GROUND_TRUTH (the cred
 
 ---
 
+## Research stream 6: LB onset detection threshold (2x control mean) misses cohort-level adversity
+
+**Hypothesis:** The engine's `subject_onset_days.json` LB rule -- "first measurement day where this subject's value > 2x control mean" -- is a per-subject extreme-elevation threshold. When cohort-level adversity is established (statistically significant elevation, target organ flagged) but per-subject ratios fall in the 1.2x-1.8x range (typical small-N noise distribution around a 1.4x cohort mean), most affected subjects don't individually cross 2x and so have no recorded onset for that test. The Cohort view's onset_day filter then surfaces only the threshold-crossing outliers, giving the toxicologist an incomplete picture of cohort-level emergence.
+
+**Affected studies** (1 SCIENCE-FLAG so far; matcher only authored on PointCross):
+
+| Study | Surface | Engine | GROUND_TRUTH | Source |
+|---|---|---|---|---|
+| PointCross | LB:AST onset, HIGH dose, by day 92 | 1/29 subjects | >=5/10 main-cohort | `unified_findings.json` group_stats[3] for AST shows HIGH/control ratio = 1.41 M / 1.56 F at terminal day, statistically adverse, hepatic flagged. Per-subject 2x threshold catches only PC201708-4009. |
+
+**Smoking gun:** PointCross HIGH-dose AST cohort means show 1.41-1.56x control at terminal day -- a statistically meaningful, target-organ-flagged elevation. The engine's per-subject onset rule (`onset_recovery.py:_extract_lb_onset`) requires `value > 2.0 * abs(control_mean)`; with cohort mean 1.41x and typical CV, only 1 subject in 29 (3.4%) crosses 2x. A toxicologist filtering "HIGH-dose subjects with AST onset by week 13" would expect to see 8-10 of 10 affected subjects (the cohort signal); the engine returns 1 subject.
+
+**Distinct from streams 1, 2, 4, 5:**
+- Stream 1 (compound class): false-positive adversity calls due to missing pharmacology context
+- Stream 2 (low-dose severity): false-positive LOAEL anchoring at low-magnitude doses
+- Stream 4 (recovery verdict): false-anomaly verdicts due to per-subject vs cohort-aggregate schema mismatch in `recovery_verdicts.py`
+- Stream 5 (cross-organ co-firing): engine's `cross_organ_syndromes` array misses multi-organ patterns because the gate is "syndrome whose definition spans organs" not "study where multiple syndromes co-fire across organs"
+- Stream 6 (LB onset threshold): engine's per-subject 2x rule under-detects emergence when cohort-level adversity is at <2x per-subject. Different code path (`onset_recovery.py` vs `recovery_verdicts.py`), different mechanism (threshold vs schema), different consequence (under-detection vs verdict mislabeling). Closest sibling to Stream 4 in the "per-subject computation diverges from cohort-level adversity" meta-pattern.
+
+**Resolution path:**
+- Replace the absolute 2x threshold with a relative-to-cohort-mean trigger: a subject's onset day is the first measurement day where their value diverges from the per-subject baseline OR exceeds an HCD-aware threshold (within-species reference range), whichever applies
+- Alternative: fall back to "first measurement day where the cohort mean shows statistical significance vs control" for subjects whose value tracks the cohort mean within typical variance -- this gives every subject in the affected cohort an onset registered at the cohort-significance day, matching the toxicologist's mental model
+- Either path is generative work; trace the Cohort view's onset_day filter consumer first to confirm it can absorb the new semantics
+- Direction-aware threshold: current rule uses `abs(val) > threshold` which is broken for decreases (negative direction findings like RBC↓ would never fire because `abs(decreased value)` is still less than `2 * abs(control)`). May explain why the only PointCross HIGH-dose subjects with LB onset entries are AST/ALT/BASO -- direction-positive findings only.
+
+**Priority signal:** matcher only authored on PointCross AST so far; corpus-wide assessment pending. Suspected affects every multi-timepoint study with cohort-level LB elevation < 2x control. Wide blast radius across the validation suite, plus all repeat-dose tox studies generally that drive onset-of-effect calls from per-subject longitudinal LB.
+
+**Surfaced by:** `onset_concordance` matcher (Phase 3 matcher #8, AUDIT-8, this commit). Two PointCross MATCH pins also authored: HIGH AST onset >=1 (regression pin for engine's correct catch of PC201708-4009) and HIGH CL:ALOPECIA onset >=1 (data-preservation pin for raw_subject_onset_days). MI/MA assertions intentionally omitted because engine's MI/MA semantics are sacrifice-day proxy (always = SACRIFICE_DY for affected subjects) -- tautologically passes any assertion, no information value.
+
+---
+
 ## ~~Original Stream 3 hypothesis (preserved for retrospective)~~
 
 The text below is the original Stream 3 framing, kept here for the audit record. All numeric claims are superseded by the falsification above.
@@ -236,6 +267,7 @@ Each clearance MUST update `.assertion-baseline.json`. The baseline file is a lo
 | 2026-04-30 | Phase 3 matcher #5 (`compound_class_flag`, AUDIT-7) shipped; PointCross + 4 CBER studies authored | +4 flags (Study1/2/3/4 — D9 Stream 1 root cause captured at source); cumulative 15 flags / 2 streams |
 | 2026-04-30 | Phase 3 matcher #6 (`recovery_verdict`, AUDIT-5) shipped; PointCross hepatic hypertrophy MED + HIGH authored | +1 flag (HIGH dose persistent mislabeled as anomaly — Stream 4 NEW: recovery verdict per-subject vs cohort-aggregate schema); MED match is regression guard for correct engine path; cumulative 16 flags / 3 streams |
 | 2026-04-30 | Phase 3 matcher #7 (`cross_organ_syndrome`, AUDIT-10) shipped; PointCross SCIENCE-FLAG + instem + TOXSCI-96298 phospholipidosis MATCH pins authored | +1 flag (PointCross 7-organ co-firing invisible to engine's definition-spanning gate — Stream 5 NEW: cross-organ co-firing not captured); 2 MATCHes lock in phospholipidosis as the only multi-organ-defined syndrome currently emitting; cumulative 17 flags / 4 streams |
+| 2026-04-30 | Phase 3 matcher #8 (`onset_concordance`, AUDIT-8) shipped; PointCross AST regression pin + SCIENCE-FLAG + CL:ALOPECIA preservation pin authored | +1 flag (HIGH AST onset 1/29 vs >=5 expected; cohort 1.41x M / 1.56x F means cohort-level adversity but per-subject 2x rule under-detects — Stream 6 NEW: LB onset detection threshold misses cohort-level adversity); 2 MATCHes pin engine's correct threshold catch + CL data preservation; cumulative 18 flags / 5 streams |
 
 ---
 
@@ -251,6 +283,7 @@ Single source of truth for audit-related work outstanding. Action items separate
 | **AUDIT-2** | Low-dose severity gating | Stream 2 (2 flags: TOXSCI-87497) | likely shares with GAP-22 phase-3 magnitude-escape, already research-validated; may already be in flight |
 | **AUDIT-18** | Recovery-verdict per-subject vs cohort-aggregate schema | Stream 4 (1 flag: PointCross HIGH hepatic hypertrophy; suspected wider blast radius pending matcher expansion) | Trace `recovery_verdicts.py` main_severity sourcing; change to read cohort-aggregate from `unified_findings.json:group_stats[dose_level].avg_severity` rather than this-subject's main-arm record; ~1-2 days. |
 | **AUDIT-19** | Cross-organ co-firing surface in `cross_organ_syndromes` | Stream 5 (1 flag: PointCross 7-organ co-firing; suspected wide blast radius across all studies with target_organs >= 3) | Extend `generator/syndrome_rollup.py:488` from "definition-spanning" gate (`len(organs) > 1`) to a second-tier "co-firing" computation: for each (dose, phase) cell, group all firing syndromes by `organ_system`, surface a co-firing entry when >=N organs have at least one fire (N=3 starting heuristic, calibrate against corpus). Trace synthesis-page consumer first to confirm rendering layer can absorb new entry-shape. ~1-2 days. |
+| **AUDIT-21** | LB onset threshold rule too strict (2x control mean per-subject) | Stream 6 (1 flag: PointCross AST 1/29 vs >=5 expected; suspected wide blast radius across all multi-timepoint LB-bearing studies) | Replace `onset_recovery.py:_extract_lb_onset` absolute 2x threshold with cohort-aware semantics: (a) subject-baseline-relative trigger (first day where value diverges from this subject's baseline by >X SD), or (b) cohort-significance fallback (assign onset = first cohort-significant day for any subject in an affected dose group). Also fix direction-handling -- `abs(val) > threshold` ignores decreases (RBC↓, HGB↓ would never trigger). Trace Cohort view's onset_day filter consumer first. ~1-2 days. |
 
 ### Engine work — adjacent issues surfaced by audit (NOT SCIENCE-FLAGs)
 
@@ -266,7 +299,7 @@ Single source of truth for audit-related work outstanding. Action items separate
 | ~~**AUDIT-5**~~ | ~~`recovery_verdict` matcher~~ | DONE 2026-04-30 — matcher shipped; PointCross MED hepatic hypertrophy MATCH (anomaly>=10, regression guard for correctly-fired engine emergence path) + HIGH hepatic hypertrophy SCIENCE-FLAG (persistent>=10 expected, engine reports anomaly=10 — Stream 4 NEW root cause: per-subject vs cohort-aggregate schema in recovery_verdicts.json). 4 other recovery-bearing studies (TOXSCI-35449, instem, PDS, Study4) still uncovered — captured as AUDIT-17 expansion. |
 | **AUDIT-6** | `hcd_score` matcher | Tier 3, knowledge-graph-backed; complements the existing parity tests |
 | ~~**AUDIT-7**~~ | ~~`compound_class_flag` matcher~~ | DONE 2026-04-30 — `pk_integration.json:compound_class` matcher shipped; PointCross MATCH (small_molecule baseline) + Study1/2/3/4 SCIENCE-FLAG (engine has no vaccine/gene_therapy classifier in pk_integration.py modality-detection path). 4 new flags reinforce Stream 1 at the source rather than via downstream class_distribution proxy. AUDIT-15-style per-study expansion (other 11 studies) deferred. |
-| **AUDIT-8** | `onset_concordance` matcher | Tier 3, multi-timepoint studies |
+| ~~**AUDIT-8**~~ | ~~`onset_concordance` matcher~~ | DONE 2026-04-30 — `subject_onset_days.json` matcher shipped; PointCross HIGH AST regression pin (>=1 by day 92) MATCH + HIGH AST SCIENCE-FLAG (>=5 expected by day 92, engine emits 1/29 -- Stream 6 NEW: per-subject 2x control-mean threshold misses cohort-level adversity) + HIGH CL:ALOPECIA preservation pin (>=1 by day 90) MATCH. Schema reuses dose_level/domain/finding_pattern/min_count; adds max_onset_day. MI/MA assertions intentionally skipped (engine's sacrifice-day proxy is tautological). Per-study expansion (LB onset for other adversity-flagged tests in PC + corpus-wide) deferred to AUDIT-22. |
 | ~~**AUDIT-9**~~ | ~~Sex-specific NOAEL/LOAEL extension~~ | DONE 2026-04-30 — `sex` field added to noael_combined/loael_combined matchers; TOXSCI-43066 M=null MATCH + F=1 SCIENCE-FLAG (Stream 2 evidence) |
 | ~~**AUDIT-10**~~ | ~~`cross_organ_syndrome` matcher~~ | DONE 2026-04-30 — `syndrome_rollup.json:cross_organ_syndromes` matcher shipped; PointCross SCIENCE-FLAG (7-organ co-firing pattern invisible to engine's definition-spanning gate -- Stream 5 NEW: cross-organ co-firing not captured) + instem MATCH (`phospholipidosis` n=7) + TOXSCI-96298 MATCH (`phospholipidosis` n=32). Matcher supports 3 modes: equality (id+organs+min_count), count-floor (min_count alone, used for SCIENCE-FLAG), absence (max_count: 0). 3 phospholipidosis-bearing studies still uncovered (TOXSCI-87497 n=1, gene-therapy Study3 n=3, TOXSCI-96298 covered) -- captured as AUDIT-20 expansion. |
 | **AUDIT-11** | Framework-aware `class_distribution` extension | Stream 3 lesson: matcher should accept union of NOEL+ECETOC vocabularies via `also_count: ["treatment_related_concerning"]` field. Lower priority. |
@@ -292,3 +325,4 @@ Single source of truth for audit-related work outstanding. Action items separate
 | **AUDIT-16** | Expand `tumor_detected` per-study | Currently PointCross + Nimble. 14 other studies have tumor_summary.json data with documented expectations (mostly `expected_has_tumors: false` for short-duration studies, plus TOXSCI-87497 with background incidence). |
 | **AUDIT-17** | Expand `recovery_verdict` per-study | Currently PointCross only. 4 other recovery-bearing studies (TOXSCI-35449, instem, PDS, Study4) have recovery_verdicts.json data; per-study authoring will reveal whether the Stream 4 schema mismatch reproduces beyond PointCross hepatic. |
 | **AUDIT-20** | Expand `cross_organ_syndrome` per-study | Currently PointCross (SCIENCE-FLAG) + instem + TOXSCI-96298 (MATCHes). 2 phospholipidosis-bearing studies still uncovered (TOXSCI-87497 n=1, gene-therapy Study3 n=3). Plus absence-pin authoring on the 12 studies that emit `cross_organ_syndromes: []` -- regression pin via `max_count: 0`. Plus corpus-wide assessment of which other studies have multi-organ co-firing patterns (suspected: any study with target_organs >= 3, e.g., Nimble, PDS) -- those would be Stream 5 SCIENCE-FLAGs. |
+| **AUDIT-22** | Expand `onset_concordance` per-study | Currently PointCross only (3 assertions: AST regression pin + AST SCIENCE-FLAG + CL:ALOPECIA preservation pin). Other PC adversity-flagged LB tests (ALT, ALP) likely show same Stream 6 under-detection -- adding 2-3 more assertions on PC would broaden the SCIENCE-FLAG anchor. Multi-timepoint dog studies (TOXSCI-43066, TOXSCI-35449) and rat (TOXSCI-87497, TOXSCI-96298) have LB onset data with documented findings; per-study authoring will reveal whether Stream 6 reproduces. |

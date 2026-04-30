@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `ccc4f9fb` (2026-04-30)
-**Generated:** 2026-04-30T22:47:35.262Z
+**Engine:** commit `e37bd675` (2026-04-30)
+**Generated:** 2026-04-30T23:33:15.288Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -423,6 +423,9 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | recovery_verdict | MED hepatic hypertrophy: anomaly verdict (engine correct -- finding emerges only in recovery) | 10 anomaly verdict(s) (>=10) at dose_level=2, domain=MI, specimen=/LIVER/i, finding=/HYPERTROPHY/i; 10 records scanned; distribution: anomaly=10 | **MATCH** |
 | recovery_verdict | HIGH hepatic hypertrophy: persistent verdict (main arm 9/10 sev 2.56; engine reports anomaly -- SCIENCE-FLAG) | VIOLATION: 0 persistent verdict(s) at dose_level=3, domain=MI, specimen=/LIVER/i, finding=/HYPERTROPHY/i (expected >=10); 10 records scanned; distribution: anomaly=10 | **MISMATCH** |
 | cross_organ_syndrome | Multi-organ co-firing (7 organs, 16 syndromes); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG (Stream 5) | VIOLATION: length=0 < min 1; no cross_organ_syndromes | **MISMATCH** |
+| onset_concordance | HIGH AST onset registered for >=1 subject by day 92 (regression pin -- engine catches PC201708-4009 via 2x rule) | 1 subject(s) (>=1) match (dose_level=3, domain=LB, finding=/^AST$/i, onset_day<=92); 29 subjects scanned in dose stratum; matched keys: LB:AST | **MATCH** |
+| onset_concordance | HIGH AST onset registered for >=5 of 10 affected subjects by day 92 (cohort 1.41x M / 1.56x F -- engine emits 1/10 SCIENCE-FLAG Stream 6) | VIOLATION: 1 subject(s) match (dose_level=3, domain=LB, finding=/^AST$/i, onset_day<=92; expected >=5); 29 subjects scanned in dose stratum; matched keys: LB:AST | **MISMATCH** |
+| onset_concordance | HIGH CL:ALOPECIA onset registered for >=1 subject by day 90 (data-preservation pin from raw_subject_onset_days) | 1 subject(s) (>=1) match (dose_level=3, domain=CL, finding=/ALOPECIA/i, onset_day<=90); 29 subjects scanned in dose stratum; matched keys: CL:ALOPECIA | **MATCH** |
 
 ---
 

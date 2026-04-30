@@ -253,3 +253,61 @@ assertions:
   - type: "cross_organ_syndrome"
     description: "Multi-organ co-firing (7 organs, 16 syndromes); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG (Stream 5)"
     min_count: 1
+
+  # Onset concordance (Phase 3 matcher #8 -- AUDIT-8). Engine surface:
+  # generator/onset_recovery.py builds subject_onset_days.json with
+  # domain-specific semantics. For LB the rule is "first measurement day
+  # where subject value > 2x control mean" -- a per-subject extreme-elevation
+  # threshold. PointCross HIGH-dose (DOSE_GROUP_ORDER=3) cohort means show
+  # AST 1.41x M / 1.56x F vs control at terminal day 92, statistically
+  # adverse and target-organ-flagged. Most individual subject AST values fall
+  # 1.2x-1.8x control (typical noise), so few cross the 2x threshold.
+  #
+  # Three assertions encode this:
+  #
+  # 1. Regression pin (MATCH): engine catches >=1 HIGH-dose subject's AST
+  #    onset by day 92. Today: PC201708-4009 has LB:AST onset=92. Locks the
+  #    current correct emit; would catch a regression to zero.
+  #
+  # 2. SCIENCE-FLAG: toxicologist's call -- given cohort-level adversity
+  #    (1.4x ratio, statistically significant, hepatic-flagged), >=5 of 10
+  #    HIGH-dose subjects should have AST onset registered (so the Cohort
+  #    view's onset_day filter would surface affected subjects, not just
+  #    threshold-crossing outliers). Engine emits 1/10 -- under-detection.
+  #    Stream 6 NEW root-cause family: per-subject 2x control-mean threshold
+  #    misses cohort-level adversity at <2x per-subject. Distinct from
+  #    Stream 4 (recovery_verdict per-subject vs cohort-aggregate schema)
+  #    because the code path, mechanism, and consequence all differ:
+  #    onset_recovery.py's threshold rule vs recovery_verdicts.py's
+  #    main_severity sourcing.
+  #
+  # 3. CL data-preservation pin (MATCH): PC201708-4105 has CL:ALOPECIA onset
+  #    at day 85 (HIGH-dose). CL onset is extracted from
+  #    raw_subject_onset_days, not algorithmically computed -- this pins
+  #    that the engine preserves the SEND-recorded clinical observation
+  #    onset day. >=1 HIGH-dose subject by day 90.
+  #
+  # MI/MA onset assertions intentionally omitted: engine's MI/MA semantics
+  # are sacrifice-day proxy (always = SACRIFICE_DY), so any assertion
+  # tautologically passes for affected dose groups. No information value.
+  - type: "onset_concordance"
+    description: "HIGH AST onset registered for >=1 subject by day 92 (regression pin -- engine catches PC201708-4009 via 2x rule)"
+    dose_level: 3
+    domain: "LB"
+    finding_pattern: "^AST$"
+    max_onset_day: 92
+    min_count: 1
+  - type: "onset_concordance"
+    description: "HIGH AST onset registered for >=5 of 10 affected subjects by day 92 (cohort 1.41x M / 1.56x F -- engine emits 1/10 SCIENCE-FLAG Stream 6)"
+    dose_level: 3
+    domain: "LB"
+    finding_pattern: "^AST$"
+    max_onset_day: 92
+    min_count: 5
+  - type: "onset_concordance"
+    description: "HIGH CL:ALOPECIA onset registered for >=1 subject by day 90 (data-preservation pin from raw_subject_onset_days)"
+    dose_level: 3
+    domain: "CL"
+    finding_pattern: "ALOPECIA"
+    max_onset_day: 90
+    min_count: 1
