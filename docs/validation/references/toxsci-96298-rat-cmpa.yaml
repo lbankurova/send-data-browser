@@ -40,3 +40,24 @@ assertions:
     description: "4 groups with unequal N (Low=20, others=30)"
   - type: "no_recovery"
     description: "No recovery period"
+
+  # ---- GROUND_TRUTH equality assertions (Phase 1 audit) ---------------------
+  # Authored from TOXSCI-24-0062 publication data (confidence 0.8 per existing
+  # YAML). Combined NOAEL=null (LOAEL at Group 1 = 50 mg/kg). 1 real death at
+  # dose level 2 (125 mg/kg) per study_mortality.json. Documentation is silent
+  # on the death so the mortality_loael=2 assertion accepts the engine's
+  # cause-of-death interpretation as defensible (1 actual death, 0 accidental).
+  # target_organs documented as {} (silent); omitting -- engine flags 5 but
+  # this is an ambiguous case, not a documented zero.
+
+  - type: "noael_combined"
+    description: "Combined NOAEL = null (LOAEL at Group 1 = 50 mg/kg per published data)"
+    expected_value: null
+
+  - type: "loael_combined"
+    description: "Combined LOAEL = 1 (50 mg/kg)"
+    expected_value: 1
+
+  - type: "mortality_loael"
+    description: "mortality_loael = 2 (1 actual death at Mid dose 125 mg/kg, accepted per engine cause analysis)"
+    expected_value: 2

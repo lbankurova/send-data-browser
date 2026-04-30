@@ -39,3 +39,24 @@ injected_signals: []  # Real study, no ground truth
 assertions:
   - type: "design_groups"
     description: "4 groups with vehicle control and 2 recovery pairs"
+
+  # ---- GROUND_TRUTH equality assertions (Phase 1 audit) ---------------------
+  # Authored from TOXSCI-24-0062 publication data (no separate study report).
+  # The reference YAML's noael block encodes the published call: LOAEL at the
+  # lowest active dose (3 mg/kg, level 1), NOAEL below tested range (null).
+  # No deaths reported. target_organs is documented as {} (silent), so the
+  # target_organs_flagged assertion is omitted -- not asserting "zero" because
+  # the engine flags 5 organs at LOAEL hits and the silence in docs is
+  # ambiguous, not denial.
+
+  - type: "noael_combined"
+    description: "Combined NOAEL = null (LOAEL at Group 1 = 3 mg/kg per published data)"
+    expected_value: null
+
+  - type: "loael_combined"
+    description: "Combined LOAEL = 1 (lowest active dose 3 mg/kg)"
+    expected_value: 1
+
+  - type: "mortality_loael"
+    description: "mortality_loael = null (zero deaths)"
+    expected_value: null

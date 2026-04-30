@@ -91,8 +91,18 @@
   },
   {
     "study_id": "TOXSCI-24-0062--87497 1 month rat- Compound B-xpt",
+    "type": "loael_combined",
+    "description": "Combined LOAEL = 2 (Mid 125 mg/kg per published call; SCIENCE-FLAG vs engine 1)"
+  },
+  {
+    "study_id": "TOXSCI-24-0062--87497 1 month rat- Compound B-xpt",
     "type": "noael_above_control",
     "description": "NOAEL at Low dose (25 mg/kg/day), not at control"
+  },
+  {
+    "study_id": "TOXSCI-24-0062--87497 1 month rat- Compound B-xpt",
+    "type": "noael_combined",
+    "description": "Combined NOAEL = 1 (Low 25 mg/kg tolerated per published call; SCIENCE-FLAG vs engine null)"
   },
   {
     "study_id": "TOXSCI-24-0062--87497 1 month rat- Compound B-xpt",

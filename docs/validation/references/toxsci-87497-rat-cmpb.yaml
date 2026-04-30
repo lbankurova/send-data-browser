@@ -40,3 +40,33 @@ assertions:
     description: "TK satellites (~18/treated group) excluded from analysis"
   - type: "noael_above_control"
     description: "NOAEL at Low dose (25 mg/kg/day), not at control"
+
+  # ---- GROUND_TRUTH equality assertions (Phase 1 audit) ---------------------
+  # Authored from TOXSCI-24-0062 publication data (confidence 0.8 per existing
+  # YAML). This is the only rodent study in the validation suite with a
+  # NON-TRIVIAL NOAEL: published call is NOAEL at Low (25 mg/kg, level 1),
+  # LOAEL at Mid (125 mg/kg, level 2). 0 deaths.
+  #
+  # ENGINE DISAGREEMENT (expected at time of authoring):
+  #   Engine returns noael_combined=null and loael_combined=1 -- it places
+  #   LOAEL at the lowest active dose, putting NOAEL below tested range.
+  #   The published authors disagree: Low is tolerated. This is a 2-of-3
+  #   GROUND_TRUTH disagreement, encoded as SCIENCE-FLAG per audit plan
+  #   ("do not weaken assertion to make engine pass"). Likely root cause is
+  #   the same over-classification surface that drives the CBER-vaccine
+  #   SCIENCE-FLAGs (Study2/Study4) -- engine treats statistical signals
+  #   at Low as adverse without applying the dose-response/severity gating
+  #   that a toxicologist applies at this exposure level. target_organs
+  #   omitted (documentation silent; ambiguous).
+
+  - type: "noael_combined"
+    description: "Combined NOAEL = 1 (Low 25 mg/kg tolerated per published call; SCIENCE-FLAG vs engine null)"
+    expected_value: 1
+
+  - type: "loael_combined"
+    description: "Combined LOAEL = 2 (Mid 125 mg/kg per published call; SCIENCE-FLAG vs engine 1)"
+    expected_value: 2
+
+  - type: "mortality_loael"
+    description: "mortality_loael = null (zero deaths)"
+    expected_value: null

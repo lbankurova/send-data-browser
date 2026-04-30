@@ -41,3 +41,23 @@ assertions:
     description: "4 groups with 3 recovery pairs"
   - type: "sex_divergent_noael"
     description: "NOAEL differs by sex — M at control, F at 25 mg/kg/day"
+
+  # ---- GROUND_TRUTH equality assertions (Phase 1 audit) ---------------------
+  # Authored from TOXSCI-24-0062 publication data. Combined NOAEL=null (LOAEL
+  # at Group 1 = 25 mg/kg). Sex-divergent: F-NOAEL=1 (25 mg/kg) but the
+  # current harness has no female-NOAEL matcher, so only Combined is encoded.
+  # No deaths. target_organs documented as {} (silent); omitting the assertion
+  # because the engine flags 7 organs and "silence is not denial" -- per the
+  # audit plan's "if ambiguous, omit" directive.
+
+  - type: "noael_combined"
+    description: "Combined NOAEL = null (LOAEL at Group 1 per published data)"
+    expected_value: null
+
+  - type: "loael_combined"
+    description: "Combined LOAEL = 1 (25 mg/kg)"
+    expected_value: 1
+
+  - type: "mortality_loael"
+    description: "mortality_loael = null (zero deaths)"
+    expected_value: null
