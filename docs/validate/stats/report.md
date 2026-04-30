@@ -55,12 +55,14 @@ Original method doesn't track statistics at all.
 
 Validated against `scipy.stats.dunnett` (direct call) using the Dunnett (1955) blood count dataset. Both p-values and test statistics are compared within tolerance. See [validate_dunnett.py](../../../backend/services/analysis/validation/validate_dunnett.py).
 
-### ✅ Jonckheere-Terpstra trend test 
+### ⚠️❌ Jonckheere-Terpstra trend test 
 
-Checked against two independent sources:
+Checked **UNTIED** variant against two independent sources:
 
 * manual JT via `scipy.stats.mannwhitneyu`
 * `jonckheere-test` library
+
+❌ TO BE FIXED: **tied-correction** (see details [here](./JT/ties_correction_jt.md)).
 
 ### ✅ Hedges' g
 
