@@ -1,0 +1,155 @@
+topic: study-design-override-surfaces
+started: 2026-04-20T00:00:00Z
+phase: blueprint-complete
+current_step: build.0
+revision: 22
+rescoped_summary:
+  completed_at: 2026-04-21
+  trigger: "scope-challenge 2026-04-21 (SPEC-VALUE-AUDIT retroactive)"
+  path_chosen: "B (surgical incorporation)"
+  cuts_loc: "~1340 (Phase 3 featuritis: 14-row panel, T0-T3 tiers, portfolio t3_count, staging/undo UX)"
+  additions_r1_loc: "+400 (defense-in-depth on F1-F13)"
+  additions_r2_loc: "+30 (N1-N4 refinements)"
+  final_total_loc: "~5640 (range 5540-5840 depending on post-audit sidecar remediation)"
+  feature_count_final: 22
+  architect_rescoped: "PASS with C-1/C-2/C-3 auto-applied"
+  probe_rescoped: "PROCEED with P-R1/P-R2 auto-applied"
+  r1_rescoped: "CONDITIONAL 4F+9C+2S all incorporated"
+  r2_rescoped: "PROCEED 12R/3P/0NR + 4NEW-CONDITIONAL all incorporated"
+  gaps_persisted:
+    registry_updates:
+      - "study-design-override-surfaces: status updated, IQ-20 re-scoped (entire column deferred), IQ-22 added (subject-level UI)"
+      - "rescoped review file references added"
+    todo_updates:
+      - "GAP-SDO-31: re-scoped from Option-B-only to entire-column-deferred"
+      - "GAP-SDO-33: subject-level override inline UI (new)"
+      - "GAP-SDO-34: future design-inference attribute emission policy (new)"
+rescoped_blueprint_progress:
+  blueprint.1-synthesize-rescoped: "2026-04-21 (surgical Phase 3 rewrite; v1 preserved)"
+  blueprint.2-architect-gate-rescoped: "2026-04-21 (PASS with 3 CONDITIONAL — C-1/C-2/C-3 auto-applied)"
+  blueprint.3-probe-rescoped: "2026-04-21 (PROCEED — 2 PROPAGATES P-R1/P-R2 auto-applied)"
+  blueprint.4-plan-review-rescoped-r1: "2026-04-21 (4F+9C+2S, gate passed)"
+  blueprint.5-incorporate-rescoped-r1: "2026-04-21 (all 4 FLAWED rewritten, all 9 CONDITIONAL incorporated; +400 LOC)"
+  blueprint.6-plan-review-rescoped-r2: "2026-04-21 (PROCEED — 12 RESOLVED/3 PARTIAL/0 NOT-RESOLVED on R1; 4 NEW CONDITIONAL N1-N4 all incorporated; +30 LOC)"
+re_entry_scope_challenge:
+  date: 2026-04-21
+  trigger: "SPEC-VALUE-AUDIT precedent — docs/_internal/incoming/study-design-override-surfaces-scope-challenge.md"
+  path: "B — surgical incorporation (keep Phase 0/1/2 + Feature 3.4; cut Phase 3 audit panel + portfolio t3_count; re-scope inference_tiers to shipped attributes)"
+  user_choice: "Option B (2026-04-21)"
+  backup: "docs/_internal/incoming/study-design-override-surfaces-synthesis-v1-pre-scope-challenge.md"
+  invalidated_steps:
+    - "blueprint.2-architect-gate (re-run against trimmed spec)"
+    - "blueprint.3-probe (re-run — reduced surface, fewer breaks expected)"
+    - "blueprint.4-plan-review-r1 (re-run on trimmed spec)"
+    - "blueprint.5-incorporate-r1 (re-run)"
+    - "blueprint.6-plan-review-r2 (re-run)"
+    - "blueprint.7-complete (re-run — new LOC estimate, reduced features)"
+sf_new_3_resolution:
+  decision: "Option A (raw count) 2026-04-21"
+  applied:
+    - "Feature 3.3 step 8: explicit raw-count spec + Option B merit-rejection rationale"
+    - "IQ-20 added to Research Gaps (REGISTRY persistence at Step 7)"
+    - "Unresolved-after-this-cycle section gains design_audit bucket caveat"
+sf_a_resolution:
+  decision: "Option 1 + active-refusal stubs (user 2026-04-21)"
+  applied:
+    - "OVERRIDE_MODE['mixed_unresolved'] for compound-profile + study-type-override; dispatch raises NotImplementedError"
+    - "Unresolved-after-this-cycle section added (5 items named explicitly)"
+    - "Framing note for next cycle: staleness-tolerance (user-visibility), not technical re-derivability"
+    - "DATA-GAP-SDO-07 persists the scientist enumeration task with the user-visibility framing"
+    - "AC-1.2.4 (active-refusal test) + AC-1.2.5 (D9 regression) added"
+completed:
+  research.1-landscape: 2026-04-20
+  research.1-deep-dive: 2026-04-20
+  research.2-r1: 2026-04-20
+  research.3-incorporate-r1: 2026-04-20
+  research.4-r2: 2026-04-20
+  research.5-evaluate: 2026-04-20
+  research.6-distill: 2026-04-20
+  research.7-probe: 2026-04-20
+  research.8-blocker-incorporation: 2026-04-21
+  blueprint.0-impl-context: 2026-04-21
+  blueprint.1-synthesize: 2026-04-21
+  blueprint.2-architect-gate: 2026-04-21 (SIMPLIFY applied; SF-A resolved by user + enhanced; re-gate PASS)
+  blueprint.3-probe: 2026-04-21 (PROCEED; 2 BREAKs auto-applied as additive ACs; SF-NEW-3 resolved by user — Option A raw count)
+  blueprint.4-plan-review-r1: 2026-04-21 (16 findings, 4F+11C+1S, gate passed)
+  blueprint.5-incorporate-r1: 2026-04-21 (all 4 FLAWED rewritten, all 11 CONDITIONAL incorporated)
+  blueprint.6-plan-review-r2: 2026-04-21 (CONDITIONAL — gate passes; 0 new FLAWED; 3 NEW CONDITIONAL + 5 PARTIAL all incorporated; IQ-21 added)
+  blueprint.7-complete: 2026-04-21 (REGISTRY updated; TODO.md gap entries persisted: DATA-GAP-SDO-05/06/07, GAP-SDO-31/32; total 20 gaps linked to this cycle)
+checkpoints:
+  research.8-blocker-incorporation:
+    completed: 2026-04-21T00:00:00Z
+    user_decision: "Option 1 — incorporate all four blockers via targeted text edits"
+    blockers_resolved:
+      BI-1: "Level 0 -> Level-D rename; sub-levels D.1-D.8; parent landscape documents full cascade with existing Levels 1-6 (expert-override-cascade.md preserved)"
+      BI-2: "finding_id hash premise corrected. Actual hash is {domain, test_code, specimen, day, sex} per unified_findings.py:185-189. IQ-1 P0 BLOCKER CLOSED. stable_finding_key retained with reframed motivation (D.6 dose-unit overrides + canonicalization drift, not arm-reclass)"
+      BI-3: "per_subject_data_inventory.json producer spec added to parent landscape; V-6 reads per-domain flags; freshness invariant vs XPT mtimes; V-6 broadened to all domains per R2 §2.6"
+      BI-4: "Prerequisite refactor ladder documented: extract _assemble_dose_groups_output() helper; consolidate GAP-218 species normalization; build per_subject_data_inventory producer; Track C REFACTOR §§1-7. Sequencing genuine-dependency gates per CLAUDE.md rule 13"
+    edits_applied:
+      - "parent landscape: Blocker Incorporation Notes (2026-04-21) section added (~200 lines)"
+      - "Track B Gap B-5: BI-2 callout + paragraph rewrite"
+      - "Track B R1 notes: IQ-1 strikethrough + CLOSED annotation"
+      - "Track C P6.F stable_finding_key bullet: rationale rewritten"
+      - "Track C R1 notes A3.2: UUID option withdrawn"
+      - "REGISTRY IQ-1: strikethrough + CLOSED"
+      - "REGISTRY new IQ-12..19"
+      - "TODO: GAP-SDO-23..30 + DATA-GAP-SDO-04 + GAP-SDO-06 closed"
+    deferred_to_synthesize:
+      - "Track A body specs P1.3/P1.5/P1.9 (IQ-17; doc hygiene, correct text in R1 notes)"
+      - "Track C P6.A full body rename Level 0 -> Level-D (IQ-18; mechanical)"
+      - "Canonicalization function implementations (DATA-GAP-SDO-04; IQ-12)"
+    gaps_persisted_step_7b:
+      registry_streams:
+        - "study-design-override-surfaces (parent)"
+        - "study-design-override-surfaces-cross-track (integration, 19 IQs)"
+      todo_entries:
+        - "GAP-SDO-01..05 (initial landscape)"
+        - "GAP-SDO-06 (CLOSED 2026-04-21)"
+        - "GAP-SDO-07..15 (deep-dive + R1)"
+        - "GAP-SDO-16..22 (R1 peer review)"
+        - "GAP-SDO-23..30 (R2 + blockers)"
+        - "DATA-GAP-SDO-01..04"
+checkpoints_blueprint:
+  blueprint.0-impl-context:
+    completed: 2026-04-21T14:30:36Z
+    scanned: "462 decisions log entries, 50 prior cycle states, code-quality-guardrails"
+    failed_relevant: 0
+    relevant_patterns:
+      - "loo-exclusion-override: two-phase preview/commit, X8 cascade template, animal-exclusion as subject-scope analog"
+      - "test-article override (B6): shipped StudyPreferences pattern — but is display-only, wrong template for X8-class cascade"
+      - "findings-enrichment-none-safety: SIMPLIFY dropped speculative scope — signal to narrow Phase 2 features"
+      - "outliers-pane-unified, protective-syndrome-engine: R1 + R2 CONDITIONAL patterns heavy but convergent"
+    domain_critical_modules:
+      - "dose_groups.py: build_dose_groups() (inference site; helper extraction prerequisite)"
+      - "override_reader.py, annotations.py: VALID_SCHEMA_TYPES registration + audit log infra"
+      - "analysis_views.py: _apply_overrides chain, ETag, _OVERRIDE_FILES, POST /regenerate"
+      - "analysis_settings.py: settings_hash() must extend to Level-D override mtimes"
+      - "unified_findings.py:185-189: finding_id hash {domain,test_code,specimen,day,sex} (no dose_level) — BI-2 premise"
+    prereq_blockers:
+      - "_assemble_dose_groups_output() helper extraction (dose_groups.py:1217-1235 inline return)"
+      - "GAP-218 species normalization consolidation (11 files, pre-Level-D.1)"
+      - "per_subject_data_inventory.json producer (V-6 dependency)"
+      - "7 Track C REFACTOR items (atomic regen write, per-study regen lock, If-Match PUT, settings_hash extension, stale-artifact detector, cascade audit entries, LEVEL_D_OVERRIDE_FILES registry)"
+    cross_topic_interactions:
+      - "GAP-218 already in TODO — blocker for D.1 species override"
+      - "compound-profile (S20) EPE-gating silent X7 risk — informs D.2 design"
+      - "loo-exclusion pattern = template for Level-D two-phase UX"
+    no_bug_patterns_file: true
+next: "/lattice:build-cycle study-design-override-surfaces"
+blueprint_summary:
+  synthesis_path: "docs/_internal/incoming/study-design-override-surfaces-synthesis.md"
+  synthesis_size_lines: 936
+  total_loc_estimate: "~6,190"
+  phases: 4  # Phase 0 refactor foundation, Phase 1 Level-D contract, Phase 2 arm/subject classification cluster, Phase 3 Design Inference Review Panel
+  features: 23  # 9 Phase-0 + 6 Phase-1 + 7 Phase-2 + 4 Phase-3 (2.7 added via R1 repositioning)
+  user_science_flag_decisions:
+    - "SF-A (OVERRIDE_MODE stubs): Option 1 + active-refusal NotImplementedError + explicit 'unresolved' callout + staleness-tolerance framing (not technical re-derivability) for next cycle"
+    - "SF-NEW-3 (portfolio design_audit bucket): Option A raw count; Option B calibrated bucket queued as IQ-20 pending DATA-GAP-SDO-01"
+  auto_decisions_logged: 9
+  deferred_with_genuine_dependencies:
+    - "D.1/D.2 species + strain (gate: GAP-218)"
+    - "D.3 study-type wiring (gate: DATA-GAP-SDO-07 scientist enumeration)"
+    - "D.5 duration (gate: Level-D storage pattern stabilizes this cycle)"
+    - "D.6 dose/route/vehicle (gate: canonicalization ships and validates this cycle)"
+    - "Portfolio calibrated bucket (gate: DATA-GAP-SDO-01)"
+    - "Cache-thrashing mitigation (gate: telemetry instrumentation shows >5% regen-concurrent misses)"

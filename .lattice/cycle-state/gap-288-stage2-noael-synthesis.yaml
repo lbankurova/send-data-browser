@@ -1,8 +1,25 @@
 topic: gap-288-stage2-noael-synthesis
 started: 2026-04-27T00:00:00Z
 phase: build
-current_step: build.1-phase1-shipped
-revision: 2
+current_step: build.2-phase1-committed
+revision: 3
+phase1_commits:
+  code: c3e54196
+  spec_refresh: 9ed47ce1
+  submodule_todo: 88c4f67
+  submodule_spec: 0cc58e2
+review_phase1:
+  verdict: PASS
+  fixed_in_commit:
+    - "drives-loael now uses canonical SYNDROME_TERM_LOOKUP (architect SCIENCE-FLAG + reqmt R9 FAIL)"
+    - "XS07 routed to general with data-grounded counter-evidence (decision auditor SCIENCE-FLAG)"
+    - "audit-syndrome-rollup.py SKIP -> FAIL when inputs exist but rollup absent (decision auditor EFFORT-BIASED)"
+  deferred_to_followup_gaps:
+    - GAP-358 (immune as first-class organ_system bucket)
+    - GAP-359 (CROSS_DOMAIN_SYNDROME_ORGAN derive from syndrome-definitions.json)
+    - GAP-360 (noael_summary.loael_dose_value numeric population)
+  accepted_deviations:
+    - "URL path /api/studies/{study_id}/analysis/syndrome-rollup vs spec /api/{study_id}/syndrome-rollup (decision auditor MERIT-SOUND; spec refreshed in 0cc58e2)"
 phase1_shipped:
   files_created:
     - backend/generator/syndrome_rollup.py

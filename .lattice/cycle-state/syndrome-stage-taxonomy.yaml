@@ -1,0 +1,69 @@
+topic: syndrome-stage-taxonomy
+started: 2026-04-29T11:48:05Z
+phase: blueprint-complete
+current_step: build.0
+revision: 10
+completed:
+  research.1: 2026-04-28
+  research.2: 2026-04-29
+  research.3: 2026-04-29
+  research.4: 2026-04-29
+  research.5: 2026-04-29
+  research.6: 2026-04-29
+  research.7: 2026-04-29
+  research.7b: 2026-04-29
+  blueprint.0: 2026-04-29
+  blueprint.1: 2026-04-29
+  blueprint.2: 2026-04-29
+  blueprint.3: 2026-04-29
+  blueprint.4: 2026-04-29
+  blueprint.5: 2026-04-29
+  blueprint.6: 2026-04-29
+  blueprint.7: 2026-04-29
+checkpoints:
+  research.complete:
+    completed: 2026-04-29
+    output: "docs/_internal/research/syndrome-stage-taxonomy.md"
+    reviews:
+      - "docs/_internal/research/peer-reviews/syndrome-stage-taxonomy-review.md (R1: CONDITIONAL, 7 findings)"
+      - "docs/_internal/research/peer-reviews/syndrome-stage-taxonomy-review-r2.md (R2: CONDITIONAL, 10 findings)"
+    persisted_gaps:
+      registry: 29 (16 R0 + 3 R1 + 10 R2)
+      todo: 9 (data gaps from R0)
+    probe_verdict: "all SAFE/PROPAGATES; no BREAKS or SCIENCE-FLAG; rule 18 + rule 22 deferred to build-cycle as expected"
+  blueprint.0:
+    completed: 2026-04-29
+    output: ".lattice/cycle-state/syndrome-stage-taxonomy-step0-impl-context.md"
+  blueprint.1:
+    completed: 2026-04-29
+    output: "docs/_internal/incoming/syndrome-stage-taxonomy-synthesis.md"
+  blueprint.2:
+    completed: 2026-04-29
+    output: "docs/_internal/research/peer-reviews/syndrome-stage-taxonomy-architect-review.md"
+    verdict: "PASS-WITH-CONDITIONS (5 findings: 2 conditions auto-applied, 3 advisory auto-applied; 0 SCIENCE-FLAG; 0 REJECT)"
+    summary: "C1: UI line reference corrected (EvidencePane:864-942 + TermReportEntry+stage extension, not :254-287 memoized block). C2: AC-F8-3 expanded to 3a/3b/3c so RG-STAGE-R2-4 study-duration moderator is empirically verified (4wk-with-tissue moderator-fires + 13wk-with-tissue moderator-skips). AF-1 JSDoc on LB-vs-MI asymmetry added to F1. AF-3 AC-F9-4 partial-recovery test added. No re-gate required."
+  blueprint.3:
+    completed: 2026-04-29
+    output: ".lattice/cycle-state/syndrome-stage-taxonomy-blueprint-probe.md"
+    verdict: "ALL_SAFE/PROPAGATES (0 BREAKS, 0 SCIENCE-FLAG, 1 RECONSIDER-SURFACE)"
+    summary: "Build-plan probe clean. Schema purely additive; no existing analytical path consumes the new fields. RECONSIDER-SURFACE: radar-forest revert leftovers (MemberRolesByDoseTable.tsx + member-roles-row.ts untracked in working tree) — defer delete-vs-revive decision to stage-UI-integration commit."
+    next: "blueprint.4 (plan review R1)"
+  blueprint.4:
+    completed: 2026-04-29
+    output: "docs/_internal/research/peer-reviews/syndrome-stage-taxonomy-synthesis-review.md"
+    verdict: "CONDITIONAL (3 FLAWED + 9 CONDITIONAL)"
+    summary: "R1 found 3 FLAWED specification defects (A-2 non-canonical confidence enum, A-3 MI default-derivation incomplete, A-4 template_dispatch contradicts AC-F8-3b) and 9 CONDITIONAL specification gaps. All accepted for incorporation."
+  blueprint.5:
+    completed: 2026-04-29
+    summary: "All 12 R1 findings incorporated into synthesis. FLAWED fixes: canonical confidence enum (internal_validated/extrapolation), MI fallback rule + AC-F2-4 test, template_dispatch reorganized with explicit ICH S4A 13wk citation. CONDITIONAL fixes: working-tree state clarified, XS04 reframed (pattern in 3b for member-stage / 3d for topology), AC-F9-1 unit-test-with-mock, KCC_TAG/BESTCategory/BiomarkerQualification typed, bradford_hill_confidence rename, P3.4 removed as justification (2 confirmed Phase-3 consumers), backwards-compat list extended, ICH S4A citation, RECOVERY-FACT-001/002/003 typed-graph promotion. Plan Review Notes section filled."
+    next: "blueprint.6 (plan review R2)"
+  blueprint.6:
+    completed: 2026-04-29
+    output: "docs/_internal/research/peer-reviews/syndrome-stage-taxonomy-synthesis-review-r2.md"
+    verdict: "CONDITIONAL (0 FLAWED + 8 CONDITIONAL); BUILD PLAN VALIDATED per Step 6 protocol"
+    summary: "All 12 R1 findings verified addressed. 8 new R2 CONDITIONAL items, all incorporated: A-1 PointCross 13wk integration-test promoted; A-2 ICH S4A → OECD TG 408 citation correction; FM-1 Extension numbering 11/12 (10 reserved); FM-2 RECOVERY-FACT-003 to gate_criterion; FM-3 fact_kind enum declaration update gate added; FM-4 AC-F8-3b unit-test-with-mock; H-1 consumer count corrected; L-1 NARRATIVE-FACT-001 typed threshold."
+  blueprint.7:
+    completed: 2026-04-29
+    output: "docs/_internal/incoming/syndrome-stage-taxonomy-synthesis.md (validated)"
+    summary: "Build plan validated. 12 features (F1-F12) across phases 3a/3b/3c/3d. R2 BLOCKING items + R1 FLAWED + R2 CONDITIONAL all incorporated. 32 RG entries in REGISTRY, 14 stage-related TODO entries (incl. 3 DATA-GAP-STAGE-SYNTH). DATA-GAP-STAGE-SYNTH-2 marked CLOSED (PointCross 13wk fixture available). Auto-decisions logged: 7 (Step 0 + Step 4 R1-incorporate + Step 6 R2-validate + 4 architect/probe outcomes)."
+    next: "/lattice:build-cycle syndrome-stage-taxonomy"

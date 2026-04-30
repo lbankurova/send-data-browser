@@ -1,0 +1,66 @@
+topic: bmd-modeling
+started: 2026-04-30T15:10:14Z
+phase: research-complete
+current_step: research.complete
+revision: 6
+completed:
+  research.1.landscape: 2026-04-30T15:10:14Z
+  research.1.deep-dives: 2026-04-30T16:00:00Z
+  research.2.peer-review-r1: 2026-04-30T16:35:00Z
+  research.3.incorporate-r1: 2026-04-30T16:45:00Z
+  research.4.peer-review-r2: 2026-04-30T16:55:00Z
+  research.5.evaluate-r2: 2026-04-30T17:05:00Z
+  research.6.distill-audit: 2026-04-30T17:10:00Z
+  research.7.probe: 2026-04-30T17:15:00Z
+  research.7b.gap-persistence: 2026-04-30T17:20:00Z
+checkpoints:
+  research.complete:
+    completed: 2026-04-30T17:20:00Z
+    summary:
+      branches_deep_dived: 5  # B3, B4, B5, B7, B8
+      branches_deferred: 6    # B1, B2, B6, B9, B10, B11
+      total_words_research: 43449
+      total_words_with_landscape_synthesis: ~50000
+      primary_citations: 130+
+      peer_reviews: 2  # R1 + R2
+      peer_review_findings: 25  # 14 R1 CONDITIONAL + 11 R2 CONDITIONAL/Moderate-or-Low
+      flawed_findings: 0
+      contradictions_distill: 0
+      tensions_distill: 6  # all engaged or coherent
+      probe_subsystems: 25
+      probe_breaks: 0
+      probe_new_science_flags: 0
+      probe_propagates: 14
+      probe_stale: 4  # non-blocking manifest notes
+    headline_decisions:
+      - "B5: Dual-framework with Bayesian-MA default via MAP-Laplace (WASM-tractable on Rust argmin/nalgebra/statrs); frequentist always-on comparability tail; full MCMC Bridge sampling as regulatory-submission high-precision option"
+      - "B7: BmdConvergence discriminated union {Converged, Fragile, Failed, Inapplicable} + 6-rung fallback cascade + 4-state UI rule-21-compliant; STD10 cascade preserved as dichotomous specialization"
+      - "B4: EFSA 2022 BMR conventions per endpoint sub-type; per-study + per-finding cascade override (rule-21 compliant); 13 BMD-FACTs to KG"
+      - "B3: 9-model continuous library + 4-tier per-dose-N rho gating + per-endpoint variance defaults via typed KG; 15 BMD-FACTs to KG"
+      - "B8: 4-layer validation architecture (synthetic / BMDS corpus / SENDEX / cross-impl) + per-class tolerances + validation manifest as rule-19 citable artifact"
+      - "Sequencing decision: Phase 1 ships provisional BMR table with explicit heuristic flags; full GTES + log-scale validation gate Phase 2 production submission only"
+      - "Cross-framework disagreement policy (3-case): both converge agree -> Bayesian primary; both converge disagree>30% -> destination-aware (FDA/PMDA frequentist, EFSA/WHO Bayesian); frequentist fails -> Bayesian-only with disclosure"
+    blocking_rgs_for_phase_1:
+      - "RG-BMD-B5-MAP-LAPLACE-ACCURACY (gates Bayesian-MA default)"
+      - "RG-BMD-B7-PHARMA-CALIBRATION (BMDL/NOAEL + BMDU/BMDL thresholds calibration)"
+      - "RG-BMD-B4-GTES-BLOCKING (Slob 2017 GTES — gates Phase 2, not Phase 1 per sequencing decision)"
+      - "RG-BMD-B3-3 (log-scale BMR convention — gates Phase 2, not Phase 1 per sequencing decision)"
+      - "RG-BMD-B3-TIER2-POSTERIOR (Bayesian likelihood/prior when variance pinned)"
+      - "RG-BMD-B5-DISAGREEMENT-POLICY (3-case revised; SME review pending)"
+      - "RG-BMD-B5-MODEL-SET-CLARIFY (8-vs-12 ambiguity; gates B8 Layer B implementation)"
+    persisted_artifacts:
+      research_doc_landscape: "docs/_internal/research/bmd-modeling.md"
+      research_docs_deep_dives:
+        - "docs/_internal/research/bmd-modeling-B3-continuous.md"
+        - "docs/_internal/research/bmd-modeling-B4-bmr.md"
+        - "docs/_internal/research/bmd-modeling-B5-framework.md"
+        - "docs/_internal/research/bmd-modeling-B7-small-n.md"
+        - "docs/_internal/research/bmd-modeling-B8-validation.md"
+      peer_reviews:
+        - "docs/_internal/research/peer-reviews/bmd-modeling-review.md"
+        - "docs/_internal/research/peer-reviews/bmd-modeling-review-r2.md"
+      registry_entry: "docs/_internal/research/REGISTRY.md (bmd-modeling stream)"
+      todo_data_gaps: "docs/_internal/TODO.md (9 DATA-GAP-BMD-* entries)"
+      kg_facts_pending: "37 BMD-FACT-B{branch}-{nnn} (BMD-FACT-B3-001..015, BMD-FACT-B4-001..013, BMD-FACT-B7-001..009)"
+      decisions_log_entries: "8 entries (acquire-lock, landscape-stop, deep-complete, peer-r1, incorporate-r1, accept-r2, distill, probe)"
+    next_action: "/lattice:blueprint-cycle bmd-modeling"

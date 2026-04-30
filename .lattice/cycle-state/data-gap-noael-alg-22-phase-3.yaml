@@ -1,0 +1,162 @@
+topic: data-gap-noael-alg-22-phase-3
+cycle: DATA-GAP-NOAEL-ALG-22 (C-criterion architectural realignment)
+phase: architect-pass
+current_step: architect-pass
+started: 2026-04-28T17:00:00Z
+revision: 2
+classification:
+  path: full
+  rationale: |
+    Engine/algorithmic-code change in domain-critical module
+    (`backend/generator/view_dataframes.py:_is_loael_driving_woe`,
+    code-quality-guardrails.md domain-critical row). 4-axis defect
+    taxonomy with corpus-decided architectural realignment
+    (scoring-engine-model.md Step 16 layered-gate canonical pattern).
+    Per CLAUDE.md rule 19, algorithm-defensibility check is mandatory.
+
+prior_phases_shipped:
+  phase_1_pattern_enumeration:
+    parent_commit: 03ed0b83
+    submodule_commit: 9c1470f
+    date: 2026-04-28
+    output: docs/_internal/research/data-gap-noael-alg-c-criterion-pattern-enumeration.md
+  phase_2_per_endpoint_rule_19:
+    parent_commit: c160f150
+    submodule_commit: 13b9cf1
+    date: 2026-04-28
+    output: docs/_internal/research/data-gap-noael-alg-22-phase-2-pointcross-non-bw-ground-truth.md
+
+inputs_consulted:
+  - docs/_internal/research/distillations/noael-alg-c-criterion-coherence.md
+  - docs/_internal/research/data-gap-noael-alg-c-criterion-pattern-enumeration.md
+  - docs/_internal/research/data-gap-noael-alg-22-phase-2-pointcross-non-bw-ground-truth.md
+  - docs/_internal/knowledge/scoring-engine-model.md (Step 16)
+  - docs/_internal/knowledge/code-quality-guardrails.md
+  - backend/generator/view_dataframes.py (lines 1-260)
+  - backend/services/analysis/c7_corroboration.py
+  - backend/services/analysis/endpoint_adverse_direction.py (lines 60-180)
+  - backend/tests/test_c7_corroboration.py
+  - shared/rules/endpoint-adverse-direction.json
+
+locked_decisions:
+  - "Option B (one architectural cycle), not four point-fixes (CLAUDE.md rule 12)"
+  - "Test fixture answer is INVARIANT under fix; DO NOT modify frontend/tests/ground-truth-validation.test.ts"
+  - "Magnitude-escape threshold default: g_lower >= 0.7 (architect-review AR-1 will adjudicate)"
+  - "lookup_endpoint_class substring-match fix (BUG-035) bundled into Phase 3 atomic patch"
+  - "C6 biphasic suspension targets Axis 2b only (low-dose fires on inferred direction); preserves ~50 Axis 2a HD-only fires"
+  - "C7 corroboration position: refactor from additive to gate (semantic INVERTS: pre-patch can only ADD a fire; post-patch can only SUBTRACT a fire)"
+
+spec_path: docs/_internal/incoming/data-gap-noael-alg-22-phase-3-synthesis.md
+
+architect_review_adjudication_points:
+  AR-1: magnitude-escape threshold value (proposed 0.7; alt 1.0; no external authority anchor)
+  AR-2: C6 biphasic suspension semantics (Axis-2b proxy via firing-dose-direction-mismatch)
+  AR-3: lookup_endpoint_class fix shape (word-boundary regex)
+  AR-4: Layer 2 ordering (suppression -> biphasic -> corroboration)
+  AR-5: audit-field shape (per-gate fields via setdefault)
+  AR-6: LB_per_analyte carve-out preservation
+  AR-7: substantiveness floor for continuous-effect corroboration triggers (proposed g_lower > 0.3 with |effect| >= 0.5 fallback; merit-driven fix per peer-review N4)
+
+implementation_surface:
+  - file: backend/generator/view_dataframes.py
+    function: _is_loael_driving_woe
+    lines: 80-260
+    change: layered-gate refactor (~150 LOC; preserves ALL Layer 3 behavior)
+  - file: backend/generator/view_dataframes.py
+    function: _is_biphasic_pairwise (NEW private helper)
+    lines: alongside _effect_matches_trend_direction (line ~78)
+    change: ~12 LOC new helper (null + zero handling per F3)
+  - file: backend/services/analysis/c7_corroboration.py
+    function: _has_class_direction_at_dose
+    lines: 117-134
+    change: substantiveness floor (g_lower > 0.3 OR |effect| >= 0.5 fallback); ~10 LOC. Closes the asymmetry vs incidence-gated pathology helpers. Per peer-review N4 + AR-7 merit decision.
+  - file: backend/services/analysis/endpoint_adverse_direction.py
+    function: lookup_endpoint_class
+    lines: 75-94
+    change: substring -> word-boundary regex (~3 LOC + import re)
+  - file: backend/tests/test_c7_corroboration.py
+    function: NEW test cases (biphasic suspension, magnitude-escape, Layer 2c paths a/b/c, substantiveness floor, lookup_endpoint_class regex)
+    lines: append
+    change: ~80 LOC new (~3 fixture functions + 10 test cases including substantiveness-floor unit test)
+  - file: docs/_internal/BUG-SWEEP.md
+    change: BUG-034 closure entry + BUG-035 entry (lands at /lattice:review)
+
+acceptance_criteria_data_grounded:
+  pointcross_per_finding_post_patch:
+    OM_HEART_WEIGHT_M_d92:
+      pre_patch_firings: [1, 2, 3]
+      post_patch_firings: [3]
+      driver: "g_lower=2.046 magnitude-escape; doses 1+2 blocked by C7 corroboration gate"
+    OM_TESTIS_WEIGHT_M_d92:
+      pre_patch_firings: [1, 3]
+      post_patch_firings: [1, 3]
+      driver: "dose 1 corroborated by MI_atrophy_same_organ_same_dose_sex; dose 3 magnitude-escape"
+    OM_BRAIN_WEIGHT_M_d92:
+      pre_patch_firings: [3]
+      post_patch_firings: [3]
+      driver: "g_lower=0.973 just clears 0.7 threshold"
+    OM_KIDNEY_WEIGHT_M_d92:
+      pre_patch_firings: [3]
+      post_patch_firings: [3]
+      driver: "g_lower=1.619 magnitude-escape"
+    LB_Prothrombin_Time_F_d92:
+      pre_patch_firings: [1]
+      post_patch_firings: []
+      driver: "C6 biphasic suspension fires (sign-flipping -,+,+); independently lookup_endpoint_class regex routes via LB_per_analyte"
+    LB_Leukocytes_M_d92:
+      pre_patch_firings: [1]
+      post_patch_firings: [1]
+      driver: "canonical-direction LB; C1 fires legitimately on g_lower=1.060 sig"
+    LB_Reticulocytes_F_d92:
+      pre_patch_firings: [1]
+      post_patch_firings: [1]
+      driver: "canonical-direction LB; C1 fires legitimately on g_lower=1.220 sig"
+    BG_Body_Weight_Gain_M_d92:
+      pre_patch_audit: c7_corroboration set (spurious; corroborators FC dose-1 effect=+0.030 g_lower=0 + SPLEEN dose-1 effect=+0.212 g_lower=0 are essentially-zero noise)
+      pre_patch_in_noael_drivers: false
+      post_patch_audit: c7_corroboration_blocked (substantiveness floor rejects both noise triggers)
+      post_patch_in_noael_drivers: false
+      effective_loael_change: none (was not driver pre-patch; not driver post-patch)
+      driver_rationale_change: from-spurious-corroboration to honest-non-corroboration
+  pointcross_combined_loael_invariant:
+    pre_patch: "Combined LOAEL <= dose 1, NOAEL = null"
+    post_patch: "Combined LOAEL <= dose 1, NOAEL = null"
+    note: "Test fixture answer invariant; driver shifts from indefensible to defensible. BG M day-92 audit-field rationale shifts from spurious-corroboration to honest-non-corroboration; effective LOAEL-driving status unchanged."
+
+peer_review_history:
+  R1: CONDITIONAL (F1 NOAEL-FACT-010 miscite, F2 C7-additive enumeration unverified, F3 null-handling)
+  R2: CONDITIONAL (line 491 sources-cited residual + N4 data-grounding)
+  R3: SOUND (after merit-based revision adding AR-7 substantiveness floor; 2 non-blocking refinements N-R3-1 unit-guard + N-R3-2 disclosure folded in)
+  attestation: peer-review-data-gap-noael-alg-22-phase-3-r3-2026-04-28T00:00:00Z (.lattice/pending-attestations.json)
+  full_review: docs/_internal/research/peer-reviews/data-gap-noael-alg-22-phase-3-synthesis-review-r3.md
+
+architect_review:
+  date: 2026-04-29T01:30:00Z
+  verdict: PASS
+  recommendations_applied_to_spec:
+    - "Dropped speculative future-consumer clause from §1b _is_biphasic_pairwise rationale"
+    - "Added §1.4a pre-implementation checklist (named magnitude-escape constant; contract-triangles registration or exempt annotation; corroboration_triggers double-call comment)"
+  recommendations_for_implementation_phase:
+    - "verify g_lower = pw.get('g_lower') assignment added at top of _is_loael_driving_woe"
+    - "ensure |effect| >= 0.5 fallback inside g_lower is None guard, not OR branch"
+    - "PDS algorithm-defensibility check: report 0.45-0.97 g_lower findings populating empirical gap"
+    - "Nimble zero-diff assertion explicit"
+    - "Layer 3 unchanged verbatim (any change is a science defect)"
+  attestation: architect-data-gap-noael-alg-22-phase-3-2026-04-29T01:30:00Z (.lattice/pending-attestations.json)
+
+next_actions:
+  - "/lattice:build-cycle data-gap-noael-alg-22-phase-3 (architect PASS cleared; spec implementation-ready)"
+  - at build-cycle review step: "/lattice:review with mandatory algorithm-defensibility check on PointCross + Nimble + PDS regen + per-finding interpretation paragraph (CLAUDE.md rule 19)"
+  - after build-cycle: BUG-034 + BUG-035 closure in BUG-SWEEP.md (Phase 5)
+
+cycle_progress:
+  Phase_1_pattern_enumeration: SHIPPED
+  Phase_2_per_endpoint_rule_19: SHIPPED
+  Phase_3_architectural_patch_spec: SHIPPED (synthesis 2026-04-28; merit-revised 2026-04-29)
+  Phase_3_peer_review: SOUND (R3, 2026-04-29; after merit-based revision + 2 non-blocking refinements)
+  Phase_3_architect_review: PASS (1 round, 2026-04-29; 3 spec-level + 5 impl-time recommendations)
+  Phase_3_architectural_patch_implementation: READY (spec implementation-ready; all gates cleared)
+  Phase_4_algorithm_defensibility_verification: SHIPS_WITH_PHASE_3_REVIEW
+  Phase_5_BUG_034_BUG_035_closure: SHIPS_WITH_PHASE_3_COMMIT
+
+estimated_remaining_effort: ~1 day implementation + ~2 hours verification + ~15 min closure

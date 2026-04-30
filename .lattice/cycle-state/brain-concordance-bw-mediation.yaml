@@ -1,9 +1,12 @@
 topic: brain-concordance-bw-mediation
 started: 2026-04-04
-phase: build
-current_step: build.2
+phase: complete
+current_step: complete
 parent: brain-weight-sex-concordance-calibration
-revision: 4
+revision: 5
+commits:
+  - 9c5c4247  # feat(noael-alg): brain weight BW-mediation auto-check (Proposal 5)
+  - 0beb54ae  # docs(submodule): post-ship spec refresh for brain-concordance-guard
 completed:
   research.1:
     completed: 2026-04-04

@@ -1,8 +1,11 @@
 topic: brain-concordance-guard
 started: 2026-04-04
-phase: build
-current_step: build.1
-revision: 1
+phase: complete
+current_step: complete
+revision: 2
+shipped: 2026-04-27
+ship_commit: f26f5b60
+ship_submodule_commit: 316cbb8
 parent: brain-weight-sex-concordance-calibration
 completed:
   research.1:

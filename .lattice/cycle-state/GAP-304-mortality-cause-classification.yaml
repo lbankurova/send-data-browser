@@ -1,0 +1,71 @@
+topic: GAP-304-mortality-cause-classification
+started: 2026-04-29T00:50:00Z
+phase: blueprint
+current_step: blueprint.3
+revision: 12
+architect_r1_disposition: "User accepted merit-based recommendation 2026-04-30: structural-elimination clearance for SCIENCE-FLAG (F6a backend loael_preview_lookup); all 4 REQUIRED + 2 RECOMMENDED applied."
+architect_r2_verdict: "PASS (1 minor RECOMMENDED on age_min_days->age_min_years field-name fixed in-synthesis; not gate-blocking)."
+classification:
+  path: full
+  signals:
+    - engine_mortality.py touched (algorithm-defensibility code path per rule 19)
+    - cross_subsystem_3 (engine + override schema + UI)
+    - science_flag_candidate (P2 — taxonomy + LOAEL inclusion criteria + WoE integration)
+    - schema_change_contract_triangle (mortality_overrides.json declaration/enforcement/consumption)
+    - paired_with_GAP-305 (schema) + GAP-306 (LOAEL display)
+  mode: auto
+scope:
+  primary_gap: GAP-304
+  paired_gaps: [GAP-305, GAP-306]
+  subsumes: [GAP-361]
+  cross-references: [GAP-362]
+completed:
+  research.1: 2026-04-29T01:00:00Z
+  research.2: 2026-04-29T01:30:00Z   # R1 peer review
+  research.3: 2026-04-29T01:45:00Z   # incorporate R1
+  research.4: 2026-04-29T02:00:00Z   # R2 peer review
+  research.5: 2026-04-29T02:15:00Z   # incorporate R2 (PEG architecture — later identified as scientifically wrong)
+  research.5b: 2026-04-29T03:00:00Z  # re-open after user retrospective; F2 redesigned with WoE framework (revision 6)
+  research.5c: 2026-04-29T03:30:00Z  # R6 peer review under updated /lattice:review skill (real-study walk)
+  research.5d: 2026-04-29T03:45:00Z  # incorporate R6 (6 CONDITIONAL operational corrections)
+  research.6: 2026-04-29T03:50:00Z   # corpus-coherence audit
+  research.7: 2026-04-29T03:50:00Z   # probe (inline)
+  research.7b: 2026-04-29T03:50:00Z  # gap persistence verification
+  blueprint.0: 2026-04-29T13:30:00Z  # impl-context loaded; .lattice/cycle-state/GAP-304-mortality-cause-classification-step0-impl-context.md
+  blueprint.1: 2026-04-29T13:35:42Z  # synthesis written; docs/_internal/incoming/GAP-304-mortality-cause-classification-synthesis.md (9 features F1-F9, 6 sections, atomic F4+F1+F5)
+  blueprint.2: 2026-04-30T19:46:42Z  # architect R1 SIMPLIFY+SCIENCE-FLAG -> R2 PASS after structural-elimination amendments
+key_decisions:
+  - "Engine taxonomy: 6 buckets (treatment_related, treatment_related_possible, background_disease, intercurrent, accidental, undetermined)"
+  - "Mortality LOAEL emitted as a pair: provisional (engine WoE-asserted) + confirmed (user-asserted)"
+  - "WoE Integration Framework (WC-1..8) replaces the discarded PEG-1..5 single-signal architecture"
+  - "Decision logic: Rule (A) clinical-floor override (canonical Hy's Law / S4 sentinel alone) OR Rule (B) >=2 components fire"
+  - "WC-1 reads `study_mortality.deaths[]` directly (NOT by_dose[].deaths which excludes recovery)"
+  - "WC-2 standard rule fires on TR=true + adverse + mechanistic plausibility; clinical-floor sub-tier requires canonical Hy's Law (ALT/AST + BILI both elevated)"
+  - "WC-8 covers {CL, BW, DS} domains"
+  - "F8 algorithmic part absorbed into WC-1; F8 retained as UI annotation"
+  - "Pre-blueprint gates: MCC-RG-10 inter-rater kappa >=0.6; DATA-GAP-MORTALITY-05 typed thresholds; DATA-GAP-MORTALITY-07 compound-profile census; MCC-RG-19 canonical organ-of-death mapping"
+  - "F4+F1 ship atomically (closes circular schema dependency)"
+  - "F2 requires F7 narrative as mandatory co-deliverable"
+constraints:
+  - "X8 invariant: mortality override re-runs entire pipeline (preserved)"
+  - "X6 invariant: NOAEL = MIN across organs (mortality cap participates)"
+  - "Rule 19: per-revision real-study walk required (lattice change E3 already incorporated by user)"
+  - "Rule 21: algorithm-as-advisor"
+  - "Rule 22: typed knowledge graph for control-mortality thresholds + background pathology"
+  - "Rule 24 (working draft): WoE integration mandatory for adverse-classification algorithms (lattice change E1 incorporated by user)"
+output:
+  research_doc: docs/_internal/research/GAP-304-mortality-cause-classification.md
+  reviews:
+    - r1: docs/_internal/research/peer-reviews/GAP-304-mortality-cause-classification-review.md
+    - r2: docs/_internal/research/peer-reviews/GAP-304-mortality-cause-classification-review-r2.md
+    - r6: docs/_internal/research/peer-reviews/GAP-304-mortality-cause-classification-review-r6.md
+  registry_stream: mortality-cause-classification
+  todo_data_gaps: [DATA-GAP-MORTALITY-01, DATA-GAP-MORTALITY-02, DATA-GAP-MORTALITY-03, DATA-GAP-MORTALITY-04, DATA-GAP-MORTALITY-05, DATA-GAP-MORTALITY-06, DATA-GAP-MORTALITY-07]
+  research_gaps: 19  # MCC-RG-1..19
+verdicts:
+  r1: "CONDITIONAL (2 FLAWED / 6 CONDITIONAL / 2 SOUND) — addressed by rewrite + qualification"
+  r2: "CONDITIONAL (1 FLAWED PRESENTATION_ONLY / 6 CONDITIONAL / 1 SOUND) — addressed by F2 PEG fixes (later discarded)"
+  user_retrospective_2026-04-29: "PEG architecture scientifically wrong on PointCross (under-attributing); lattice changes E1-E3 incorporated"
+  r6: "CONDITIONAL (0 FLAWED / 6 CONDITIONAL / 1 SOUND) — real-study walk verified WoE framework produces correct toxicologist-aligned output for PointCross; 6 operational refinements all addressed"
+final_verdict: VALIDATED
+next: "blueprint phase. Run /clear, then /lattice:cycle GAP-304-mortality-cause-classification"

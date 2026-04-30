@@ -1,7 +1,17 @@
 topic: overview-executive-summary-redesign
-phase: build
-current_step: build.1
-revision: 8
+phase: complete
+current_step: complete
+revision: 9
+build_commit: af686848
+build_summary: |
+  6-section executive-summary layout replaces 6-card grid. Driver attribution
+  unified between Headline and Findings via shared findLoaelDriverOrgan. 48
+  unit tests including PointCross fixture worked-example + driver-parity
+  regression. Contract triangle entries added for 3 fields. Cross-study
+  verified on PointCross + TOXSCI-87497 + Nimble + CBER-Pilot-Study3-Gene-Therapy.
+  Doc updates (study-summary view spec, MANIFEST row, contract-triangles entries)
+  staged in docs/_internal submodule working tree but not committed in this run
+  due to concurrent-cycle WIP in same submodule; pending follow-up commit.
 plan_review_r2:
   verdict: FLAWED
   new_findings: 6  # 3 FLAWED, 3 CONDITIONAL

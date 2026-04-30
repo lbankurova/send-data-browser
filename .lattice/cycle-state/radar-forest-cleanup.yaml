@@ -1,0 +1,85 @@
+topic: radar-forest-cleanup
+phase: build-partial
+current_step: build.complete-partial
+revision: 7
+completed: 2026-04-28T21:11:00Z
+build_started: 2026-04-28T21:13:00Z
+build_partial_committed: 2026-04-29T11:55:00Z
+build_partial_commit: 0f0b7ca6
+build_partial_summary: |
+  Phases 0,1,2,3,4,6 + F8 cross-scope nav + F4/F6 unit tests (19 cases) shipped.
+  Phase 5 (F9-F12 pane consolidation: slim Evidence/Recovery, move classification
+  chip, slim OrganContextPanel) deferred to discrete follow-on cycle per
+  user-accepted merit decision (2026-04-29). Phase 7 snapshot tests for slim
+  panes deferred (depend on Phase 5).
+  Cross-cycle coordination: NoaelSynthesisSection.tsx retains private
+  buildDoseColumns; the new shared lib/dose-columns.ts is consumed only by
+  new components. gap-288-stage2 cycle owns NoaelSynthesisSection in parallel
+  work; convergence happens whenever that cycle commits.
+
+plan_review:
+  r1_verdict: CONDITIONAL (4 findings + 1 SOUND)
+  r1_findings_resolved: 4 (F1 data source, F2 LOAEL/NOAEL nomenclature, F3 small-N power qualifier, F4 MI/MA/TF three-way split) — all auto-accepted and incorporated
+  r1_review: docs/_internal/research/peer-reviews/radar-forest-cleanup-synthesis-review.md
+  r2_verdict: CONDITIONAL (4 NF + 1 informational, all stale-text propagation or build-time verification flags)
+  r2_findings_resolved: 4 (NF1 Architecture bullet stale, NF2 Decision Points contradiction, NF3 incidence count source unverified, NF4 Feature 5 wrapper-file orphaned) + 1 informational (NF5 looStability scope clarification)
+  r2_review: docs/_internal/research/peer-reviews/radar-forest-cleanup-synthesis-review-r2.md
+  decision: VALIDATED (no FLAWED, no contradictions, no new architectural objections)
+
+next: /lattice:build-cycle radar-forest-cleanup
+
+architect_gate:
+  r1_verdict: SIMPLIFY (3 blocking + 3 non-blocking findings auto-applied)
+  r1_review: docs/_internal/research/peer-reviews/radar-forest-cleanup-architect-review.md
+  r2_verdict: SIMPLIFY (narrow — 3 stale table rows from incomplete propagation; auto-applied)
+  r2_decision: PASS (mechanical completion of accepted findings, not new objections)
+  science_flag: none
+
+probe:
+  verdict: SAFE-with-PROPAGATES
+  breaks: 0
+  science_flags: 0
+  propagates: 2 (OM-without-MI discount disappears as user-visible only; rawMagnitude in SubjectProfilePanel Detail retained — both already documented in synthesis)
+  stale: 3 (index.css:253 CSS comment, views/findings.md:32, architecture/navigation-and-layout.md + information-architecture.md)
+  research_conflicts: 0
+  invariants_pass: X1, X2, X3, X5, Consumption-Invariant (all PASS)
+started: 2026-04-28T19:30:00Z
+
+# Synthesis was authored from a /lattice:distill conversation rather than a formal
+# /lattice:research-cycle output. The corpus already contained validated research
+# (cross-domain-effect-commensurability.md, three radar peer reviews, GAP-99) which
+# served as the research substrate. This is a visualization-layer cleanup — no new
+# domain research required.
+research_substrate:
+  - docs/_internal/research/cross-domain-effect-commensurability.md
+  - docs/_internal/research/peer-reviews/organ-radar-signal-score-synthesis-review.md
+  - docs/_internal/research/peer-reviews/organ-radar-scale-review.md
+  - docs/_internal/research/peer-reviews/organ-radar-scoring-gaps-thesis-review.md
+  - docs/_internal/research/distillations/organ-radar-scoring-gaps-thesis.md
+
+synthesis: docs/_internal/incoming/radar-forest-cleanup-synthesis.md
+synthesis_completed: 2026-04-28T19:30:00Z
+
+knowledge_prerequisite:
+  patch: docs/_internal/knowledge/scoring-engine-model.md (Step 10 Consumption invariant block)
+  status: shipped
+
+resolved_decisions:
+  - F4 continuous cell encoding: count-form n_significant/n_endpoints with * suffix (decided 2026-04-28 on merit)
+  - F4 NOAEL column: include per-domain NOAEL contribution (decided 2026-04-28 on merit)
+  - F8 filter persistence: preserve all rail filters across scope switches (decided 2026-04-28 on merit)
+  - F10 pane rename: "Recovery" (decided 2026-04-28)
+
+scope_summary:
+  features: 13
+  net_loc: -465
+  reuse_points: 7
+  new_components: 5
+  deletions: 4 (OrganToxicityRadar, GroupForestPlot top-level, OrganGroupedHeatmap, SubjectRadar)
+  refactor: forest-plot-primitives.ts extraction
+  pane_consolidation: SyndromeContextPanel Evidence/Recovery slim + classification chip move; OrganContextPanel CONVERGENCE-list/RELATED-SYNDROMES/MEMBER-ENDPOINTS drop
+
+related_topics:
+  - SYNDROME-STAGE-TAXONOMY (Phase 3 follow-on, TODO.md, research→blueprint→build)
+
+next: blueprint.2 architect gate
