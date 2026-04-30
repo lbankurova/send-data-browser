@@ -47,11 +47,15 @@ def trend_test(groups: list[np.ndarray]) -> dict:
     """Jonckheere-Terpstra trend test for ordered independent groups.
 
     REM-29: Proper JT test replacing the Spearman correlation proxy.
-    Tests H0: identical distributions across groups vs H1: ordered alternative
-    (F_1 ≤ F_2 ≤ ... ≤ F_k, with at least one strict inequality).
+    Tests H0: F_1 = F_2 = ... = F_k (identical distributions across all groups)
+    vs H1 (two-sided): not all F_i are equal and the groups exhibit a monotonic
+    shift along the given ordering — values either tend to increase or tend to
+    decrease across the ordered groups.
 
     The JT statistic sums Mann-Whitney U counts across all ordered pairs of
-    groups. P-value uses normal approximation (Lehmann, "Nonparametrics", 2006).
+    groups. P-value uses the normal approximation (Lehmann, "Nonparametrics",
+    2006). Variance is computed without tie-correction, so the p-value is
+    slightly conservative in the presence of ties.
 
     Parameters:
         groups: List of arrays, one per dose level (ordered low to high).
