@@ -92,6 +92,13 @@ interface RefAssertion {
   // (either or both) for ranges. Phase 3 matcher targeting the over-classification gap.
   expected_classes?: Record<string, { min?: number; max?: number; exact?: number }>;
   domain?: string;
+  // severity_distribution: per-organ-system constraints on max_severity in
+  // target_organ_summary.json. Severity grades are decimal (engine returns avg of
+  // per-finding ints, e.g., 2.33). Constraint kinds: min / max / exact. A null
+  // max_severity (organ has no graded findings) FAILS any numeric constraint --
+  // intentional: encoding "should be null" via this matcher is not supported, use
+  // target_organs_flagged with expect_only: true to assert the organ isn't flagged.
+  expected_severity?: Record<string, { min?: number; max?: number; exact?: number }>;
 }
 
 interface RefNoael {
@@ -528,6 +535,7 @@ interface TargetOrganRow {
   target_organ_flag: boolean;
   n_domains: number;
   domains: string[];
+  max_severity: number | null;
   evidence_quality?: { convergence?: { groups?: number } };
 }
 
@@ -702,6 +710,56 @@ function checkAssertion(
         passed: matches.length >= minCount,
         actual: `${matches.length} death(s) at dose_level=${dl} matching /${pattern}/i (need >=${minCount}); subjects: ${matches.map((m) => m.USUBJID).join(",") || "none"}`,
       };
+    }
+    case "severity_distribution": {
+      // Per-organ-system constraints on max_severity in target_organ_summary.json.
+      // Engine returns max_severity as either a decimal grade (e.g., 2.33) or null
+      // when the organ has no graded findings. Numeric constraints fail on null --
+      // use target_organs_flagged for "this organ should not be flagged" semantics.
+      if (!studyDir) return { assertion, passed: false, actual: "no study dir" };
+      const targets = loadJson<TargetOrganRow[]>(studyDir, "target_organ_summary.json");
+      if (!targets) return { assertion, passed: false, actual: "target_organ_summary.json not found" };
+      const expected = assertion.expected_severity;
+      if (!expected || Object.keys(expected).length === 0) {
+        return { assertion, passed: false, actual: "[missing expected_severity in YAML]" };
+      }
+      const violations: string[] = [];
+      const passes: string[] = [];
+      for (const [organ, constraint] of Object.entries(expected)) {
+        const row = targets.find((t) => t.organ_system.toLowerCase() === organ.toLowerCase());
+        if (!row) {
+          violations.push(`${organ}: organ_system not in target_organ_summary`);
+          continue;
+        }
+        const sev = row.max_severity;
+        if (sev == null) {
+          violations.push(`${organ}: max_severity=null (no graded findings)`);
+          continue;
+        }
+        if (constraint.exact !== undefined) {
+          if (sev !== constraint.exact) {
+            violations.push(`${organ}: max_severity=${sev} (expected exactly ${constraint.exact})`);
+          } else {
+            passes.push(`${organ}=${sev}`);
+          }
+          continue;
+        }
+        let ok = true;
+        if (constraint.min !== undefined && sev < constraint.min) {
+          violations.push(`${organ}: max_severity=${sev} (expected >=${constraint.min})`);
+          ok = false;
+        }
+        if (constraint.max !== undefined && sev > constraint.max) {
+          violations.push(`${organ}: max_severity=${sev} (expected <=${constraint.max})`);
+          ok = false;
+        }
+        if (ok) passes.push(`${organ}=${sev}`);
+      }
+      const passed = violations.length === 0;
+      const actual = passed
+        ? `all ${passes.length} severity constraint(s) match: ${passes.join(", ")}`
+        : `VIOLATIONS: ${violations.join("; ")}`;
+      return { assertion, passed, actual };
     }
     case "class_distribution": {
       // Per-class min/max/exact constraints on finding_class counts in unified_findings.json.

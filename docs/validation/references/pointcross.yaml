@@ -152,3 +152,15 @@ assertions:
     expected_classes:
       tr_adverse: { min: 13 }
       not_assessed: { exact: 0 }
+
+  # Severity distribution: nSDRG 6.2 documents hepatocellular hypertrophy AND
+  # liver adenoma + carcinoma (tumor findings). Tumor findings are graded
+  # >= moderate per standard pathology practice, so hepatic max_severity must
+  # be >= 3 (moderate). Engine reports 3.0 -- MATCH. This is a Phase 3 first
+  # severity_distribution assertion; remaining 15 studies have documentation
+  # silent on per-organ severity grades, so are not encoded (per "if ambiguous,
+  # omit" directive).
+  - type: "severity_distribution"
+    description: "Hepatic max_severity >= 3 (hypertrophy + adenoma + carcinoma per nSDRG 6.2)"
+    expected_severity:
+      hepatic: { min: 3 }
