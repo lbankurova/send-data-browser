@@ -64,3 +64,20 @@ assertions:
     expected_classes:
       tr_adverse: { min: 1 }
       not_assessed: { exact: 0 }
+
+  # Cross-organ syndrome (Phase 3 matcher #7 -- AUDIT-10). instem emits one
+  # cross_organ entry: phospholipidosis (the histopath rule whose `organ` field
+  # includes liver+lung+kidney+spleen, mapping to hepatic+respiratory+renal+
+  # hematologic via ORGAN_SYSTEM_MAP). 7 subjects matched at 60 mg/kg Main
+  # Study. Phospholipidosis is the only multi-organ-defined syndrome in the
+  # corpus, so this is the engine's happy-path emission. MATCH pins the
+  # syndrome_id, the four-organ span, and the n>=7 subject count. Engine
+  # behavior here is correct -- regression pin per CLAUDE.md rule 18
+  # (contract-triangle hygiene: declaration site = syndrome-definitions.json
+  # organ field; enforcement site = this assertion; consumption site =
+  # synthesis page rendering).
+  - type: "cross_organ_syndrome"
+    description: "Phospholipidosis cross-organ entry (hepatic+respiratory+renal+hematologic; n>=7)"
+    expected_syndrome_id: "phospholipidosis"
+    expected_organs: ["hepatic", "respiratory", "renal", "hematologic"]
+    min_count: 7

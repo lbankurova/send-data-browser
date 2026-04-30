@@ -1,7 +1,7 @@
 # Validation Summary
 
-**Engine:** commit `9cc15db8` (2026-04-30)
-**Generated:** 2026-04-30T21:12:12.377Z
+**Engine:** commit `ccc4f9fb` (2026-04-30)
+**Generated:** 2026-04-30T22:45:32.047Z
 
 | Study | Origin | Signals | Design | Assertions | Notes |
 |-------|--------|---------|--------|------------|-------|
@@ -13,16 +13,16 @@
 | CJ16050-xptonly | synthetic | 6/6 | 5/5 | 4/6 |  |
 | CJUGSEND00 | synthetic | 2/2 | 6/6 | 3/5 |  |
 | FFU-Contribution-to-FDA | real | -- | 5/5 | 4/4 |  |
-| instem | synthetic | -- | 5/5 | 4/7 |  |
+| instem | synthetic | -- | 5/5 | 5/8 |  |
 | Nimble | synthetic | -- | 5/5 | 6/6 |  |
 | PDS | synthetic | -- | 5/5 | 5/7 |  |
-| PointCross | synthetic | 12/13 | 7/7 | 11/12 | MISSED |
+| PointCross | synthetic | 12/13 | 7/7 | 11/13 | MISSED |
 | TOXSCI-24-0062--35449 1 month dog- Compound B-xpt | real | -- | 5/5 | 5/5 |  |
 | TOXSCI-24-0062--43066 1 month dog- Compound A-xpt | real | -- | 5/5 | 6/8 |  |
 | TOXSCI-24-0062--87497 1 month rat- Compound B-xpt | real | -- | 4/5 | 3/7 | MISMATCH |
-| TOXSCI-24-0062--96298 1 month rat- Compound A xpt | real | -- | 5/5 | 5/6 |  |
+| TOXSCI-24-0062--96298 1 month rat- Compound A xpt | real | -- | 5/5 | 6/7 |  |
 
-**Totals:** 47/49 signals detected, 83/84 design matched, 77/108 assertions passed
+**Totals:** 47/49 signals detected, 83/84 design matched, 79/111 assertions passed
 
 ## Missed Signals
 

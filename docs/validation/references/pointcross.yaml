@@ -228,3 +228,28 @@ assertions:
     finding_pattern: "HYPERTROPHY"
     expected_verdict: "persistent"
     min_count: 10
+
+  # Cross-organ syndrome (Phase 3 matcher #7 -- AUDIT-10). PointCross has clear
+  # multi-organ toxicity: 16 single-organ-defined syndromes co-fire across 7
+  # organs at HIGH dose -- hepatic XS01 (hepatocellular injury, 7 subjects),
+  # hematologic XS04 (myelosuppression, 31 subjects) + XC01a/c (BM suppression),
+  # renal XS03 (nephrotoxicity), ocular XC12c (corneal effects, 24 subjects),
+  # endocrine XC04a (adrenal cortical hypertrophy), reproductive XC06a/b
+  # (testicular germ cell + Leydig), general XS07 (immunotoxicity). A
+  # toxicologist would absolutely flag this co-firing pattern as a multi-organ
+  # syndrome of concern.
+  #
+  # Engine emits []: cross_organ_syndromes (gate at generator/syndrome_rollup.py:488)
+  # only fires on syndromes whose DEFINITION spans >1 organ_system in
+  # shared/syndrome-definitions.json -- and zero of the 33 cross-domain
+  # syndromes (XS01-XS10, XC*) have multi-organ definitions; only the
+  # histopath rule `phospholipidosis` qualifies. So PointCross's actual
+  # multi-organ pattern is invisible to this surface.
+  #
+  # Stream 5 NEW root-cause family: cross-organ co-firing not captured by
+  # cross_organ_syndromes. SCIENCE-FLAG: encoding the toxicologist's call
+  # (>=1 cross-organ syndrome expected) per CLAUDE.md rule 21 (algorithm-as-
+  # advisor) -- the engine's design is missing the surface, not its detection.
+  - type: "cross_organ_syndrome"
+    description: "Multi-organ co-firing (7 organs, 16 syndromes); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG (Stream 5)"
+    min_count: 1

@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `9cc15db8` (2026-04-30)
-**Generated:** 2026-04-30T21:12:11.916Z
+**Engine:** commit `ccc4f9fb` (2026-04-30)
+**Generated:** 2026-04-30T22:45:30.600Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -313,6 +313,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | loael_combined | Combined LOAEL = 1 (60 mg/kg, lowest treated dose) | loael(Combined)=1 (expected 1) | **MATCH** |
 | mortality_loael | mortality_loael = null (zero deaths) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
 | class_distribution | Engine produces tr_adverse findings (LOAEL fires at lowest treated dose); all findings classified | 317 findings all domains; tr_adverse=34, not_assessed=0 | **MATCH** |
+| cross_organ_syndrome | Phospholipidosis cross-organ entry (hepatic+respiratory+renal+hematologic; n>=7) | cross_organ entry "phospholipidosis": organs=[hepatic,respiratory,renal,hematologic], n=7 | **MATCH** |
 
 ---
 
@@ -421,6 +422,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | compound_class_flag | Compound modality = small_molecule (oral 13-wk rat tox; engine baseline) | pk_integration.compound_class = "small_molecule" (expected "small_molecule") | **MATCH** |
 | recovery_verdict | MED hepatic hypertrophy: anomaly verdict (engine correct -- finding emerges only in recovery) | 10 anomaly verdict(s) (>=10) at dose_level=2, domain=MI, specimen=/LIVER/i, finding=/HYPERTROPHY/i; 10 records scanned; distribution: anomaly=10 | **MATCH** |
 | recovery_verdict | HIGH hepatic hypertrophy: persistent verdict (main arm 9/10 sev 2.56; engine reports anomaly -- SCIENCE-FLAG) | VIOLATION: 0 persistent verdict(s) at dose_level=3, domain=MI, specimen=/LIVER/i, finding=/HYPERTROPHY/i (expected >=10); 10 records scanned; distribution: anomaly=10 | **MISMATCH** |
+| cross_organ_syndrome | Multi-organ co-firing (7 organs, 16 syndromes); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG (Stream 5) | VIOLATION: length=0 < min 1; no cross_organ_syndromes | **MISMATCH** |
 
 ---
 
@@ -531,5 +533,6 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | loael_combined | Combined LOAEL = 1 (50 mg/kg) | loael(Combined)=1 (expected 1) | **MATCH** |
 | mortality_loael | mortality_loael = 2 (1 actual death at Mid dose 125 mg/kg, accepted per engine cause analysis) | mortality_loael=2, 1 deaths + 0 accidental (expected 2) | **MATCH** |
 | class_distribution | Engine produces tr_adverse findings (LOAEL fires); all findings classified | 491 findings all domains; tr_adverse=31, not_assessed=0 | **MATCH** |
+| cross_organ_syndrome | Phospholipidosis cross-organ entry (hepatic+respiratory+renal+hematologic; n>=32) | cross_organ entry "phospholipidosis": organs=[hepatic,respiratory,renal,hematologic], n=32 | **MATCH** |
 
 ---

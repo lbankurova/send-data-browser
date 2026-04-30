@@ -146,6 +146,11 @@
   },
   {
     "study_id": "PointCross",
+    "type": "cross_organ_syndrome",
+    "description": "Multi-organ co-firing (7 organs, 16 syndromes); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG (Stream 5)"
+  },
+  {
+    "study_id": "PointCross",
     "type": "recovery_verdict",
     "description": "HIGH hepatic hypertrophy: persistent verdict (main arm 9/10 sev 2.56; engine reports anomaly -- SCIENCE-FLAG)"
   },

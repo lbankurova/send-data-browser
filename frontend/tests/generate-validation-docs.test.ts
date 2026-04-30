@@ -141,6 +141,34 @@ interface RefAssertion {
   specimen_pattern?: string;
   finding_pattern?: string;
   expected_verdict?: string;
+  // cross_organ_syndrome: assertion over syndrome_rollup.json:cross_organ_syndromes.
+  // Engine surface: an entry appears in this array iff its definition spans >1
+  // organ_system per shared/syndrome-definitions.json (filter at
+  // generator/syndrome_rollup.py:488 -- `if len(organs) > 1`). Currently only
+  // the histopath rule `phospholipidosis` qualifies (4/16 studies emit:
+  // instem n=7, 96298 n=32, 87497 n=1, gene-therapy Study3 n=3). Single-organ
+  // syndromes co-firing across organs in the same study (PointCross hepatic
+  // XS01 + hematologic XS04 + renal XS03 + ocular XC12c + endocrine XC04a +
+  // immuno XS07 + reproductive XC06) are NOT captured by this surface --
+  // they're invisible at the rollup level. Stream 5 NEW root-cause family.
+  //
+  // Match modes:
+  // - equality (regression pin): expected_syndrome_id + expected_organs (set
+  //   equality on entry.organ_systems) + min_count (>= n_subjects_total) --
+  //   pins phospholipidosis emissions on instem / 96298 / etc.
+  // - count floor (SCIENCE-FLAG): min_count alone, no expected_syndrome_id --
+  //   asserts the array length is >= N. Fires on PointCross where toxicologist
+  //   sees multi-organ pattern (7 organs, 16 syndromes co-firing) but engine
+  //   emits 0 because no co-firing syndrome has a multi-organ definition.
+  // - absence (regression pin): max_count: 0 with no expected_syndrome_id --
+  //   pins studies with no expected multi-organ findings to engine emitting [].
+  //
+  // Reuses: expected_organs (line 76, target_organs_flagged) -- both are
+  // organ_system string lists; semantic differs (target-flag membership vs
+  // syndrome-span set equality) but namespaced by assertion type. Reuses
+  // min_count (line 86, mortality_cause_concordance + recovery_verdict).
+  expected_syndrome_id?: string;
+  max_count?: number;
 }
 
 interface RefNoael {
@@ -1001,6 +1029,72 @@ function checkAssertion(
         passed,
         actual: `pk_integration.compound_class = ${actualStr} (expected ${expectedStr})`,
       };
+    }
+    case "cross_organ_syndrome": {
+      // Reads syndrome_rollup.json:cross_organ_syndromes -- the engine's emit
+      // surface for syndromes whose definition spans multiple organ_systems.
+      // See generator/syndrome_rollup.py:488 (`if len(organs) > 1`) for the
+      // emit gate. PointCross emits empty (Stream 5 SCIENCE-FLAG: 7 organs,
+      // 16 single-organ-defined syndromes co-firing); instem + 3 TOXSCI rat
+      // studies emit phospholipidosis (the only multi-organ-defined syndrome
+      // in the corpus, hepatic+respiratory+renal+hematologic). Modes per the
+      // RefAssertion type comment above.
+      if (!studyDir) return { assertion, passed: false, actual: "no study dir" };
+      const sr = loadJson<{
+        cross_organ_syndromes?: { syndrome_id?: string; n_subjects_total?: number; organ_systems?: string[] }[];
+      }>(studyDir, "syndrome_rollup.json");
+      if (!sr) return { assertion, passed: false, actual: "syndrome_rollup.json not found" };
+      const entries = sr.cross_organ_syndromes ?? [];
+      const expectedId = assertion.expected_syndrome_id;
+      const expectedOrgans = assertion.expected_organs;
+      const minCount = assertion.min_count;
+      const maxCount = assertion.max_count;
+
+      if (expectedId !== undefined) {
+        // Equality mode: find by syndrome_id; validate organs + n_subjects_total.
+        const match = entries.find((e) => e.syndrome_id === expectedId);
+        if (!match) {
+          const names = entries.map((e) => e.syndrome_id ?? "?").join(", ") || "none";
+          return {
+            assertion,
+            passed: false,
+            actual: `VIOLATION: syndrome_id "${expectedId}" not in cross_organ_syndromes (${entries.length} entries: ${names})`,
+          };
+        }
+        const issues: string[] = [];
+        if (expectedOrgans !== undefined) {
+          const got = new Set(match.organ_systems ?? []);
+          const want = new Set(expectedOrgans);
+          const missing = [...want].filter((o) => !got.has(o));
+          const extra = [...got].filter((o) => !want.has(o));
+          if (missing.length || extra.length) {
+            issues.push(
+              `organ_systems mismatch (got [${[...got].sort().join(",")}], expected [${[...want].sort().join(",")}]; missing=[${missing.join(",")}], extra=[${extra.join(",")}])`,
+            );
+          }
+        }
+        const n = match.n_subjects_total ?? 0;
+        if (minCount !== undefined && n < minCount) issues.push(`n_subjects_total=${n} < ${minCount}`);
+        if (maxCount !== undefined && n > maxCount) issues.push(`n_subjects_total=${n} > ${maxCount}`);
+        const passed = issues.length === 0;
+        const actual = passed
+          ? `cross_organ entry "${expectedId}": organs=[${(match.organ_systems ?? []).join(",")}], n=${n}`
+          : `VIOLATION on "${expectedId}": ${issues.join("; ")}`;
+        return { assertion, passed, actual };
+      }
+
+      // Aggregate mode: assert array length constraints (no expected_syndrome_id).
+      const n = entries.length;
+      const issues: string[] = [];
+      if (minCount !== undefined && n < minCount) issues.push(`length=${n} < min ${minCount}`);
+      if (maxCount !== undefined && n > maxCount) issues.push(`length=${n} > max ${maxCount}`);
+      const passed = issues.length === 0;
+      const summary =
+        n === 0 ? "no cross_organ_syndromes" : `${n} entries: ${entries.map((e) => `${e.syndrome_id ?? "?"} (n=${e.n_subjects_total ?? 0})`).join("; ")}`;
+      const actual = passed
+        ? `cross_organ_syndromes length=${n} satisfies constraints; ${summary}`
+        : `VIOLATION: ${issues.join("; ")}; ${summary}`;
+      return { assertion, passed, actual };
     }
     default:
       // Strict default: unknown types fail loud rather than silently passing.

@@ -130,6 +130,38 @@ This file catalogs Phase 1 disagreements between authored GROUND_TRUTH (the cred
 
 ---
 
+## Research stream 5: Cross-organ co-firing not captured by `cross_organ_syndromes`
+
+**Hypothesis:** The engine's `syndrome_rollup.json:cross_organ_syndromes` array exists to surface multi-organ injury patterns to the synthesis page (a Hy's-Law-style pattern is the canonical clinical use case). The current implementation only fires on syndromes whose **definition** spans multiple `organ_system` values per `shared/syndrome-definitions.json` (gate at `generator/syndrome_rollup.py:488` -- `if len(organs) > 1`). But of the 33 cross-domain syndromes in the catalog (XS01-XS10, XC*), **zero are multi-organ-defined**; only the histopath rule `phospholipidosis` qualifies. So studies with multiple single-organ syndromes co-firing -- the actual multi-organ injury signal a toxicologist would name -- are invisible to this surface.
+
+**Affected studies** (1 SCIENCE-FLAG so far; matcher only authored on PointCross + 2 phospholipidosis MATCH pins):
+
+| Study | Surface | Engine | GROUND_TRUTH | Source |
+|---|---|---|---|---|
+| PointCross | cross_organ_syndromes length | 0 | >=1 | `syndrome_rollup.json:by_organ` shows 16 syndromes co-firing across 7 organs (hepatic XS01 + hematologic XS04 + renal XS03 + ocular XC12c + endocrine XC04a + immuno XS07 + reproductive XC06). A credentialed toxicologist would absolutely flag this as a multi-organ syndrome of concern. |
+
+**Smoking gun:** PointCross has unambiguous multi-organ injury -- hepatocellular toxicity (XS01 with 7 subjects, MODERATE/HIGH confidence), bone-marrow + lymphoid + erythroid suppression (XS04 with 31 subjects), nephrotoxicity, corneal effects (24 subjects), adrenal stress hypertrophy, immunotoxicity, all firing concurrently at HIGH dose. The engine emits `cross_organ_syndromes: []` because each individual syndrome's definition is single-organ. The architecture conflates "syndrome that spans organs in its definition" (which is rare and currently means only phospholipidosis) with "study where multiple syndromes co-fire across organs" (which is the actually-clinical question).
+
+**Distinct from streams 1, 2, 4:**
+- Stream 1 (compound class): false-positive adversity calls due to missing pharmacology context
+- Stream 2 (low-dose severity): false-positive LOAEL anchoring at low-magnitude doses
+- Stream 4 (recovery verdict): false-anomaly verdicts due to per-subject vs cohort-aggregate schema mismatch
+- Stream 5 (cross-organ co-firing): the engine's design is missing the surface, not its detection -- the per-organ `by_organ` rollup correctly captures all 16 syndromes; the cross-organ summary mechanism is just blind to co-firing patterns
+
+**Resolution path:**
+- Extend `generator/syndrome_rollup.py` to compute a second-tier "co-firing" view: for each (dose, phase) cell, group all firing syndromes by `organ_system` and surface a cross-organ entry when >=N organs have at least one firing syndrome at that cell
+- Threshold N=3 is a starting heuristic; calibration TBD against the corpus
+- Alternatively: enrich the cross_organ_syndromes array with a second entry-shape ("co-firing pattern") distinct from the existing definition-spanning shape; consumer (synthesis page) renders both
+- Either path is generative work, not a one-line fix; trace the synthesis-page consumer first to ensure the rendering layer can absorb a new entry-shape
+
+**Phospholipidosis MATCH pins (instem n=7, TOXSCI-96298 n=32):** the engine's existing definition-spanning mechanism fires correctly for the one multi-organ-defined syndrome. These MATCHes lock in that emission as a regression pin per CLAUDE.md rule 18 (contract-triangle hygiene: declaration site = `shared/syndrome-definitions.json` organ field; enforcement site = these assertions; consumption site = synthesis page rendering). Any future change to phospholipidosis's organ_system list, or to the `len(organs) > 1` gate, will trip these assertions.
+
+**Priority signal:** matcher only authored on PointCross + 2 MATCH studies so far. PointCross's pattern is unambiguous; broader corpus authoring (other studies with co-firing patterns) deferred. Suspected affects most studies with target organ count >=3 -- needs corpus-wide assessment in expansion.
+
+**Surfaced by:** `cross_organ_syndrome` matcher (Phase 3 matcher #7, AUDIT-10, this commit).
+
+---
+
 ## ~~Original Stream 3 hypothesis (preserved for retrospective)~~
 
 The text below is the original Stream 3 framing, kept here for the audit record. All numeric claims are superseded by the falsification above.
@@ -203,6 +235,7 @@ Each clearance MUST update `.assertion-baseline.json`. The baseline file is a lo
 | 2026-04-30 | Phase 3 sex extension (AUDIT-9): noael_combined gains optional `sex` field; TOXSCI-43066 M+F authored | +1 flag (F-NOAEL — Stream 2 evidence); cumulative 11 flags / 2 streams |
 | 2026-04-30 | Phase 3 matcher #5 (`compound_class_flag`, AUDIT-7) shipped; PointCross + 4 CBER studies authored | +4 flags (Study1/2/3/4 — D9 Stream 1 root cause captured at source); cumulative 15 flags / 2 streams |
 | 2026-04-30 | Phase 3 matcher #6 (`recovery_verdict`, AUDIT-5) shipped; PointCross hepatic hypertrophy MED + HIGH authored | +1 flag (HIGH dose persistent mislabeled as anomaly — Stream 4 NEW: recovery verdict per-subject vs cohort-aggregate schema); MED match is regression guard for correct engine path; cumulative 16 flags / 3 streams |
+| 2026-04-30 | Phase 3 matcher #7 (`cross_organ_syndrome`, AUDIT-10) shipped; PointCross SCIENCE-FLAG + instem + TOXSCI-96298 phospholipidosis MATCH pins authored | +1 flag (PointCross 7-organ co-firing invisible to engine's definition-spanning gate — Stream 5 NEW: cross-organ co-firing not captured); 2 MATCHes lock in phospholipidosis as the only multi-organ-defined syndrome currently emitting; cumulative 17 flags / 4 streams |
 
 ---
 
@@ -217,6 +250,7 @@ Single source of truth for audit-related work outstanding. Action items separate
 | **AUDIT-1** | D9 compound-class profile scoring | Stream 1 (10 flags: Study2/4 noael+loael+target_organs+class_distribution; Study1/2/3/4 compound_class_flag — AUDIT-7 captures the gap at source) | engine work, multi-day |
 | **AUDIT-2** | Low-dose severity gating | Stream 2 (2 flags: TOXSCI-87497) | likely shares with GAP-22 phase-3 magnitude-escape, already research-validated; may already be in flight |
 | **AUDIT-18** | Recovery-verdict per-subject vs cohort-aggregate schema | Stream 4 (1 flag: PointCross HIGH hepatic hypertrophy; suspected wider blast radius pending matcher expansion) | Trace `recovery_verdicts.py` main_severity sourcing; change to read cohort-aggregate from `unified_findings.json:group_stats[dose_level].avg_severity` rather than this-subject's main-arm record; ~1-2 days. |
+| **AUDIT-19** | Cross-organ co-firing surface in `cross_organ_syndromes` | Stream 5 (1 flag: PointCross 7-organ co-firing; suspected wide blast radius across all studies with target_organs >= 3) | Extend `generator/syndrome_rollup.py:488` from "definition-spanning" gate (`len(organs) > 1`) to a second-tier "co-firing" computation: for each (dose, phase) cell, group all firing syndromes by `organ_system`, surface a co-firing entry when >=N organs have at least one fire (N=3 starting heuristic, calibrate against corpus). Trace synthesis-page consumer first to confirm rendering layer can absorb new entry-shape. ~1-2 days. |
 
 ### Engine work — adjacent issues surfaced by audit (NOT SCIENCE-FLAGs)
 
@@ -234,7 +268,7 @@ Single source of truth for audit-related work outstanding. Action items separate
 | ~~**AUDIT-7**~~ | ~~`compound_class_flag` matcher~~ | DONE 2026-04-30 — `pk_integration.json:compound_class` matcher shipped; PointCross MATCH (small_molecule baseline) + Study1/2/3/4 SCIENCE-FLAG (engine has no vaccine/gene_therapy classifier in pk_integration.py modality-detection path). 4 new flags reinforce Stream 1 at the source rather than via downstream class_distribution proxy. AUDIT-15-style per-study expansion (other 11 studies) deferred. |
 | **AUDIT-8** | `onset_concordance` matcher | Tier 3, multi-timepoint studies |
 | ~~**AUDIT-9**~~ | ~~Sex-specific NOAEL/LOAEL extension~~ | DONE 2026-04-30 — `sex` field added to noael_combined/loael_combined matchers; TOXSCI-43066 M=null MATCH + F=1 SCIENCE-FLAG (Stream 2 evidence) |
-| **AUDIT-10** | `cross_organ_syndrome` matcher | Tier 2, Hy's-Law-style cross-organ patterns |
+| ~~**AUDIT-10**~~ | ~~`cross_organ_syndrome` matcher~~ | DONE 2026-04-30 — `syndrome_rollup.json:cross_organ_syndromes` matcher shipped; PointCross SCIENCE-FLAG (7-organ co-firing pattern invisible to engine's definition-spanning gate -- Stream 5 NEW: cross-organ co-firing not captured) + instem MATCH (`phospholipidosis` n=7) + TOXSCI-96298 MATCH (`phospholipidosis` n=32). Matcher supports 3 modes: equality (id+organs+min_count), count-floor (min_count alone, used for SCIENCE-FLAG), absence (max_count: 0). 3 phospholipidosis-bearing studies still uncovered (TOXSCI-87497 n=1, gene-therapy Study3 n=3, TOXSCI-96298 covered) -- captured as AUDIT-20 expansion. |
 | **AUDIT-11** | Framework-aware `class_distribution` extension | Stream 3 lesson: matcher should accept union of NOEL+ECETOC vocabularies via `also_count: ["treatment_related_concerning"]` field. Lower priority. |
 
 ### Audit infrastructure — Phase 4/5 of audit plan
@@ -257,3 +291,4 @@ Single source of truth for audit-related work outstanding. Action items separate
 | **AUDIT-15** | Expand `severity_distribution` per-study | Currently only PointCross. Other studies need per-study doc re-read to author defensible severity claims. |
 | **AUDIT-16** | Expand `tumor_detected` per-study | Currently PointCross + Nimble. 14 other studies have tumor_summary.json data with documented expectations (mostly `expected_has_tumors: false` for short-duration studies, plus TOXSCI-87497 with background incidence). |
 | **AUDIT-17** | Expand `recovery_verdict` per-study | Currently PointCross only. 4 other recovery-bearing studies (TOXSCI-35449, instem, PDS, Study4) have recovery_verdicts.json data; per-study authoring will reveal whether the Stream 4 schema mismatch reproduces beyond PointCross hepatic. |
+| **AUDIT-20** | Expand `cross_organ_syndrome` per-study | Currently PointCross (SCIENCE-FLAG) + instem + TOXSCI-96298 (MATCHes). 2 phospholipidosis-bearing studies still uncovered (TOXSCI-87497 n=1, gene-therapy Study3 n=3). Plus absence-pin authoring on the 12 studies that emit `cross_organ_syndromes: []` -- regression pin via `max_count: 0`. Plus corpus-wide assessment of which other studies have multi-organ co-firing patterns (suspected: any study with target_organs >= 3, e.g., Nimble, PDS) -- those would be Stream 5 SCIENCE-FLAGs. |
