@@ -1,13 +1,12 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { Info, EyeOff } from "lucide-react";
+import { EyeOff } from "lucide-react";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FindingsTable } from "../FindingsTable";
-import { FindingsQuadrantScatter } from "./FindingsQuadrantScatter";
 import { DoseResponseChartPanel } from "./DoseResponseChartPanel";
 import { IsImmunogenicityPanel } from "./IsImmunogenicityPanel";
 import { DayStepper } from "./DayStepper";
@@ -20,16 +19,12 @@ import { buildDoseColumns } from "@/lib/dose-columns";
 import { deriveOrganScopeStats, deriveSyndromeScopeStats } from "@/lib/scope-stats";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useSyndromeRollup } from "@/hooks/useSyndromeRollup";
-import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useSessionState, isOneOf } from "@/hooks/useSessionState";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
-import { CONTINUOUS_DOMAINS } from "@/lib/derive-summaries";
-import { formatPValue, formatEffectSize } from "@/lib/severity-colors";
-import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import type { UnifiedFinding } from "@/types/analysis";
 import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
@@ -148,27 +143,7 @@ export function FindingsView() {
   }, [tableTabOpen, scopeLabel, mainTabLabel]);
 
   // Local UI state
-  const [selectedPointData, setSelectedPointData] = useState<ScatterSelectedPoint | null>(null);
-  const [showInfoTooltip, setShowInfoTooltip] = useState(false);
-  const infoHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [excludedEndpoints, setExcludedEndpoints] = useState<Set<string>>(new Set());
-
-  const handleSelectedPointChange = useCallback((pt: ScatterSelectedPoint | null) => {
-    setSelectedPointData(pt);
-  }, []);
-
-  const handleInfoMouseEnter = useCallback(() => {
-    if (infoHideTimerRef.current) { clearTimeout(infoHideTimerRef.current); infoHideTimerRef.current = null; }
-    setShowInfoTooltip(true);
-  }, []);
-
-  const handleInfoMouseLeave = useCallback(() => {
-    infoHideTimerRef.current = setTimeout(() => setShowInfoTooltip(false), 150);
-  }, []);
-
-  const handleExcludeEndpoint = useCallback((label: string) => {
-    setExcludedEndpoints((prev) => { const next = new Set(prev); next.add(label); return next; });
-  }, []);
 
   const handleRestoreEndpoint = useCallback((label: string) => {
     setExcludedEndpoints((prev) => { const next = new Set(prev); next.delete(label); return next; });
@@ -192,7 +167,7 @@ export function FindingsView() {
 
   // Analytics from Layout-level provider — single derivation shared across view, rail, and context panel
   const { analytics, data, isLoading, isFetching, isPlaceholderData, error } = useFindingsAnalyticsResult();
-  const { endpoints: endpointSummaries, syndromes, organCoherence, labMatches,
+  const { endpoints: endpointSummaries, syndromes,
           signalScores: signalScoreMap, endpointSexes } = analytics;
 
   // Noael + syndrome rollup — feed the new ScopeBanner/DomainDoseRollup + RelatedSyndromesTable layout.
@@ -279,7 +254,8 @@ export function FindingsView() {
     }
   }, [activeEndpoint, data, selectFinding]);
 
-  // Scatter endpoints — filtered by rail's visible set, then by user exclusions
+  // Endpoints visible after rail filtering — feeds DomainDoseRollup, ScopeBanner,
+  // section-title count.
   const railFilteredEndpoints = useMemo(() => {
     if (!visibleLabels) return endpointSummaries;
     return endpointSummaries.filter((ep) => visibleLabels.has(ep.endpoint_label));
@@ -287,11 +263,6 @@ export function FindingsView() {
 
   // Endpoints scoped to the active rail group (DomainDoseRollup + ScopeBanner inputs).
   const scopedEndpoints = railFilteredEndpoints;
-
-  const scatterEndpoints = useMemo(() => {
-    if (excludedEndpoints.size === 0) return railFilteredEndpoints;
-    return railFilteredEndpoints.filter((ep) => !excludedEndpoints.has(ep.endpoint_label));
-  }, [railFilteredEndpoints, excludedEndpoints]);
 
   // Table findings — filtered by rail's visible set + scheduled-only exclusion
   const tableFindings = useMemo(() => {
@@ -456,8 +427,8 @@ export function FindingsView() {
 
   // Plottable count: endpoints with both effect size and p-value
   const plottableCount = useMemo(() =>
-    scatterEndpoints.filter(ep => ep.maxEffectSize != null && ep.minPValue != null).length,
-    [scatterEndpoints],
+    railFilteredEndpoints.filter(ep => ep.maxEffectSize != null && ep.minPValue != null).length,
+    [railFilteredEndpoints],
   );
 
   // Section title: dynamic based on scope type
@@ -495,28 +466,10 @@ export function FindingsView() {
               <span className="text-muted-foreground">{label}</span>
             </span>
           ))}
-          {selectedPointData && (
-            <>
-              {sep}
-              <span className="text-muted-foreground/60">{"\u2605"}</span>
-              {" "}
-              <span className="font-medium">{selectedPointData.label}</span>
-              {sep}
-              <span className="font-mono" title={!CONTINUOUS_DOMAINS.has(selectedPointData.domain) ? "avg severity (1\u20135 ordinal scale)" : `${getEffectSizeLabel(analytics.activeEffectSizeMethod ?? "hedges-g")} \u2014 standardized effect size. Negative = decrease, positive = increase.`}>{!CONTINUOUS_DOMAINS.has(selectedPointData.domain) ? "sev" : getEffectSizeSymbol(analytics.activeEffectSizeMethod ?? "hedges-g")}={formatEffectSize(selectedPointData.effectSize)}</span>
-              {sep}
-              <span className="font-mono">
-                p={formatPValue(selectedPointData.rawP)}
-                {" "}
-                <span className="font-normal text-muted-foreground/60">
-                  ({["LB", "BW", "OM", "FW"].includes(selectedPointData.domain) ? "Dunnett\u2019s" : "Fisher\u2019s"})
-                </span>
-              </span>
-            </>
-          )}
         </span>
       </span>
     );
-  }, [scopeLabel, scopeType, filterLabels, selectedPointData, plottableCount, railFilteredEndpoints.length]);
+  }, [scopeLabel, scopeType, filterLabels, plottableCount, railFilteredEndpoints.length]);
 
   // Excluded endpoint chips for header
   const excludedChips = useMemo(() => {
@@ -551,31 +504,10 @@ export function FindingsView() {
     );
   }, [excludedEndpoints, handleRestoreEndpoint]);
 
-  // Header right: excluded chips + info tooltip icon
+  // Header right (specimen / grouped scope sections): excluded chips only.
   const headerRight = useMemo(() => (
-    <span className="flex items-center">
-      {excludedChips}
-      <span
-        className="relative shrink-0"
-        onMouseEnter={handleInfoMouseEnter}
-        onMouseLeave={handleInfoMouseLeave}
-      >
-        <Info className="h-3 w-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground" />
-        {showInfoTooltip && (
-          <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover px-3 py-2 shadow-md">
-            <div className="text-xs leading-relaxed text-popover-foreground">
-              <p>One dot per finding, showing the strongest signal across timepoints and sexes.</p>
-              <p className="mt-1.5"><span className="text-muted-foreground">&rarr;</span> Effect size percentile <span className="text-muted-foreground">(continuous and incidence ranked separately)</span></p>
-              <p><span className="text-muted-foreground">&uarr;</span> Lower p-value (pairwise vs. control)</p>
-              <p className="mt-1.5 italic text-muted-foreground">
-                Investigate the upper-right quadrant first.
-              </p>
-            </div>
-          </div>
-        )}
-      </span>
-    </span>
-  ), [showInfoTooltip, handleInfoMouseEnter, handleInfoMouseLeave, excludedChips]);
+    <span className="flex items-center">{excludedChips}</span>
+  ), [excludedChips]);
 
   // Header right for D-R chart section: day stepper + excluded chips + info icon
   const chartHeaderRight = useMemo(() => (
@@ -832,29 +764,10 @@ export function FindingsView() {
               </div>
             </div>
           </ViewSection>
-        ) : endpointSummaries.length > 0 ? (
-          /* No scope (overview) → scatter plot */
-          <ViewSection
-            title={sectionTitle}
-            headerRight={headerRight}
-            mode="fixed"
-            height={scatterSection.height}
-            onResizePointerDown={scatterSection.onPointerDown}
-            contentRef={scatterSection.contentRef}
-          >
-            <FindingsQuadrantScatter
-              endpoints={scatterEndpoints}
-              selectedEndpoint={activeEndpoint}
-              onSelect={handleEndpointSelect}
-              onExclude={handleExcludeEndpoint}
-              onSelectedPointChange={handleSelectedPointChange}
-              organCoherence={organCoherence}
-              syndromes={syndromes}
-              labMatches={labMatches}
-              effectSizeSymbol={getEffectSizeSymbol(analytics.activeEffectSizeMethod ?? "hedges-g")}
-            />
-          </ViewSection>
         ) : null
+        /* No "no-selection" branch: rail auto-selects the first endpoint, so
+           reaching this case means analytics is still loading or the rail is
+           genuinely empty. The table section below handles both. */
       )}
 
       {/* Table */}

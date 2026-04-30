@@ -440,6 +440,39 @@ export function FindingsRail({
     }
   }, [sortedCards, grouping]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Auto-select default rail target when nothing is selected ─
+  // Findings view has no "unselected" state; default behavior is to select the
+  // first rail target. For grouped modes (organ/syndrome/specimen/domain/...)
+  // that target is the first GROUP CARD (sets activeGroupScope). For the flat
+  // "finding" mode it's the first endpoint row. Fires on initial load and
+  // after grouping change (which clears both endpoint and scope). Bypasses
+  // beginNavigation() so the redirect doesn't push history entries —
+  // back-history captures only user choices.
+  useEffect(() => {
+    if (activeEndpoint || activeGroupScope) return;
+    if (sortedCards.length === 0) return;
+    if (grouping === "finding") {
+      const firstEndpoint = sortedCards[0]?.endpoints[0];
+      if (firstEndpoint) {
+        onEndpointSelect?.(
+          firstEndpoint.endpoint_label,
+          firstEndpoint.domains ? firstEndpoint.domain : undefined,
+        );
+      }
+    } else {
+      const firstCard = sortedCards[0];
+      if (firstCard) {
+        onGroupScopeChange?.({ type: grouping, value: firstCard.key });
+        setExpanded((prev) => {
+          if (prev.has(firstCard.key)) return prev;
+          const next = new Set(prev);
+          next.add(firstCard.key);
+          return next;
+        });
+      }
+    }
+  }, [sortedCards, grouping, activeEndpoint, activeGroupScope, onEndpointSelect, onGroupScopeChange]);
+
   // ── Auto-expand parent card + scroll when activeEndpoint changes externally ─
   useEffect(() => {
     if (!activeEndpoint) return;

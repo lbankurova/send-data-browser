@@ -54,14 +54,7 @@ import { getVerdictLabel } from "@/lib/recovery-labels";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
-import { NoaelDeterminationPane } from "@/components/analysis/noael/NoaelDeterminationPane";
-import { SafetyMarginCalculator } from "@/components/analysis/noael/SafetyMarginCalculator";
-import { StudyStatementsBar } from "@/components/analysis/noael/StudyStatementsBar";
-import { usePkIntegration } from "@/hooks/usePkIntegration";
-import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
-import { buildSignalsPanelData } from "@/lib/signals-panel-engine";
 import { resolveOnsetDose, resolveEffectivePattern } from "@/lib/onset-dose";
-import { mapFindingsToRows } from "@/lib/derive-summaries";
 import { isPairedOrgan, specimenHasLaterality, aggregateSubjectLaterality, aggregateFindingLaterality, lateralitySummary } from "@/lib/laterality";
 import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS, HCD_STATUS_TOOLTIPS } from "@/lib/mock-historical-controls";
 import type { HCDStatus, HistoricalControlData } from "@/lib/mock-historical-controls";
@@ -2036,18 +2029,26 @@ export function FindingsContextPanel() {
       );
     }
 
-    // Priority 3: no selection → NOAEL determination + study-level panes
+    // Priority 3: no selection. Findings rail auto-selects the first endpoint,
+    // so this branch only renders during the brief loading window before that
+    // happens (or when the study has no findings at all). Study-level NOAEL
+    // content lives in StudySummaryView's NoaelSynthesisSection now — don't
+    // duplicate it here.
     return (
-      <NoaelStudyLevelPanel
-        studyId={studyId}
-        activeFindings={activeFindings}
-        noaelRows={noaelRows}
-        expandAll={expandAll}
-        collapseAll={collapseAll}
-        expandGen={expandGen}
-        collapseGen={collapseGen}
-        nav={nav}
-      />
+      <div>
+        <ContextPanelHeader
+          title="Findings"
+          onExpandAll={expandAll}
+          onCollapseAll={collapseAll}
+          canGoBack={nav.canGoBack}
+          canGoForward={nav.canGoForward}
+          onBack={nav.onBack}
+          onForward={nav.onForward}
+        />
+        <div className="px-4 py-3 text-xs text-muted-foreground">
+          Select a finding to view detailed analysis.
+        </div>
+      </div>
     );
   }
 
@@ -2788,93 +2789,3 @@ export function FindingsContextPanel() {
   );
 }
 
-// ─── Study-level NOAEL panel (no finding/group selected) ────────────────────
-
-function NoaelStudyLevelPanel({
-  studyId,
-  activeFindings,
-  noaelRows,
-  expandAll,
-  collapseAll,
-  expandGen,
-  collapseGen,
-  nav,
-}: {
-  studyId: string | undefined;
-  activeFindings: UnifiedFinding[];
-  noaelRows: import("@/types/analysis-views").NoaelSummaryRow[] | undefined;
-  expandAll: () => void;
-  collapseAll: () => void;
-  expandGen: number;
-  collapseGen: number;
-  nav: { canGoBack: boolean; canGoForward: boolean; onBack: () => void; onForward: () => void };
-}) {
-  const navigate = useNavigate();
-  const { data: signalData } = useStudySignalSummary(studyId);
-  const { data: targetOrgans } = useTargetOrganSummary(studyId);
-  const { data: pkData } = usePkIntegration(studyId);
-
-  const aeData = useMemo(() => {
-    if (!activeFindings.length) return [];
-    return mapFindingsToRows(activeFindings);
-  }, [activeFindings]);
-
-  // Study statements for StudyStatementsBar
-  const panelData = useMemo(() => {
-    if (!signalData || !targetOrgans || !noaelRows) return null;
-    return buildSignalsPanelData(noaelRows, targetOrgans, signalData);
-  }, [signalData, targetOrgans, noaelRows]);
-
-  return (
-    <div>
-      <ContextPanelHeader
-        title="Findings"
-        onExpandAll={expandAll}
-        onCollapseAll={collapseAll}
-        canGoBack={nav.canGoBack}
-        canGoForward={nav.canGoForward}
-        onBack={nav.onBack}
-        onForward={nav.onForward}
-      />
-
-      {/* NOAEL determination (compact) */}
-      <NoaelDeterminationPane aeData={aeData} expandAll={expandGen} collapseAll={collapseGen} />
-
-      {/* Study statements + caveats */}
-      {panelData && (panelData.studyStatements.length > 0 || panelData.modifiers.length > 0 || panelData.caveats.length > 0) && (
-        <CollapsiblePane title="Study statements" defaultOpen={false} sessionKey="pcc.ep.study-statements" expandAll={expandGen} collapseAll={collapseGen}>
-          <StudyStatementsBar
-            statements={panelData.studyStatements}
-            modifiers={panelData.modifiers}
-            caveats={panelData.caveats}
-          />
-        </CollapsiblePane>
-      )}
-
-      {/* Safety margin calculator */}
-      {pkData?.available && (pkData.noael_exposure || pkData.loael_exposure) && (
-        <CollapsiblePane title="Safety margin" defaultOpen={false} sessionKey="pcc.ep.safety-margin" expandAll={expandGen} collapseAll={collapseGen}>
-          <SafetyMarginCalculator pkData={pkData} />
-        </CollapsiblePane>
-      )}
-
-      {/* Configure rules link */}
-      {studyId && (
-        <div className="border-b px-4 py-2">
-          <button
-            type="button"
-            className="text-[11px] font-medium text-primary hover:underline"
-            onClick={() => navigate(`/studies/${encodeURIComponent(studyId)}?tab=rules`)}
-          >
-            Configure rules &rarr;
-          </button>
-        </div>
-      )}
-
-      {/* Fallback guidance */}
-      <div className="px-4 py-3 text-xs text-muted-foreground">
-        Select a finding to view detailed analysis.
-      </div>
-    </div>
-  );
-}
