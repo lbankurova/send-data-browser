@@ -164,3 +164,19 @@ assertions:
     description: "Hepatic max_severity >= 3 (hypertrophy + adenoma + carcinoma per nSDRG 6.2)"
     expected_severity:
       hepatic: { min: 3 }
+
+  # Tumor detection: nSDRG Section 6.2 lists "Liver tumors -- Adenoma + carcinoma"
+  # as engineered signals at top dose (Group 4). Engine reports has_tumors=true
+  # with 5 affected animals and 3 tumor types in tumor_summary.json. Both adenoma
+  # and carcinoma morphologies are confirmed in summaries[]. This assertion
+  # mechanically pins the engine's correct detection of both tumor types.
+  - type: "tumor_detected"
+    description: "Liver adenoma + liver carcinoma both detected (nSDRG 6.2 engineered tumors)"
+    expected_has_tumors: true
+    expected_tumors:
+      - organ: "LIVER"
+        morphology_pattern: "ADENOMA"
+        min_count: 1
+      - organ: "LIVER"
+        morphology_pattern: "CARCINOMA"
+        min_count: 1

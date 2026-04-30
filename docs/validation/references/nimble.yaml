@@ -55,3 +55,10 @@ assertions:
     expected_classes:
       tr_adverse: { min: 1 }
       not_assessed: { exact: 0 }
+
+  # Tumor detection: 3-week study, no tumor findings documented; engine confirms
+  # has_tumors=false. Regression guard: engine must not start hallucinating
+  # tumor signals on this short subchronic study.
+  - type: "tumor_detected"
+    description: "No tumors expected in 3-week subchronic study"
+    expected_has_tumors: false

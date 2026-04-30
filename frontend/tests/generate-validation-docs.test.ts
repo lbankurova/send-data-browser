@@ -99,6 +99,14 @@ interface RefAssertion {
   // intentional: encoding "should be null" via this matcher is not supported, use
   // target_organs_flagged with expect_only: true to assert the organ isn't flagged.
   expected_severity?: Record<string, { min?: number; max?: number; exact?: number }>;
+  // tumor_detected: assertions over tumor_summary.json. Supports both a coarse
+  // boolean (expected_has_tumors) and per-tumor detail (expected_tumors). When
+  // both are set, both are checked. Tumor entries match by organ (exact match
+  // case-insensitive) AND morphology_pattern (regex applied to the morphology
+  // string, e.g. "ADENOMA, HEPATOCELLULAR" matches /ADENOMA/i). Counts are
+  // summed across matching summary rows.
+  expected_has_tumors?: boolean;
+  expected_tumors?: { organ: string; morphology_pattern?: string; min_count?: number }[];
 }
 
 interface RefNoael {
@@ -710,6 +718,65 @@ function checkAssertion(
         passed: matches.length >= minCount,
         actual: `${matches.length} death(s) at dose_level=${dl} matching /${pattern}/i (need >=${minCount}); subjects: ${matches.map((m) => m.USUBJID).join(",") || "none"}`,
       };
+    }
+    case "tumor_detected": {
+      // Reads tumor_summary.json. Two-level assertion:
+      //   expected_has_tumors (bool): asserts tumor_summary.has_tumors equals expected
+      //   expected_tumors (list):     asserts each entry's organ + morphology_pattern
+      //                               appears in summaries with at least min_count animals
+      if (!studyDir) return { assertion, passed: false, actual: "no study dir" };
+      const tumorData = loadJson<{
+        has_tumors?: boolean;
+        total_tumor_animals?: number;
+        summaries?: { organ?: string; morphology?: string; count?: number }[];
+      }>(studyDir, "tumor_summary.json");
+      if (!tumorData) {
+        return { assertion, passed: false, actual: "tumor_summary.json not found" };
+      }
+      const violations: string[] = [];
+      const passes: string[] = [];
+
+      if (assertion.expected_has_tumors !== undefined) {
+        const actual = tumorData.has_tumors ?? false;
+        if (actual !== assertion.expected_has_tumors) {
+          violations.push(`has_tumors=${actual} (expected ${assertion.expected_has_tumors})`);
+        } else {
+          passes.push(`has_tumors=${actual}`);
+        }
+      }
+
+      if (assertion.expected_tumors && assertion.expected_tumors.length > 0) {
+        const summaries = tumorData.summaries ?? [];
+        for (const entry of assertion.expected_tumors) {
+          const minCount = entry.min_count ?? 1;
+          const re = entry.morphology_pattern
+            ? new RegExp(entry.morphology_pattern, "i")
+            : null;
+          const matched = summaries.filter((s) => {
+            if (!s.organ || s.organ.toLowerCase() !== entry.organ.toLowerCase()) return false;
+            if (re && !re.test(s.morphology ?? "")) return false;
+            return true;
+          });
+          const total = matched.reduce((acc, s) => acc + (s.count ?? 0), 0);
+          const tag = `${entry.organ}` +
+            (entry.morphology_pattern ? `+/${entry.morphology_pattern}/i` : "");
+          if (total < minCount) {
+            violations.push(`${tag}: ${total} animals (expected >=${minCount})`);
+          } else {
+            passes.push(`${tag}=${total}`);
+          }
+        }
+      }
+
+      if (assertion.expected_has_tumors === undefined && !assertion.expected_tumors) {
+        return { assertion, passed: false, actual: "[missing expected_has_tumors and expected_tumors in YAML]" };
+      }
+
+      const passed = violations.length === 0;
+      const actual = passed
+        ? `${passes.length} tumor check(s) match: ${passes.join(", ")}`
+        : `VIOLATIONS: ${violations.join("; ")}`;
+      return { assertion, passed, actual };
     }
     case "severity_distribution": {
       // Per-organ-system constraints on max_severity in target_organ_summary.json.
