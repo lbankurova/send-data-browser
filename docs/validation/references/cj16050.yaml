@@ -69,3 +69,23 @@ assertions:
     description: "3 parallel groups correctly parsed"
   - type: "non_monotonic_detected"
     description: "Engine should detect non-monotonic dose-response pattern"
+
+  # ---- GROUND_TRUTH equality assertions (Phase 1 audit) ---------------------
+  # Authored from raw RE domain data + nSDRG (no separate study report).
+  # Single-dose 8h respiratory safety pharm; both treated doses (100, 1000)
+  # produce effects (biphasic: 100=stimulation, 1000=depression). LOAEL at
+  # lowest active dose (100 mg/kg, level 1), NOAEL below tested range. 0
+  # deaths. target_organs omitted -- safety-pharm rate/volume changes don't
+  # map to organ pathology in the toxicological sense; doc is silent.
+
+  - type: "noael_combined"
+    description: "Combined NOAEL = null (LOAEL at lowest active dose, both treated doses produce effects)"
+    expected_value: null
+
+  - type: "loael_combined"
+    description: "Combined LOAEL = 1 (100 mg/kg, lowest active dose)"
+    expected_value: 1
+
+  - type: "mortality_loael"
+    description: "mortality_loael = null (zero deaths; single-dose 8h observation)"
+    expected_value: null

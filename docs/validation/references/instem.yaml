@@ -40,3 +40,21 @@ assertions:
     description: "All 5 groups have recovery arms"
   - type: "tk_excluded"
     description: "TK satellites (~18/group) excluded from analysis"
+
+  # ---- GROUND_TRUTH equality assertions (Phase 1 audit) ---------------------
+  # Authored from instem readme.txt (no separate study report). Dual-control
+  # 5-group design (Vehicle + Negative + 60/200/600 mg/kg). Doc YAML's noael
+  # block says "LOAEL at lowest treated dose (60 mg/kg)", NOAEL=null. 0
+  # deaths. target_organs omitted -- no signal documentation to anchor against.
+
+  - type: "noael_combined"
+    description: "Combined NOAEL = null (LOAEL at lowest treated dose 60 mg/kg per readme)"
+    expected_value: null
+
+  - type: "loael_combined"
+    description: "Combined LOAEL = 1 (60 mg/kg, lowest treated dose)"
+    expected_value: 1
+
+  - type: "mortality_loael"
+    description: "mortality_loael = null (zero deaths)"
+    expected_value: null

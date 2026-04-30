@@ -39,3 +39,24 @@ assertions:
     description: "is_multi_compound = true, 3 compounds detected"
   - type: "trend_suppressed"
     description: "JT trend across compounds suppressed (meaningless across different test articles)"
+
+  # ---- GROUND_TRUTH equality assertions (Phase 1 audit) ---------------------
+  # Authored from define.pdf only (no separate study report). FDA contribution
+  # dataset: NHP IV multi-compound, female-only, N=2/group across 5 groups
+  # representing 3 different test articles at varying doses. Multi-compound
+  # design makes "combined LOAEL across all groups" semantically ill-defined:
+  # the doc YAML's note says "LOAEL at lowest active dose" but the engine
+  # returns LOAEL=4. Both are arguably defensible -- doc applies the standard
+  # framework, engine may be flagging the highest-effect group. Omitting
+  # loael_combined per the audit plan's "if ambiguous, omit" directive.
+  #
+  # noael_combined and mortality are unambiguous (no defensible NOAEL across
+  # mixed compounds; zero deaths).
+
+  - type: "noael_combined"
+    description: "Combined NOAEL = null (multi-compound design; per-compound NOAEL not derivable from combined matcher)"
+    expected_value: null
+
+  - type: "mortality_loael"
+    description: "mortality_loael = null (zero deaths)"
+    expected_value: null

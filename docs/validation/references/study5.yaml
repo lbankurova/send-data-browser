@@ -85,3 +85,34 @@ assertions:
     description: "Latin square crossover correctly parsed — 4 treatments, 6 animals, within-subject"
   - type: "no_noael"
     description: "NOAEL not established — CV effects at all doses tested (LOEL = 20 mg/kg)"
+
+  # ---- GROUND_TRUTH equality assertions (Phase 1 audit) ---------------------
+  # Authored from 3-1-PILOT_CV_Redacted.pdf (Tables 10-11 for QTc) + nSDRG.
+  # ICH S7B hERG/QTc study, Latin square crossover (each of 6 dogs receives
+  # all 4 doses with 10+ day washouts). Report explicit conclusion:
+  # "cardiovascular effects at all doses tested" -- LOEL = 20 mg/kg (lowest
+  # tested dose, HR increase). NOAEL not established. 0 deaths.
+  #
+  # Target organ: cardiovascular -- the report's Tables 10-11 document QTc
+  # prolongation, BP decrease, HR increase, and QRS duration changes, all CV
+  # findings. Engine flags exactly cardiovascular (1 organ), matching the
+  # report's primary observation. expect_only=true asserts CV is the SOLE
+  # target -- the report describes no extra-CV findings (no tox study terminal
+  # endpoints; animals returned to colony).
+
+  - type: "noael_combined"
+    description: "Combined NOAEL = null (CV effects at all doses tested per report)"
+    expected_value: null
+
+  - type: "loael_combined"
+    description: "Combined LOAEL = 1 (20 mg/kg, lowest tested dose; HR increase)"
+    expected_value: 1
+
+  - type: "mortality_loael"
+    description: "mortality_loael = null (zero deaths; non-terminal study, animals returned to colony)"
+    expected_value: null
+
+  - type: "target_organs_flagged"
+    description: "Cardiovascular ONLY (QTc/BP/HR per report Tables 10-11; non-terminal so no other organ data)"
+    expected_organs: ["cardiovascular"]
+    expect_only: true

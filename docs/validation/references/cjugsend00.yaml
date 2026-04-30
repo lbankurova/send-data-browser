@@ -52,3 +52,24 @@ assertions:
     description: "Dose escalation crossover correctly parsed — 4 dose levels, within-subject"
   - type: "endpoint_count"
     description: "CV (768 records) + EG (960 records) present"
+
+  # ---- GROUND_TRUTH equality assertions (Phase 1 audit) ---------------------
+  # Authored from nSDRG (data packaging only, no scientific conclusions).
+  # Within-subject dose-escalation crossover: 4 NHPs, each receives vehicle
+  # then 10/30/100 mg/kg with 6-day washouts. Doc YAML's noael block says
+  # LOAEL at lowest active dose, NOAEL=null. 0 deaths. target_organs omitted
+  # because doc has no scientific conclusions to anchor against (the engine
+  # flags cardiovascular which is plausible for a CV safety-pharm study, but
+  # the doc gives no authority for that call).
+
+  - type: "noael_combined"
+    description: "Combined NOAEL = null (LOAEL at lowest active dose per nSDRG packaging)"
+    expected_value: null
+
+  - type: "loael_combined"
+    description: "Combined LOAEL = 1 (10 mg/kg, lowest active dose)"
+    expected_value: 1
+
+  - type: "mortality_loael"
+    description: "mortality_loael = null (zero deaths)"
+    expected_value: null

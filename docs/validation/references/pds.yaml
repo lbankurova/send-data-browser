@@ -43,3 +43,24 @@ assertions:
     description: "2 recovery pairs (Vehicle + High) detected"
   - type: "sex_stratified_merge"
     description: "Recovery arms merged into pooled N of 18M/18F for Vehicle and High"
+
+  # ---- GROUND_TRUTH equality assertions (Phase 1 audit) ---------------------
+  # Authored from PDS readme.md + define.pdf (no signal documentation). Doc
+  # YAML's noael block: LOAEL at Low (20 mg/kg, level 1), NOAEL=null. 1 death
+  # in the corpus -- a control female found dead day 3 with cause undetermined
+  # (PDS2014-0119); engine correctly classifies as not-treatment-related so
+  # mortality_loael=null is the defensible call (a control death cannot
+  # establish a treatment-mortality LOAEL). target_organs omitted: no signal
+  # documentation to anchor against.
+
+  - type: "noael_combined"
+    description: "Combined NOAEL = null (LOAEL at Low 20 mg/kg per readme)"
+    expected_value: null
+
+  - type: "loael_combined"
+    description: "Combined LOAEL = 1 (20 mg/kg, lowest treated dose)"
+    expected_value: 1
+
+  - type: "mortality_loael"
+    description: "mortality_loael = null (1 control death PDS2014-0119, cause undetermined; correctly not attributable to treatment)"
+    expected_value: null
