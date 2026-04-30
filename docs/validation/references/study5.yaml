@@ -116,3 +116,15 @@ assertions:
     description: "Cardiovascular ONLY (QTc/BP/HR per report Tables 10-11; non-terminal so no other organ data)"
     expected_organs: ["cardiovascular"]
     expect_only: true
+
+  # Class distribution: report explicitly identifies CV adverse findings
+  # (QTc prolongation at 150 mg/kg, p<0.05 at 2h+3h). Engine produces ZERO
+  # tr_adverse on this study -- 13 equivocal + 26 not_treatment_related instead.
+  # GROUND_TRUTH per the credentialed reviewer is that QTc prolongation IS
+  # adverse; engine's small-N statistical conservatism mis-classifies this as
+  # equivocal. NEW SCIENCE-FLAG family: safety-pharm small-N under-classification.
+  # Distinct from D9 (Study2/4 over-classification) and low-dose severity (87497).
+  - type: "class_distribution"
+    description: "QTc prolongation IS adverse per report; SCIENCE-FLAG vs engine 0 tr_adverse (small-N safety-pharm under-classification)"
+    expected_classes:
+      tr_adverse: { min: 1 }

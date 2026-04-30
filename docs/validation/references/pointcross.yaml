@@ -143,3 +143,12 @@ assertions:
     organ_system: "hepatic"
     min_domains: 3
     min_groups_converging: 2
+
+  # Class distribution: per nSDRG Section 6.2 the synthetic data has 13 engineered
+  # tr_adverse signals at top dose; engine must produce at least that many. Plus
+  # not_assessed must be zero (all findings classified — no engine punts).
+  - type: "class_distribution"
+    description: "13 engineered tr_adverse signals (nSDRG 6.2); all findings classified"
+    expected_classes:
+      tr_adverse: { min: 13 }
+      not_assessed: { exact: 0 }

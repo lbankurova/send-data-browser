@@ -89,3 +89,11 @@ assertions:
   - type: "mortality_loael"
     description: "mortality_loael = null (zero deaths; single-dose 8h observation)"
     expected_value: null
+
+  # Class distribution: 5 RE-domain findings; engine flags all 5 as tr_adverse
+  # (biphasic effects at both treated doses). Confirms engine fires adverse on
+  # respiratory rate / minute volume / tidal volume / activity changes.
+  - type: "class_distribution"
+    description: "Engine flags RE-domain findings as tr_adverse (biphasic effects at both doses)"
+    expected_classes:
+      tr_adverse: { min: 1 }

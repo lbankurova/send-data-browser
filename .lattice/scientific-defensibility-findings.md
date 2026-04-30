@@ -18,6 +18,17 @@ This file catalogs Phase 1 disagreements between authored GROUND_TRUTH (the cred
 
 8 SCIENCE-FLAGs cluster into **2 root-cause families** — both trace to the same engine gap: missing severity / compound-class / dose-response gating that toxicologists apply when interpreting statistical signals.
 
+## Phase 3 first matcher result (2026-04-30, `class_distribution`)
+
+| Metric | Value |
+|---|---|
+| Studies with class_distribution authored | 14 / 16 |
+| Skipped (no doc authority / multi-compound) | 2 (CJUGSEND00, FFU) |
+| MATCH | 11 |
+| SCIENCE-FLAG | 3 |
+
+3 new flags surfaced. 2 reinforce the existing D9 stream (Study2 + Study4 tr_adverse > 0 at the source level — was previously visible only at the noael/loael/target_organs level). 1 is a NEW root-cause family: **safety-pharm small-N under-classification** (Study5). Cumulative SCIENCE-FLAGs: 11 (was 8); 3 root-cause families (was 2).
+
 ---
 
 ## Research stream 1: D9 — compound-class profile scoring
@@ -69,6 +80,35 @@ This file catalogs Phase 1 disagreements between authored GROUND_TRUTH (the cred
 
 ---
 
+## Research stream 3: Safety-pharm small-N under-classification
+
+**Hypothesis:** Engine's statistical adversity classification is conservative at small-N (telemetry safety-pharm studies typically run N=4-6). When statistical significance can't be established due to power limitations, findings get classified as `equivocal` or `not_treatment_related` even when a credentialed reviewer's interpretation is `tr_adverse`.
+
+**Affected studies** (1 SCIENCE-FLAG, surfaced 2026-04-30 by `class_distribution` matcher):
+
+| Study | Surface | Engine | GROUND_TRUTH | Source |
+|---|---|---|---|---|
+| Study5 (CV crossover, 6 dogs, Latin square) | tr_adverse count | 0 | ≥1 | 3-1-PILOT_CV_Redacted.pdf Tables 10-11 |
+
+The report explicitly identifies QTc prolongation at 150 mg/kg as significant (p<0.05 at 2h+3h, +18.3% / +43.4 msec peak). A toxicologist reviewing this would call it adverse; the engine produces zero `tr_adverse` findings (13 equivocal, 26 not_treatment_related, 13 not_assessed instead).
+
+**Why this is distinct from streams 1 & 2:**
+- Stream 1 (compound class): the engine OVER-classifies vaccine pharmacology as toxicity. Direction: false positive.
+- Stream 2 (low-dose severity): the engine OVER-classifies low-dose statistical signals. Direction: false positive at low doses.
+- Stream 3 (small-N safety-pharm): the engine UNDER-classifies findings when N is too small for traditional statistical adversity. Direction: false negative. Opposite direction from streams 1+2.
+
+**Resolution path:**
+- Apply credentialed-reviewer override semantics from CLAUDE.md rule 21 at the per-finding level
+- When a finding's effect-size is regulatorily meaningful (e.g., QTc Δ > 30 msec for an ICH S7B endpoint) but small-N statistics don't reach significance, surface as `tr_adverse` with reduced confidence rather than demoting to `equivocal`
+- Likely shares structure with stream 2 — both need an effect-size floor, but stream 2 RAISES the threshold (low-dose findings need bigger effect to count) and stream 3 LOWERS it (small-N + clinically-meaningful effect size should count as adverse)
+- Domain-specific thresholds (CV / EG / RE for safety pharm) likely live in `knowledge-graph.md` once authored
+
+**Priority signal:** affects 1 of 16 studies in this audit (6%); but applies to ALL safety-pharm studies (CJ16050, CJUGSEND00, Study5 in this corpus, plus most ICH S7A/B studies generally). Wide blast radius outside the validation suite.
+
+**Surfaced by:** `class_distribution` matcher (Phase 3, this commit). Without per-class encoding, this flag was invisible — Phase 1's NOAEL/LOAEL/target_organs assertions all matched for Study5 because the engine's per-NOAEL surface returns `null/1/[cardiovascular]`, which matches the report at the macro level. The class-level disagreement (where the engine's 0 tr_adverse contradicts the toxicologist's call) only surfaces when class_distribution is asserted.
+
+---
+
 ## Out-of-scope omissions (2026-04-30 audit)
 
 Per audit plan §1 step 6 ("if genuinely ambiguous, omit"):
@@ -104,3 +144,4 @@ Each clearance MUST update `.assertion-baseline.json`. The baseline file is a lo
 | 2026-04-29 | TOXSCI cluster (4 studies) | 2 flags filed (TOXSCI-87497 NOAEL/LOAEL) |
 | 2026-04-30 | Phase 1 completion (final 6: CJ16050, CJUGSEND00, FFU, instem, PDS, Study5) | 0 new flags |
 | 2026-04-30 | Phase 1 disposition (this file authored) | 8 flags grouped into 2 research streams |
+| 2026-04-30 | Phase 3 first matcher (`class_distribution`) authored across 14/16 studies | +3 flags (Study2/4 reinforcement; Study5 NEW family); cumulative 11 flags / 3 streams |

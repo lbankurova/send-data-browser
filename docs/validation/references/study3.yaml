@@ -76,3 +76,14 @@ assertions:
     description: "Zero target organs flagged -- report's 'no adverse findings' must surface as empty target_organ_summary"
     expected_organs: []
     expect_only: true
+
+  # Class distribution: no concurrent control -> all findings must be not_assessed.
+  # Same mechanical guard as Study1.
+  - type: "class_distribution"
+    description: "All findings not_assessed (no concurrent control; engine must not fabricate adversity calls)"
+    expected_classes:
+      tr_adverse: { exact: 0 }
+      tr_non_adverse: { exact: 0 }
+      tr_adaptive: { exact: 0 }
+      equivocal: { exact: 0 }
+      not_treatment_related: { exact: 0 }

@@ -46,3 +46,12 @@ assertions:
   - type: "mortality_loael"
     description: "mortality_loael = 1 (treatment-cohort death captured) — but study validity questioned"
     expected_value: 1
+
+  # Class distribution: study validity questioned (CTRL_MORT_CRITICAL) but findings
+  # ARE classified by engine. Confirm engine fires at least one tr_adverse and all
+  # findings have a classification (no engine punt).
+  - type: "class_distribution"
+    description: "Findings classified despite CTRL_MORT_CRITICAL; engine produces some tr_adverse"
+    expected_classes:
+      tr_adverse: { min: 1 }
+      not_assessed: { exact: 0 }

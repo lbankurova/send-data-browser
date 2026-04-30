@@ -58,3 +58,9 @@ assertions:
   - type: "mortality_loael"
     description: "mortality_loael = null (zero deaths)"
     expected_value: null
+
+  - type: "class_distribution"
+    description: "Engine produces tr_adverse findings (LOAEL fires at lowest treated dose); all findings classified"
+    expected_classes:
+      tr_adverse: { min: 1 }
+      not_assessed: { exact: 0 }

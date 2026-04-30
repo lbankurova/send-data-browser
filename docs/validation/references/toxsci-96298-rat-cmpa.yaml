@@ -61,3 +61,9 @@ assertions:
   - type: "mortality_loael"
     description: "mortality_loael = 2 (1 actual death at Mid dose 125 mg/kg, accepted per engine cause analysis)"
     expected_value: 2
+
+  - type: "class_distribution"
+    description: "Engine produces tr_adverse findings (LOAEL fires); all findings classified"
+    expected_classes:
+      tr_adverse: { min: 1 }
+      not_assessed: { exact: 0 }

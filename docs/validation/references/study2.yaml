@@ -130,3 +130,12 @@ assertions:
     description: "Zero target organs (report: pharmacology, not toxicity; SCIENCE-FLAG vs engine 5-organ flagging)"
     expected_organs: []
     expect_only: true
+
+  # Class distribution: per report, all findings are pharmacology-related and
+  # NON-adverse. Engine produces 42 tr_adverse + 162 equivocal -- the SCIENCE-FLAG
+  # at the source level. tr_adverse: {max: 0} mechanically encodes the report's call.
+  - type: "class_distribution"
+    description: "Zero tr_adverse per report (all pharmacology); SCIENCE-FLAG vs engine 42 tr_adverse"
+    expected_classes:
+      tr_adverse: { max: 0 }
+      not_assessed: { exact: 0 }

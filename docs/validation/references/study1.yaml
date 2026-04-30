@@ -58,3 +58,14 @@ assertions:
     description: "Zero target organs -- no statistical adversity calls possible without a control"
     expected_organs: []
     expect_only: true
+
+  # Class distribution: no concurrent control -> engine MUST produce only not_assessed.
+  # Any other classification would mean engine fabricated a comparison without a control.
+  - type: "class_distribution"
+    description: "All findings not_assessed (no concurrent control; engine cannot fabricate adversity calls)"
+    expected_classes:
+      tr_adverse: { exact: 0 }
+      tr_non_adverse: { exact: 0 }
+      tr_adaptive: { exact: 0 }
+      equivocal: { exact: 0 }
+      not_treatment_related: { exact: 0 }

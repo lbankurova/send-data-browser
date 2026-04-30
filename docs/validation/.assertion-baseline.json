@@ -1,6 +1,11 @@
 [
   {
     "study_id": "CBER-POC-Pilot-Study2-Vaccine_xpt",
+    "type": "class_distribution",
+    "description": "Zero tr_adverse per report (all pharmacology); SCIENCE-FLAG vs engine 42 tr_adverse"
+  },
+  {
+    "study_id": "CBER-POC-Pilot-Study2-Vaccine_xpt",
     "type": "loael_combined",
     "description": "Combined LOAEL = null (no findings deemed adverse by report; SCIENCE-FLAG vs engine output)"
   },
@@ -16,6 +21,11 @@
   },
   {
     "study_id": "CBER-POC-Pilot-Study4-Vaccine",
+    "type": "class_distribution",
+    "description": "Zero tr_adverse per report (all pharmacology); SCIENCE-FLAG vs engine 63 tr_adverse"
+  },
+  {
+    "study_id": "CBER-POC-Pilot-Study4-Vaccine",
     "type": "loael_combined",
     "description": "Combined LOAEL = null (no findings deemed adverse by report; SCIENCE-FLAG)"
   },
@@ -28,6 +38,11 @@
     "study_id": "CBER-POC-Pilot-Study4-Vaccine",
     "type": "target_organs_flagged",
     "description": "Zero target organs (report: pharmacology; SCIENCE-FLAG vs engine 5-organ flagging)"
+  },
+  {
+    "study_id": "CBER-POC-Pilot-Study5",
+    "type": "class_distribution",
+    "description": "QTc prolongation IS adverse per report; SCIENCE-FLAG vs engine 0 tr_adverse (small-N safety-pharm under-classification)"
   },
   {
     "study_id": "CBER-POC-Pilot-Study5",

@@ -85,6 +85,13 @@ interface RefAssertion {
   expected_dose_level?: number;
   min_count?: number;
   cause_pattern?: string;
+  // class_distribution: per-class min/max/exact constraints on finding_class counts in
+  // unified_findings.json. Optional `domain` restricts the count to a single SEND domain
+  // (e.g., LB). Classes omitted from expected_classes carry no constraint -- the harness
+  // does not assert anything about them. Use `exact: N` to pin a count, or `min`/`max`
+  // (either or both) for ranges. Phase 3 matcher targeting the over-classification gap.
+  expected_classes?: Record<string, { min?: number; max?: number; exact?: number }>;
+  domain?: string;
 }
 
 interface RefNoael {
@@ -695,6 +702,48 @@ function checkAssertion(
         passed: matches.length >= minCount,
         actual: `${matches.length} death(s) at dose_level=${dl} matching /${pattern}/i (need >=${minCount}); subjects: ${matches.map((m) => m.USUBJID).join(",") || "none"}`,
       };
+    }
+    case "class_distribution": {
+      // Per-class min/max/exact constraints on finding_class counts in unified_findings.json.
+      // Targets the over-classification gap: vaccine studies (Study2/4) report "non-adverse
+      // pharmacology" but engine produces 42-63 tr_adverse findings. expected_classes:
+      // {tr_adverse: {max: 0}} mechanically detects the disagreement at the source.
+      const expected = assertion.expected_classes;
+      if (!expected || Object.keys(expected).length === 0) {
+        return { assertion, passed: false, actual: "[missing expected_classes in YAML]" };
+      }
+      const domainFilter = assertion.domain;
+      const scoped = domainFilter
+        ? findings.filter((f) => f.domain === domainFilter)
+        : findings;
+      const counts: Record<string, number> = {};
+      for (const f of scoped) {
+        const c = f.finding_class ?? "unknown";
+        counts[c] = (counts[c] ?? 0) + 1;
+      }
+      const violations: string[] = [];
+      for (const [cls, constraint] of Object.entries(expected)) {
+        const actualCount = counts[cls] ?? 0;
+        if (constraint.exact !== undefined) {
+          if (actualCount !== constraint.exact) {
+            violations.push(`${cls}=${actualCount} (expected exactly ${constraint.exact})`);
+          }
+          continue;
+        }
+        if (constraint.min !== undefined && actualCount < constraint.min) {
+          violations.push(`${cls}=${actualCount} (expected >=${constraint.min})`);
+        }
+        if (constraint.max !== undefined && actualCount > constraint.max) {
+          violations.push(`${cls}=${actualCount} (expected <=${constraint.max})`);
+        }
+      }
+      const scope = domainFilter ? `domain=${domainFilter}` : "all domains";
+      const passed = violations.length === 0;
+      const actual = passed
+        ? `${scoped.length} findings ${scope}; ` +
+          Object.entries(expected).map(([cls]) => `${cls}=${counts[cls] ?? 0}`).join(", ")
+        : `VIOLATIONS (${scope}, ${scoped.length} findings): ${violations.join("; ")}`;
+      return { assertion, passed, actual };
     }
     default:
       // Strict default: unknown types fail loud rather than silently passing.

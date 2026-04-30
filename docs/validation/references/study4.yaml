@@ -126,3 +126,11 @@ assertions:
     description: "Zero target organs (report: pharmacology; SCIENCE-FLAG vs engine 5-organ flagging)"
     expected_organs: []
     expect_only: true
+
+  # Class distribution: same SCIENCE-FLAG pattern as Study2 -- report says no adverse,
+  # engine produces 63 tr_adverse. Mechanical encoding of D9 compound-class gap at source.
+  - type: "class_distribution"
+    description: "Zero tr_adverse per report (all pharmacology); SCIENCE-FLAG vs engine 63 tr_adverse"
+    expected_classes:
+      tr_adverse: { max: 0 }
+      not_assessed: { exact: 0 }

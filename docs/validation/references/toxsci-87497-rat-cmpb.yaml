@@ -70,3 +70,14 @@ assertions:
   - type: "mortality_loael"
     description: "mortality_loael = null (zero deaths)"
     expected_value: null
+
+  # Class distribution: aggregate adversity (≥1 tr_adverse) is correct -- the
+  # SCIENCE-FLAG is per-dose placement (engine flags Low as LOAEL when published
+  # call is Mid). Per-dose distribution would be a Phase-3 follow-on matcher
+  # (per_dose_class_distribution). The aggregate min:1 confirms engine fires SOME
+  # adverse finding, which both engine and doc agree on.
+  - type: "class_distribution"
+    description: "Engine fires tr_adverse (aggregate level; per-dose placement is the SCIENCE-FLAG, not aggregate)"
+    expected_classes:
+      tr_adverse: { min: 1 }
+      not_assessed: { exact: 0 }
