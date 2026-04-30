@@ -67,3 +67,23 @@ assertions:
     expected_classes:
       tr_adverse: { min: 1 }
       not_assessed: { exact: 0 }
+
+  # Sex-specific NOAEL: published TOXSCI-24-0062 analysis identifies a
+  # sex-divergent NOAEL (per noael block above + existing sex_divergent_noael
+  # assertion). M-NOAEL = 0 (below tested range -- M shows effects at lowest
+  # active dose) and F-NOAEL = 1 (25 mg/kg, F tolerates Low). Engine returns
+  # M=null and F=null. M matches doc (null = "below tested range"); F is a
+  # NEW SCIENCE-FLAG -- engine fails to recognize female tolerance at Low.
+  #
+  # Same root cause as TOXSCI-87497 (Stream 2 low-dose severity) but on the
+  # F stratum. Adds evidence to Stream 2's blast radius.
+
+  - type: "noael_combined"
+    description: "Male NOAEL = null (M shows effects at lowest active dose per published analysis)"
+    sex: "M"
+    expected_value: null
+
+  - type: "noael_combined"
+    description: "Female NOAEL = 1 (Low 25 mg/kg tolerated per published call; SCIENCE-FLAG vs engine null -- Stream 2 evidence)"
+    sex: "F"
+    expected_value: 1

@@ -96,6 +96,11 @@
   },
   {
     "study_id": "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt",
+    "type": "noael_combined",
+    "description": "Female NOAEL = 1 (Low 25 mg/kg tolerated per published call; SCIENCE-FLAG vs engine null -- Stream 2 evidence)"
+  },
+  {
+    "study_id": "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt",
     "type": "sex_divergent_noael",
     "description": "NOAEL differs by sex — M at control, F at 25 mg/kg/day"
   },

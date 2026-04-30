@@ -107,6 +107,12 @@ interface RefAssertion {
   // summed across matching summary rows.
   expected_has_tumors?: boolean;
   expected_tumors?: { organ: string; morphology_pattern?: string; min_count?: number }[];
+  // noael_combined / loael_combined: optional sex selector. Defaults to "Combined"
+  // when omitted (existing behavior). Set to "M" or "F" to assert against the
+  // male or female stratum row. Used for sex-divergent NOAEL studies (e.g.
+  // TOXSCI-43066 has documented F-NOAEL=1 vs M-NOAEL=null per the published
+  // sex-stratified analysis). The same matcher serves all three strata.
+  sex?: string;
 }
 
 interface RefNoael {
@@ -609,41 +615,43 @@ function checkAssertion(
     }
     case "noael_combined": {
       if (!noael) return { assertion, passed: false, actual: "noael_summary.json not found" };
-      const combinedRows = noael.filter((n) => n.sex === "Combined");
-      if (combinedRows.length === 0) return { assertion, passed: false, actual: "no Combined NOAEL row" };
+      const sex = assertion.sex ?? "Combined";
+      const sexRows = noael.filter((n) => n.sex === sex);
+      if (sexRows.length === 0) return { assertion, passed: false, actual: `no ${sex} NOAEL row` };
       // Multi-compound: take the most conservative (lowest) NOAEL.
-      const combined = combinedRows.reduce((a, b) => {
+      const row = sexRows.reduce((a, b) => {
         const aDl = a.noael_dose_level ?? -Infinity;
         const bDl = b.noael_dose_level ?? -Infinity;
         return aDl <= bDl ? a : b;
       });
-      const actual = combined.noael_dose_level;
+      const actual = row.noael_dose_level;
       if (assertion.expected_value === undefined) {
-        return { assertion, passed: false, actual: `noael_combined=${actual} [missing expected_value in YAML]` };
+        return { assertion, passed: false, actual: `noael(${sex})=${actual} [missing expected_value in YAML]` };
       }
       return {
         assertion,
         passed: actual === assertion.expected_value,
-        actual: `noael_combined=${actual} (expected ${assertion.expected_value})`,
+        actual: `noael(${sex})=${actual} (expected ${assertion.expected_value})`,
       };
     }
     case "loael_combined": {
       if (!noael) return { assertion, passed: false, actual: "noael_summary.json not found" };
-      const combinedRows = noael.filter((n) => n.sex === "Combined");
-      if (combinedRows.length === 0) return { assertion, passed: false, actual: "no Combined NOAEL row" };
-      const combined = combinedRows.reduce((a, b) => {
+      const sex = assertion.sex ?? "Combined";
+      const sexRows = noael.filter((n) => n.sex === sex);
+      if (sexRows.length === 0) return { assertion, passed: false, actual: `no ${sex} NOAEL row` };
+      const row = sexRows.reduce((a, b) => {
         const aLo = a.loael_dose_level ?? Infinity;
         const bLo = b.loael_dose_level ?? Infinity;
         return aLo <= bLo ? a : b;
       });
-      const actual = combined.loael_dose_level;
+      const actual = row.loael_dose_level;
       if (assertion.expected_value === undefined) {
-        return { assertion, passed: false, actual: `loael_combined=${actual} [missing expected_value in YAML]` };
+        return { assertion, passed: false, actual: `loael(${sex})=${actual} [missing expected_value in YAML]` };
       }
       return {
         assertion,
         passed: actual === assertion.expected_value,
-        actual: `loael_combined=${actual} (expected ${assertion.expected_value})`,
+        actual: `loael(${sex})=${actual} (expected ${assertion.expected_value})`,
       };
     }
     case "target_organs_flagged": {

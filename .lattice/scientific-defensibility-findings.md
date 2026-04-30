@@ -66,6 +66,7 @@ This file catalogs Phase 1 disagreements between authored GROUND_TRUTH (the cred
 |---|---|---|---|---|
 | TOXSCI-87497 (rat Compound B, IDO1) | noael_combined | null | 1 (Low 25 mg/kg tolerated) | TOXSCI-24-0062 publication |
 | TOXSCI-87497 | loael_combined | 1 | 2 (Mid 125 mg/kg) | TOXSCI-24-0062 publication |
+| TOXSCI-43066 (dog Compound A) | noael_combined sex=F | null | 1 (F tolerates Low 25 mg/kg) | TOXSCI-24-0062 publication; surfaced 2026-04-30 by AUDIT-9 sex-stratification extension |
 
 **Why this is the canonical case:** TOXSCI-87497 is the only RDT (regulatory-grade dose-tox) study in the validation suite with a non-trivial published NOAEL. The published authors explicitly conclude that the Low dose is tolerated. Engine's "NOAEL below tested range" output for this study is structurally indefensible against the published expert call (confidence 0.8 in the existing reference YAML).
 
@@ -168,6 +169,7 @@ Each clearance MUST update `.assertion-baseline.json`. The baseline file is a lo
 | 2026-04-30 | Stream 3 falsified by background-agent investigation (vocabulary mismatch, not algorithmic gap) | -1 flag (Study5 retracted); cumulative 10 flags / 2 streams |
 | 2026-04-30 | Phase 3 matcher #2 (`severity_distribution`) shipped + PointCross hepatic min:3 authored | 0 new flags; cumulative remains 10 / 2 |
 | 2026-04-30 | Phase 3 matcher #3 (`tumor_detected`) shipped + PointCross + Nimble authored | 0 new flags; cumulative remains 10 / 2 |
+| 2026-04-30 | Phase 3 sex extension (AUDIT-9): noael_combined gains optional `sex` field; TOXSCI-43066 M+F authored | +1 flag (F-NOAEL — Stream 2 evidence); cumulative 11 flags / 2 streams |
 
 ---
 
@@ -197,7 +199,7 @@ Single source of truth for audit-related work outstanding. Action items separate
 | **AUDIT-6** | `hcd_score` matcher | Tier 3, knowledge-graph-backed; complements the existing parity tests |
 | **AUDIT-7** | `compound_class_flag` matcher | **Mechanically captures D9 gap (Stream 1) at the source** -- highest-leverage candidate |
 | **AUDIT-8** | `onset_concordance` matcher | Tier 3, multi-timepoint studies |
-| **AUDIT-9** | Sex-specific NOAEL/LOAEL extension | Tier 1, addresses TOXSCI-43066 sex-divergent NOAEL (currently UNCOVERED -- only Combined matcher exists) |
+| ~~**AUDIT-9**~~ | ~~Sex-specific NOAEL/LOAEL extension~~ | DONE 2026-04-30 — `sex` field added to noael_combined/loael_combined matchers; TOXSCI-43066 M=null MATCH + F=1 SCIENCE-FLAG (Stream 2 evidence) |
 | **AUDIT-10** | `cross_organ_syndrome` matcher | Tier 2, Hy's-Law-style cross-organ patterns |
 | **AUDIT-11** | Framework-aware `class_distribution` extension | Stream 3 lesson: matcher should accept union of NOEL+ECETOC vocabularies via `also_count: ["treatment_related_concerning"]` field. Lower priority. |
 
