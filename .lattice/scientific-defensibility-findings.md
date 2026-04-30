@@ -167,3 +167,56 @@ Each clearance MUST update `.assertion-baseline.json`. The baseline file is a lo
 | 2026-04-30 | Phase 3 first matcher (`class_distribution`) authored across 14/16 studies | +3 flags (Study2/4 reinforcement; Study5 NEW family); cumulative 11 flags / 3 streams |
 | 2026-04-30 | Stream 3 falsified by background-agent investigation (vocabulary mismatch, not algorithmic gap) | -1 flag (Study5 retracted); cumulative 10 flags / 2 streams |
 | 2026-04-30 | Phase 3 matcher #2 (`severity_distribution`) shipped + PointCross hepatic min:3 authored | 0 new flags; cumulative remains 10 / 2 |
+| 2026-04-30 | Phase 3 matcher #3 (`tumor_detected`) shipped + PointCross + Nimble authored | 0 new flags; cumulative remains 10 / 2 |
+
+---
+
+## Open TODOs (logged 2026-04-30)
+
+Single source of truth for audit-related work outstanding. Action items separated by class. IDs are local to this audit (`AUDIT-N`); they're not in the cross-project TODO.md (which is in the submodule).
+
+### Engine work — resolution paths for filed SCIENCE-FLAGs
+
+| ID | Title | Streams it clears | Est. effort |
+|---|---|---|---|
+| **AUDIT-1** | D9 compound-class profile scoring | Stream 1 (6 flags: Study2, Study4) | engine work, multi-day |
+| **AUDIT-2** | Low-dose severity gating | Stream 2 (2 flags: TOXSCI-87497) | likely shares with GAP-22 phase-3 magnitude-escape, already research-validated; may already be in flight |
+
+### Engine work — adjacent issues surfaced by audit (NOT SCIENCE-FLAGs)
+
+| ID | Title | Origin | Est. effort |
+|---|---|---|---|
+| **AUDIT-3** | NOEL `treatment_related_concerning` doesn't propagate downstream | Stream 3 retraction note (`research-stream-3-safety-pharm-investigation.md`) | Contract-triangle hygiene per CLAUDE.md rule 18: declaration says 8 finding_class values, consumption sites assume 5. Affects `target_organ_summary.json`, `noael_summary.json`, `adverse_effect_summary.json`. ~1-2 days |
+| **AUDIT-4** | QTc 10ms concern threshold not in typed knowledge graph | Stream 3 retraction note | `_CONCERN_THRESHOLDS` in `classification.py:1237-1243` should be promoted to `knowledge-graph.md` as a `clinical_threshold` fact with `derives_from: ICH E14/S7B` per CLAUDE.md rule 22. ~30 min |
+
+### Audit infrastructure — Phase 3 remaining matchers
+
+| ID | Title | Notes |
+|---|---|---|
+| **AUDIT-5** | `recovery_verdict` matcher | Tier 2, recovery-bearing studies (PointCross, TOXSCI-35449, instem, PDS, Study4) currently UNCOVERED |
+| **AUDIT-6** | `hcd_score` matcher | Tier 3, knowledge-graph-backed; complements the existing parity tests |
+| **AUDIT-7** | `compound_class_flag` matcher | **Mechanically captures D9 gap (Stream 1) at the source** -- highest-leverage candidate |
+| **AUDIT-8** | `onset_concordance` matcher | Tier 3, multi-timepoint studies |
+| **AUDIT-9** | Sex-specific NOAEL/LOAEL extension | Tier 1, addresses TOXSCI-43066 sex-divergent NOAEL (currently UNCOVERED -- only Combined matcher exists) |
+| **AUDIT-10** | `cross_organ_syndrome` matcher | Tier 2, Hy's-Law-style cross-organ patterns |
+| **AUDIT-11** | Framework-aware `class_distribution` extension | Stream 3 lesson: matcher should accept union of NOEL+ECETOC vocabularies via `also_count: ["treatment_related_concerning"]` field. Lower priority. |
+
+### Audit infrastructure — Phase 4/5 of audit plan
+
+| ID | Title | Plan ref |
+|---|---|---|
+| **AUDIT-12** | Phase 4: harness as blocking CI gate | `docs/_internal/incoming/scientific-defensibility-audit-plan.md` §4. Adds `audit-knowledge-load-bearing.py --strict` + `npm test -- generate-validation-docs` as PR-blocking checks. ~1 hour. |
+| **AUDIT-13** | Phase 5: pull oracle authoring into research/peer-review skills | Plan §5. Updates `/lattice:research-cycle` + `/lattice:peer-review` to require an oracle-walk during research. ~1 hour. |
+
+### Framework infrastructure
+
+| ID | Title | Notes |
+|---|---|---|
+| **AUDIT-14** | Submodule-side rule-attestations dispatcher deployment | Parent's Path B mechanical-rules dispatcher (commit `65182f02`) is parent-only. Rules 3, 6, 11, 17 + submodule paths of rules 1/8 still honor-system. Memory entry `project_submodule_dispatcher_deployment_pending.md` has full context. ~30-45 min when submodule WIP clears. |
+
+### Authoring expansion (lower priority)
+
+| ID | Title | Notes |
+|---|---|---|
+| **AUDIT-15** | Expand `severity_distribution` per-study | Currently only PointCross. Other studies need per-study doc re-read to author defensible severity claims. |
+| **AUDIT-16** | Expand `tumor_detected` per-study | Currently PointCross + Nimble. 14 other studies have tumor_summary.json data with documented expectations (mostly `expected_has_tumors: false` for short-duration studies, plus TOXSCI-87497 with background incidence). |
