@@ -113,6 +113,16 @@ interface RefAssertion {
   // TOXSCI-43066 has documented F-NOAEL=1 vs M-NOAEL=null per the published
   // sex-stratified analysis). The same matcher serves all three strata.
   sex?: string;
+  // compound_class_flag: assertion over pk_integration.json:compound_class
+  // (the engine's only emit surface for compound modality). Compares the
+  // documented compound class (small_molecule / monoclonal_antibody / vaccine /
+  // gene_therapy / adc / etc.) against what the engine surfaces. Mismatches
+  // mechanically capture the D9 gap at the source: vaccine + gene-therapy
+  // studies currently emit no compound_class (engine has no classifier for
+  // those modalities). Case-insensitive equality. expected_compound_class:null
+  // is meaningful (REGRESSION_PIN of absence). Phase 3 matcher targeting the
+  // compound-class root cause (Stream 1).
+  expected_compound_class?: string | null;
 }
 
 interface RefNoael {
@@ -877,6 +887,38 @@ function checkAssertion(
           Object.entries(expected).map(([cls]) => `${cls}=${counts[cls] ?? 0}`).join(", ")
         : `VIOLATIONS (${scope}, ${scoped.length} findings): ${violations.join("; ")}`;
       return { assertion, passed, actual };
+    }
+    case "compound_class_flag": {
+      // Reads pk_integration.json:compound_class -- the engine's only emit
+      // surface for compound modality. Documented expected class is asserted
+      // against engine output; mismatches captures the D9 gap (Stream 1) at
+      // the source rather than via the downstream class_distribution proxy.
+      // See generator/pk_integration.py:275 (emit point) and
+      // services/analysis/compound_class.py:484-543 (modality detection;
+      // notably has no classifiers for vaccine or gene_therapy, so those
+      // studies emit nothing).
+      if (!studyDir) return { assertion, passed: false, actual: "no study dir" };
+      if (assertion.expected_compound_class === undefined) {
+        return { assertion, passed: false, actual: "[missing expected_compound_class in YAML]" };
+      }
+      const pk = loadJson<{ compound_class?: string | null }>(studyDir, "pk_integration.json");
+      const actualValue = pk?.compound_class ?? null;
+      const expected = assertion.expected_compound_class;
+      const passed =
+        (expected === null && actualValue === null) ||
+        (typeof expected === "string" &&
+          typeof actualValue === "string" &&
+          expected.toLowerCase() === actualValue.toLowerCase());
+      const actualStr =
+        actualValue === null
+          ? "null (no compound_class in pk_integration.json or file absent)"
+          : `"${actualValue}"`;
+      const expectedStr = expected === null ? "null" : `"${expected}"`;
+      return {
+        assertion,
+        passed,
+        actual: `pk_integration.compound_class = ${actualStr} (expected ${expectedStr})`,
+      };
     }
     default:
       // Strict default: unknown types fail loud rather than silently passing.

@@ -139,3 +139,17 @@ assertions:
     expected_classes:
       tr_adverse: { max: 0 }
       not_assessed: { exact: 0 }
+
+  # Compound class flag (Phase 3 matcher #5 -- AUDIT-7). Source: SME-confirmed
+  # annotation `backend/annotations/CBER-POC-Pilot-Study2-Vaccine_xpt/
+  # compound_profile.json` -- compound_class: "vaccine_non_adjuvanted",
+  # original_compound_class: "vaccine", confirmed_by_sme: true. 456a vaccine
+  # in NZW rabbits (CBER-POC.pdf pp.9-12). Expected MISMATCH: engine has no
+  # vaccine classifier in pk_integration.py modality-detection path; output
+  # is null -- D9 Stream 1 root cause surfaced at source. Reinforces this
+  # study's existing class_distribution / NOAEL / target_organs flags from
+  # the same root cause (engine cannot reason about vaccine pharmacology
+  # without a compound-class signal).
+  - type: "compound_class_flag"
+    description: "Compound modality = vaccine (456a IM rabbit; SME-confirmed vaccine_non_adjuvanted)"
+    expected_compound_class: "vaccine"

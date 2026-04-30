@@ -134,3 +134,17 @@ assertions:
     expected_classes:
       tr_adverse: { max: 0 }
       not_assessed: { exact: 0 }
+
+  # Compound class flag (Phase 3 matcher #5 -- AUDIT-7). Source: SME-confirmed
+  # annotation `backend/annotations/CBER-POC-Pilot-Study4-Vaccine/
+  # compound_profile.json` -- compound_class: "vaccine_adjuvanted",
+  # original_compound_class: "vaccine", confirmed_by_sme: true. Adjuvanted
+  # influenza vaccines SENDVACC10 + SENDVACC99 in NZW rabbits (rabbivi.pdf
+  # pp.9-12). Expected MISMATCH: same D9 root cause as Study1/2/3 -- engine
+  # has no vaccine classifier; output is null. The vaccine_adjuvanted SME
+  # subclass would matter downstream (adjuvant-specific expected effects)
+  # but is currently unsignaled. Both vaccine studies (Study2 + Study4) trace
+  # this same gap.
+  - type: "compound_class_flag"
+    description: "Compound modality = vaccine (SENDVACC10/99 IM rabbit; SME-confirmed vaccine_adjuvanted)"
+    expected_compound_class: "vaccine"

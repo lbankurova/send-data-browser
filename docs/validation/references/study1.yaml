@@ -69,3 +69,16 @@ assertions:
       tr_adaptive: { exact: 0 }
       equivocal: { exact: 0 }
       not_treatment_related: { exact: 0 }
+
+  # Compound class flag (Phase 3 matcher #5 -- AUDIT-7). Source: SME-confirmed
+  # annotation `backend/annotations/CBER-POC-Pilot-Study1-Vaccine_xpt_only/
+  # compound_profile.json` -- compound_class: "vaccine_non_adjuvanted",
+  # original_compound_class: "vaccine", confirmed_by_sme: true. Hepatitis B
+  # vaccine T-cell dependent antibody response study (nSDRG p.3). Expected
+  # MISMATCH: engine has no vaccine classifier in pk_integration.py modality-
+  # detection path (services/analysis/compound_class.py:484-543 enumerates
+  # mAb/ADC/recombinant patterns; no "vaccine" branch). Engine output is
+  # null -- D9 Stream 1 root cause surfaced at source.
+  - type: "compound_class_flag"
+    description: "Compound modality = vaccine (HBV TDAR; SME-confirmed vaccine_non_adjuvanted)"
+    expected_compound_class: "vaccine"

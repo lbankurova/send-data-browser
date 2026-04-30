@@ -111,7 +111,7 @@ Ordered by regulatory-leverage × Phase-1-flag-relevance:
 3. **`recovery_verdict` matcher** — recovery-bearing studies (PointCross, TOXSCI-35449, instem, PDS, Study4) currently have no harness-level recovery validation. ~5 studies × per-organ assertion.
 4. **`tumor_detected` matcher** — PointCross hepatic adenoma + carcinoma, plus any tumor-bearing TOXSCI study. Tier 2.
 5. **`hcd_score` matcher** — within-HCD verdict; only fires on cyno + rat HCD-eligible tests. Tier 3 input layer; complements knowledge-graph parity tests.
-6. **`compound_class_flag` matcher** — directly encodes the D9 gap: was vaccine/biologic/etc. compound-class detected and applied. UNCOVERED today; would mechanically detect Study2/Study4 over-classification at the source.
+6. ~~**`compound_class_flag` matcher**~~ — DONE 2026-04-30 (AUDIT-7). Reads `pk_integration.json:compound_class`. PointCross MATCH (small_molecule baseline) + Study1/2/3/4 SCIENCE-FLAG (engine has no vaccine/gene_therapy classifier in `services/analysis/compound_class.py:484-543`). 4 new flags reinforce Stream 1 at the source rather than via downstream class_distribution proxy.
 7. **`onset_concordance` matcher** — multi-timepoint studies; encodes when LOAEL is reached.
 8. **Sex-specific NOAEL/LOAEL extension** — `expected_value_male`, `expected_value_female`. Lightweight extension of existing matchers; addresses TOXSCI-43066 sex-divergent NOAEL.
 9. **`cross_organ_syndrome` matcher** — encodes Hy's-Law-style cross-organ patterns; complements existing `cross_domain_concordance`.

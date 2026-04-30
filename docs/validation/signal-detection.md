@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `b2ba39f2` (2026-04-29)
-**Generated:** 2026-04-29T23:34:25.792Z
+**Engine:** commit `0e841314` (2026-04-30)
+**Generated:** 2026-04-30T19:59:19.847Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -28,10 +28,12 @@ Compares engine output against reference cards in `docs/validation/references/`.
 |-----------|----------|--------|---------|
 | zero_adverse | No tr_adverse findings -- single-arm, no control, not a tox study | 0 tr_adverse findings (135 total) | **MATCH** |
 | no_concurrent_control | has_concurrent_control = false | has_concurrent_control = false | **MATCH** |
-| noael_combined | Combined NOAEL = null (no concurrent control -> no defensible NOAEL) | noael_combined=null (expected null) | **MATCH** |
-| loael_combined | Combined LOAEL = null (no concurrent control -> no defensible LOAEL) | loael_combined=null (expected null) | **MATCH** |
+| noael_combined | Combined NOAEL = null (no concurrent control -> no defensible NOAEL) | noael(Combined)=null (expected null) | **MATCH** |
+| loael_combined | Combined LOAEL = null (no concurrent control -> no defensible LOAEL) | loael(Combined)=null (expected null) | **MATCH** |
 | mortality_loael | mortality_loael = null (zero deaths; no mortality endpoint in study design) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
 | target_organs_flagged | Zero target organs -- no statistical adversity calls possible without a control | 0 organs flagged (expect_only) | **MATCH** |
+| class_distribution | All findings not_assessed (no concurrent control; engine cannot fabricate adversity calls) | 135 findings all domains; tr_adverse=0, tr_non_adverse=0, tr_adaptive=0, equivocal=0, not_treatment_related=0 | **MATCH** |
+| compound_class_flag | Compound modality = vaccine (HBV TDAR; SME-confirmed vaccine_non_adjuvanted) | pk_integration.compound_class = null (no compound_class in pk_integration.json or file absent) (expected "vaccine") | **MISMATCH** |
 
 ---
 
@@ -68,10 +70,12 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Assertion | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
-| noael_combined | Combined NOAEL = 1 (treatment dose tolerated per report; engine over-classifies absent compound-class context) | noael_combined=null (expected 1) | **MISMATCH** |
-| loael_combined | Combined LOAEL = null (no findings deemed adverse by report; SCIENCE-FLAG vs engine output) | loael_combined=1 (expected null) | **MISMATCH** |
+| noael_combined | Combined NOAEL = 1 (treatment dose tolerated per report; engine over-classifies absent compound-class context) | noael(Combined)=null (expected 1) | **MISMATCH** |
+| loael_combined | Combined LOAEL = null (no findings deemed adverse by report; SCIENCE-FLAG vs engine output) | loael(Combined)=1 (expected null) | **MISMATCH** |
 | mortality_loael | mortality_loael = null (zero deaths; report says no mortality concerns) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
 | target_organs_flagged | Zero target organs (report: pharmacology, not toxicity; SCIENCE-FLAG vs engine 5-organ flagging) | UNEXPECTED: hematologic, hepatic, general, cardiovascular, renal; flagged: hematologic, hepatic, general, cardiovascular, renal | **MISMATCH** |
+| class_distribution | Zero tr_adverse per report (all pharmacology); SCIENCE-FLAG vs engine 42 tr_adverse | VIOLATIONS (all domains, 490 findings): tr_adverse=42 (expected <=0) | **MISMATCH** |
+| compound_class_flag | Compound modality = vaccine (456a IM rabbit; SME-confirmed vaccine_non_adjuvanted) | pk_integration.compound_class = null (no compound_class in pk_integration.json or file absent) (expected "vaccine") | **MISMATCH** |
 
 ---
 
@@ -95,10 +99,12 @@ Compares engine output against reference cards in `docs/validation/references/`.
 |-----------|----------|--------|---------|
 | zero_adverse | No tr_adverse findings -- no concurrent control, report states 'no adverse test article-related findings' | 0 tr_adverse findings (593 total) | **MATCH** |
 | no_concurrent_control | has_concurrent_control = false | has_concurrent_control = false | **MATCH** |
-| noael_combined | Combined NOAEL = null (no concurrent control -> no defensible NOAEL) | noael_combined=null (expected null) | **MATCH** |
-| loael_combined | Combined LOAEL = null (no concurrent control -> no defensible LOAEL) | loael_combined=null (expected null) | **MATCH** |
+| noael_combined | Combined NOAEL = null (no concurrent control -> no defensible NOAEL) | noael(Combined)=null (expected null) | **MATCH** |
+| loael_combined | Combined LOAEL = null (no concurrent control -> no defensible LOAEL) | loael(Combined)=null (expected null) | **MATCH** |
 | mortality_loael | mortality_loael = null (zero deaths; engine must NOT invent a mortality LOAEL from non-mortality findings) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
 | target_organs_flagged | Zero target organs flagged -- report's 'no adverse findings' must surface as empty target_organ_summary | 0 organs flagged (expect_only) | **MATCH** |
+| class_distribution | All findings not_assessed (no concurrent control; engine must not fabricate adversity calls) | 593 findings all domains; tr_adverse=0, tr_non_adverse=0, tr_adaptive=0, equivocal=0, not_treatment_related=0 | **MATCH** |
+| compound_class_flag | Compound modality = gene_therapy (AAV vector IV cyno; no engine classifier) | pk_integration.compound_class = null (no compound_class in pk_integration.json or file absent) (expected "gene_therapy") | **MISMATCH** |
 
 ---
 
@@ -136,10 +142,12 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Assertion | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
-| noael_combined | Combined NOAEL = 2 (highest vaccine dose tolerated per report; engine over-classifies) | noael_combined=null (expected 2) | **MISMATCH** |
-| loael_combined | Combined LOAEL = null (no findings deemed adverse by report; SCIENCE-FLAG) | loael_combined=1 (expected null) | **MISMATCH** |
+| noael_combined | Combined NOAEL = 2 (highest vaccine dose tolerated per report; engine over-classifies) | noael(Combined)=null (expected 2) | **MISMATCH** |
+| loael_combined | Combined LOAEL = null (no findings deemed adverse by report; SCIENCE-FLAG) | loael(Combined)=1 (expected null) | **MISMATCH** |
 | mortality_loael | mortality_loael = null (zero deaths) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
 | target_organs_flagged | Zero target organs (report: pharmacology; SCIENCE-FLAG vs engine 5-organ flagging) | UNEXPECTED: general, hepatic, hematologic, cardiovascular, renal; flagged: general, hepatic, hematologic, cardiovascular, renal | **MISMATCH** |
+| class_distribution | Zero tr_adverse per report (all pharmacology); SCIENCE-FLAG vs engine 63 tr_adverse | VIOLATIONS (all domains, 747 findings): tr_adverse=63 (expected <=0) | **MISMATCH** |
+| compound_class_flag | Compound modality = vaccine (SENDVACC10/99 IM rabbit; SME-confirmed vaccine_adjuvanted) | pk_integration.compound_class = null (no compound_class in pk_integration.json or file absent) (expected "vaccine") | **MISMATCH** |
 
 ---
 
@@ -175,6 +183,11 @@ Compares engine output against reference cards in `docs/validation/references/`.
 |-----------|----------|--------|---------|
 | crossover_design | Latin square crossover correctly parsed — 4 treatments, 6 animals, within-subject | unknown assertion type 'crossover_design' — strict default refuses to silently pass | **MISMATCH** |
 | no_noael | NOAEL not established — CV effects at all doses tested (LOEL = 20 mg/kg) | unknown assertion type 'no_noael' — strict default refuses to silently pass | **MISMATCH** |
+| noael_combined | Combined NOAEL = null (CV effects at all doses tested per report) | noael(Combined)=null (expected null) | **MATCH** |
+| loael_combined | Combined LOAEL = 1 (20 mg/kg, lowest tested dose; HR increase) | loael(Combined)=1 (expected 1) | **MATCH** |
+| mortality_loael | mortality_loael = null (zero deaths; non-terminal study, animals returned to colony) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
+| target_organs_flagged | Cardiovascular ONLY (QTc/BP/HR per report Tables 10-11; non-terminal so no other organ data) | exact set of 1 flagged: cardiovascular | **MATCH** |
+| class_distribution | QTCSAG correctly classified treatment_related_concerning (NOEL framework); ICH S7B QTc concern threshold met (+32ms > 10ms) | 52 findings all domains; treatment_related_concerning=1, treatment_related=12 | **MATCH** |
 
 ---
 
@@ -209,6 +222,10 @@ Compares engine output against reference cards in `docs/validation/references/`.
 |-----------|----------|--------|---------|
 | parallel_design | 3 parallel groups correctly parsed | unknown assertion type 'parallel_design' — strict default refuses to silently pass | **MISMATCH** |
 | non_monotonic_detected | Engine should detect non-monotonic dose-response pattern | unknown assertion type 'non_monotonic_detected' — strict default refuses to silently pass | **MISMATCH** |
+| noael_combined | Combined NOAEL = null (LOAEL at lowest active dose, both treated doses produce effects) | noael(Combined)=null (expected null) | **MATCH** |
+| loael_combined | Combined LOAEL = 1 (100 mg/kg, lowest active dose) | loael(Combined)=1 (expected 1) | **MATCH** |
+| mortality_loael | mortality_loael = null (zero deaths; single-dose 8h observation) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
+| class_distribution | Engine flags RE-domain findings as tr_adverse (biphasic effects at both doses) | 5 findings all domains; tr_adverse=5 | **MATCH** |
 
 ---
 
@@ -240,6 +257,9 @@ Compares engine output against reference cards in `docs/validation/references/`.
 |-----------|----------|--------|---------|
 | design_escalation | Dose escalation crossover correctly parsed — 4 dose levels, within-subject | unknown assertion type 'design_escalation' — strict default refuses to silently pass | **MISMATCH** |
 | endpoint_count | CV (768 records) + EG (960 records) present | unknown assertion type 'endpoint_count' — strict default refuses to silently pass | **MISMATCH** |
+| noael_combined | Combined NOAEL = null (LOAEL at lowest active dose per nSDRG packaging) | noael(Combined)=null (expected null) | **MATCH** |
+| loael_combined | Combined LOAEL = 1 (10 mg/kg, lowest active dose) | loael(Combined)=1 (expected 1) | **MATCH** |
+| mortality_loael | mortality_loael = null (zero deaths) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
 
 ---
 
@@ -263,6 +283,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 |-----------|----------|--------|---------|
 | multi_compound_detected | is_multi_compound = true, 3 compounds detected | multi-compound study detected (not machine-verified — TODO) | **MATCH** |
 | trend_suppressed | JT trend across compounds suppressed (meaningless across different test articles) | trend suppression active (not machine-verified — TODO) | **MATCH** |
+| noael_combined | Combined NOAEL = null (multi-compound design; per-compound NOAEL not derivable from combined matcher) | noael(Combined)=null (expected null) | **MATCH** |
+| mortality_loael | mortality_loael = null (zero deaths) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
 
 ---
 
@@ -287,6 +309,10 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | dual_control | Dual control (Vehicle primary, Negative secondary) correctly detected | unknown assertion type 'dual_control' — strict default refuses to silently pass | **MISMATCH** |
 | recovery_all_groups | All 5 groups have recovery arms | unknown assertion type 'recovery_all_groups' — strict default refuses to silently pass | **MISMATCH** |
 | tk_excluded | TK satellites (~18/group) excluded from analysis | unknown assertion type 'tk_excluded' — strict default refuses to silently pass | **MISMATCH** |
+| noael_combined | Combined NOAEL = null (LOAEL at lowest treated dose 60 mg/kg per readme) | noael(Combined)=null (expected null) | **MATCH** |
+| loael_combined | Combined LOAEL = 1 (60 mg/kg, lowest treated dose) | loael(Combined)=1 (expected 1) | **MATCH** |
+| mortality_loael | mortality_loael = null (zero deaths) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
+| class_distribution | Engine produces tr_adverse findings (LOAEL fires at lowest treated dose); all findings classified | 317 findings all domains; tr_adverse=34, not_assessed=0 | **MATCH** |
 
 ---
 
@@ -310,8 +336,10 @@ Compares engine output against reference cards in `docs/validation/references/`.
 |-----------|----------|--------|---------|
 | design_groups | 2 groups correctly parsed | covered by design check | **MATCH** |
 | no_dose_response | Single treatment dose — no dose-response pattern possible | covered by design check | **MATCH** |
-| noael_combined | Combined NOAEL = null (suppressed by CTRL_MORT_CRITICAL — 28% control mortality) | noael_combined=null (expected null) | **MATCH** |
+| noael_combined | Combined NOAEL = null (suppressed by CTRL_MORT_CRITICAL — 28% control mortality) | noael(Combined)=null (expected null) | **MATCH** |
 | mortality_loael | mortality_loael = 1 (treatment-cohort death captured) — but study validity questioned | mortality_loael=1, 15 deaths + 11 accidental (expected 1) | **MATCH** |
+| class_distribution | Findings classified despite CTRL_MORT_CRITICAL; engine produces some tr_adverse | 52 findings all domains; tr_adverse=6, not_assessed=0 | **MATCH** |
+| tumor_detected | No tumors expected in 3-week subchronic study | 1 tumor check(s) match: has_tumors=false | **MATCH** |
 
 ---
 
@@ -336,6 +364,10 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | design_groups | 4 groups correctly parsed with vehicle control | covered by design check | **MATCH** |
 | recovery_detected | 2 recovery pairs (Vehicle + High) detected | unknown assertion type 'recovery_detected' — strict default refuses to silently pass | **MISMATCH** |
 | sex_stratified_merge | Recovery arms merged into pooled N of 18M/18F for Vehicle and High | unknown assertion type 'sex_stratified_merge' — strict default refuses to silently pass | **MISMATCH** |
+| noael_combined | Combined NOAEL = null (LOAEL at Low 20 mg/kg per readme) | noael(Combined)=null (expected null) | **MATCH** |
+| loael_combined | Combined LOAEL = 1 (20 mg/kg, lowest treated dose) | loael(Combined)=1 (expected 1) | **MATCH** |
+| mortality_loael | mortality_loael = null (1 control death PDS2014-0119, cause undetermined; correctly not attributable to treatment) | mortality_loael=null, 1 deaths + 0 accidental (expected null) | **MATCH** |
+| class_distribution | Engine produces tr_adverse findings (LOAEL at Low fires); all findings classified | 689 findings all domains; tr_adverse=150, not_assessed=0 | **MATCH** |
 
 ---
 
@@ -379,10 +411,14 @@ Compares engine output against reference cards in `docs/validation/references/`.
 |-----------|----------|--------|---------|
 | mortality_loael | mortality_loael = 3 (Group 4) — 2 HCC moribund sacrifices (4003 M day 90, 4113 F day 100, latter in recovery cohort) | mortality_loael=3, 1 deaths + 1 accidental (expected 3) | **MATCH** |
 | mortality_cause_concordance | >=2 hepatocellular carcinoma deaths at dose_level 3 (main + recovery cohort) | 2 death(s) at dose_level=3 matching /hepatocellular carcinoma|hcc/i (need >=2); subjects: PC201708-4003,PC201708-4113 | **MATCH** |
-| noael_combined | Combined NOAEL = null (not established — LOAEL at Group 2) | noael_combined=null (expected null) | **MATCH** |
-| loael_combined | Combined LOAEL = 1 (Group 2, 2 mg/kg) | loael_combined=1 (expected 1) | **MATCH** |
+| noael_combined | Combined NOAEL = null (not established — LOAEL at Group 2) | noael(Combined)=null (expected null) | **MATCH** |
+| loael_combined | Combined LOAEL = 1 (Group 2, 2 mg/kg) | loael(Combined)=1 (expected 1) | **MATCH** |
 | target_organs_flagged | hepatic and hematologic flagged as target organs | all 2 expected organs flagged: hepatic, hematologic | **MATCH** |
 | cross_domain_concordance | hepatic: >=3 domains converging across >=2 dose groups (WoE integration) | hepatic: flag=true, n_domains=4 (need >=3, [LB,MA,MI,OM]), convergence_groups=3 (need >=2) | **MATCH** |
+| class_distribution | 13 engineered tr_adverse signals (nSDRG 6.2); all findings classified | 415 findings all domains; tr_adverse=77, not_assessed=0 | **MATCH** |
+| severity_distribution | Hepatic max_severity >= 3 (hypertrophy + adenoma + carcinoma per nSDRG 6.2) | all 1 severity constraint(s) match: hepatic=3 | **MATCH** |
+| tumor_detected | Liver adenoma + liver carcinoma both detected (nSDRG 6.2 engineered tumors) | 3 tumor check(s) match: has_tumors=true, LIVER+/ADENOMA/i=2, LIVER+/CARCINOMA/i=1 | **MATCH** |
+| compound_class_flag | Compound modality = small_molecule (oral 13-wk rat tox; engine baseline) | pk_integration.compound_class = "small_molecule" (expected "small_molecule") | **MATCH** |
 
 ---
 
@@ -405,6 +441,10 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | Assertion | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
 | design_groups | 4 groups with vehicle control and 2 recovery pairs | covered by design check | **MATCH** |
+| noael_combined | Combined NOAEL = null (LOAEL at Group 1 = 3 mg/kg per published data) | noael(Combined)=null (expected null) | **MATCH** |
+| loael_combined | Combined LOAEL = 1 (lowest active dose 3 mg/kg) | loael(Combined)=1 (expected 1) | **MATCH** |
+| mortality_loael | mortality_loael = null (zero deaths) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
+| class_distribution | Engine produces tr_adverse findings (LOAEL fires); all findings classified | 862 findings all domains; tr_adverse=102, not_assessed=0 | **MATCH** |
 
 ---
 
@@ -428,6 +468,12 @@ Compares engine output against reference cards in `docs/validation/references/`.
 |-----------|----------|--------|---------|
 | design_groups | 4 groups with 3 recovery pairs | covered by design check | **MATCH** |
 | sex_divergent_noael | NOAEL differs by sex — M at control, F at 25 mg/kg/day | unknown assertion type 'sex_divergent_noael' — strict default refuses to silently pass | **MISMATCH** |
+| noael_combined | Combined NOAEL = null (LOAEL at Group 1 per published data) | noael(Combined)=null (expected null) | **MATCH** |
+| loael_combined | Combined LOAEL = 1 (25 mg/kg) | loael(Combined)=1 (expected 1) | **MATCH** |
+| mortality_loael | mortality_loael = null (zero deaths) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
+| class_distribution | Engine produces tr_adverse findings (LOAEL fires); all findings classified | 436 findings all domains; tr_adverse=40, not_assessed=0 | **MATCH** |
+| noael_combined | Male NOAEL = null (M shows effects at lowest active dose per published analysis) | noael(M)=null (expected null) | **MATCH** |
+| noael_combined | Female NOAEL = 1 (Low 25 mg/kg tolerated per published call; SCIENCE-FLAG vs engine null -- Stream 2 evidence) | noael(F)=null (expected 1) | **MISMATCH** |
 
 ---
 
@@ -452,6 +498,10 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | design_groups | 4 groups, unequal N (control 26, treated 20) | covered by design check | **MATCH** |
 | tk_excluded | TK satellites (~18/treated group) excluded from analysis | unknown assertion type 'tk_excluded' — strict default refuses to silently pass | **MISMATCH** |
 | noael_above_control | NOAEL at Low dose (25 mg/kg/day), not at control | unknown assertion type 'noael_above_control' — strict default refuses to silently pass | **MISMATCH** |
+| noael_combined | Combined NOAEL = 1 (Low 25 mg/kg tolerated per published call; SCIENCE-FLAG vs engine null) | noael(Combined)=null (expected 1) | **MISMATCH** |
+| loael_combined | Combined LOAEL = 2 (Mid 125 mg/kg per published call; SCIENCE-FLAG vs engine 1) | loael(Combined)=1 (expected 2) | **MISMATCH** |
+| mortality_loael | mortality_loael = null (zero deaths) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
+| class_distribution | Engine fires tr_adverse (aggregate level; per-dose placement is the SCIENCE-FLAG, not aggregate) | 343 findings all domains; tr_adverse=39, not_assessed=0 | **MATCH** |
 
 ---
 
@@ -475,5 +525,9 @@ Compares engine output against reference cards in `docs/validation/references/`.
 |-----------|----------|--------|---------|
 | design_groups | 4 groups with unequal N (Low=20, others=30) | covered by design check | **MATCH** |
 | no_recovery | No recovery period | unknown assertion type 'no_recovery' — strict default refuses to silently pass | **MISMATCH** |
+| noael_combined | Combined NOAEL = null (LOAEL at Group 1 = 50 mg/kg per published data) | noael(Combined)=null (expected null) | **MATCH** |
+| loael_combined | Combined LOAEL = 1 (50 mg/kg) | loael(Combined)=1 (expected 1) | **MATCH** |
+| mortality_loael | mortality_loael = 2 (1 actual death at Mid dose 125 mg/kg, accepted per engine cause analysis) | mortality_loael=2, 1 deaths + 0 accidental (expected 2) | **MATCH** |
+| class_distribution | Engine produces tr_adverse findings (LOAEL fires); all findings classified | 491 findings all domains; tr_adverse=31, not_assessed=0 | **MATCH** |
 
 ---

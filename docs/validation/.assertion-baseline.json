@@ -1,8 +1,18 @@
 [
   {
+    "study_id": "CBER-POC-Pilot-Study1-Vaccine_xpt_only",
+    "type": "compound_class_flag",
+    "description": "Compound modality = vaccine (HBV TDAR; SME-confirmed vaccine_non_adjuvanted)"
+  },
+  {
     "study_id": "CBER-POC-Pilot-Study2-Vaccine_xpt",
     "type": "class_distribution",
     "description": "Zero tr_adverse per report (all pharmacology); SCIENCE-FLAG vs engine 42 tr_adverse"
+  },
+  {
+    "study_id": "CBER-POC-Pilot-Study2-Vaccine_xpt",
+    "type": "compound_class_flag",
+    "description": "Compound modality = vaccine (456a IM rabbit; SME-confirmed vaccine_non_adjuvanted)"
   },
   {
     "study_id": "CBER-POC-Pilot-Study2-Vaccine_xpt",
@@ -20,9 +30,19 @@
     "description": "Zero target organs (report: pharmacology, not toxicity; SCIENCE-FLAG vs engine 5-organ flagging)"
   },
   {
+    "study_id": "CBER-POC-Pilot-Study3-Gene-Therapy",
+    "type": "compound_class_flag",
+    "description": "Compound modality = gene_therapy (AAV vector IV cyno; no engine classifier)"
+  },
+  {
     "study_id": "CBER-POC-Pilot-Study4-Vaccine",
     "type": "class_distribution",
     "description": "Zero tr_adverse per report (all pharmacology); SCIENCE-FLAG vs engine 63 tr_adverse"
+  },
+  {
+    "study_id": "CBER-POC-Pilot-Study4-Vaccine",
+    "type": "compound_class_flag",
+    "description": "Compound modality = vaccine (SENDVACC10/99 IM rabbit; SME-confirmed vaccine_adjuvanted)"
   },
   {
     "study_id": "CBER-POC-Pilot-Study4-Vaccine",

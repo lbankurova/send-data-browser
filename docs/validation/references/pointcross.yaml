@@ -180,3 +180,14 @@ assertions:
       - organ: "LIVER"
         morphology_pattern: "CARCINOMA"
         min_count: 1
+
+  # Compound class flag (Phase 3 matcher #5 -- AUDIT-7). Source: nSDRG dataset
+  # is small-molecule by design (oral gavage, hepatic toxicity profile, classic
+  # 13-week ICH M3 architecture). Engine emits "small_molecule" via the
+  # pk_integration.json modality-detection path (no mAb/ADC/biologic patterns
+  # match the synthetic treatment name). MATCH expected -- PointCross is the
+  # baseline that confirms the matcher fires correctly when the engine hits
+  # its happy path.
+  - type: "compound_class_flag"
+    description: "Compound modality = small_molecule (oral 13-wk rat tox; engine baseline)"
+    expected_compound_class: "small_molecule"

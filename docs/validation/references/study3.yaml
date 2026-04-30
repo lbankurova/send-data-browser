@@ -87,3 +87,19 @@ assertions:
       tr_adaptive: { exact: 0 }
       equivocal: { exact: 0 }
       not_treatment_related: { exact: 0 }
+
+  # Compound class flag (Phase 3 matcher #5 -- AUDIT-7). Source: study type
+  # explicit in directory name + VECTORSTUDYU1_RedactedSummaryReport.pdf -- AAV
+  # gene therapy (VECTOR A + VECTOR B at 1.024x10^13 GC/kg, IV bolus, single
+  # dose, biodistribution endpoint, anti-AAV NAb prescreening). SME annotation
+  # `backend/annotations/CBER-POC-Pilot-Study3-Gene-Therapy/compound_profile.json`
+  # is empty {} -- but the modality is unambiguous from study design. Expected
+  # MISMATCH: engine has no gene_therapy classifier in pk_integration.py
+  # modality-detection path (services/analysis/compound_class.py:484-543);
+  # output is null -- D9 Stream 1 root cause surfaced at source. Distinct from
+  # Study1/2/4 (vaccine) because gene therapy has its own expected-effect
+  # axis (transduction biology, AAV capsid immunogenicity) that engine
+  # cannot reason about without the modality signal.
+  - type: "compound_class_flag"
+    description: "Compound modality = gene_therapy (AAV vector IV cyno; no engine classifier)"
+    expected_compound_class: "gene_therapy"

@@ -170,6 +170,7 @@ Each clearance MUST update `.assertion-baseline.json`. The baseline file is a lo
 | 2026-04-30 | Phase 3 matcher #2 (`severity_distribution`) shipped + PointCross hepatic min:3 authored | 0 new flags; cumulative remains 10 / 2 |
 | 2026-04-30 | Phase 3 matcher #3 (`tumor_detected`) shipped + PointCross + Nimble authored | 0 new flags; cumulative remains 10 / 2 |
 | 2026-04-30 | Phase 3 sex extension (AUDIT-9): noael_combined gains optional `sex` field; TOXSCI-43066 M+F authored | +1 flag (F-NOAEL — Stream 2 evidence); cumulative 11 flags / 2 streams |
+| 2026-04-30 | Phase 3 matcher #5 (`compound_class_flag`, AUDIT-7) shipped; PointCross + 4 CBER studies authored | +4 flags (Study1/2/3/4 — D9 Stream 1 root cause captured at source); cumulative 15 flags / 2 streams |
 
 ---
 
@@ -181,7 +182,7 @@ Single source of truth for audit-related work outstanding. Action items separate
 
 | ID | Title | Streams it clears | Est. effort |
 |---|---|---|---|
-| **AUDIT-1** | D9 compound-class profile scoring | Stream 1 (6 flags: Study2, Study4) | engine work, multi-day |
+| **AUDIT-1** | D9 compound-class profile scoring | Stream 1 (10 flags: Study2/4 noael+loael+target_organs+class_distribution; Study1/2/3/4 compound_class_flag — AUDIT-7 captures the gap at source) | engine work, multi-day |
 | **AUDIT-2** | Low-dose severity gating | Stream 2 (2 flags: TOXSCI-87497) | likely shares with GAP-22 phase-3 magnitude-escape, already research-validated; may already be in flight |
 
 ### Engine work — adjacent issues surfaced by audit (NOT SCIENCE-FLAGs)
@@ -197,7 +198,7 @@ Single source of truth for audit-related work outstanding. Action items separate
 |---|---|---|
 | **AUDIT-5** | `recovery_verdict` matcher | Tier 2, recovery-bearing studies (PointCross, TOXSCI-35449, instem, PDS, Study4) currently UNCOVERED |
 | **AUDIT-6** | `hcd_score` matcher | Tier 3, knowledge-graph-backed; complements the existing parity tests |
-| **AUDIT-7** | `compound_class_flag` matcher | **Mechanically captures D9 gap (Stream 1) at the source** -- highest-leverage candidate |
+| ~~**AUDIT-7**~~ | ~~`compound_class_flag` matcher~~ | DONE 2026-04-30 — `pk_integration.json:compound_class` matcher shipped; PointCross MATCH (small_molecule baseline) + Study1/2/3/4 SCIENCE-FLAG (engine has no vaccine/gene_therapy classifier in pk_integration.py modality-detection path). 4 new flags reinforce Stream 1 at the source rather than via downstream class_distribution proxy. AUDIT-15-style per-study expansion (other 11 studies) deferred. |
 | **AUDIT-8** | `onset_concordance` matcher | Tier 3, multi-timepoint studies |
 | ~~**AUDIT-9**~~ | ~~Sex-specific NOAEL/LOAEL extension~~ | DONE 2026-04-30 — `sex` field added to noael_combined/loael_combined matchers; TOXSCI-43066 M=null MATCH + F=1 SCIENCE-FLAG (Stream 2 evidence) |
 | **AUDIT-10** | `cross_organ_syndrome` matcher | Tier 2, Hy's-Law-style cross-organ patterns |
