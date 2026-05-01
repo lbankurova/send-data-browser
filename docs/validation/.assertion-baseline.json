@@ -115,6 +115,31 @@
     "description": "Recovery arms merged into pooled N of 18M/18F for Vehicle and High"
   },
   {
+    "study_id": "PointCross",
+    "type": "cross_organ_syndrome",
+    "description": "Multi-organ co-firing (7 organs, 16 syndromes); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG (Stream 5)"
+  },
+  {
+    "study_id": "PointCross",
+    "type": "onset_concordance",
+    "description": "HIGH ALP onset registered for >=5 subjects by day 92 (cohort M 1.29x / F 1.53x g=2.81, hepatic flagged -- engine emits 0/29 SCIENCE-FLAG Stream 6 worst-case complete miss)"
+  },
+  {
+    "study_id": "PointCross",
+    "type": "onset_concordance",
+    "description": "HIGH ALT onset registered for >=5 subjects by day 92 (cohort M 1.34x / F 1.25x, hepatic flagged -- engine emits 1/29 SCIENCE-FLAG Stream 6 sister)"
+  },
+  {
+    "study_id": "PointCross",
+    "type": "onset_concordance",
+    "description": "HIGH AST onset registered for >=5 of 10 affected subjects by day 92 (cohort 1.41x M / 1.56x F -- engine emits 1/10 SCIENCE-FLAG Stream 6)"
+  },
+  {
+    "study_id": "PointCross",
+    "type": "recovery_verdict",
+    "description": "HIGH hepatic hypertrophy: persistent verdict (main arm 9/10 sev 2.56; engine reports anomaly -- SCIENCE-FLAG)"
+  },
+  {
     "study_id": "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt",
     "type": "noael_combined",
     "description": "Female NOAEL = 1 (Low 25 mg/kg tolerated per published call; SCIENCE-FLAG vs engine null -- Stream 2 evidence)"
@@ -145,23 +170,13 @@
     "description": "TK satellites (~18/treated group) excluded from analysis"
   },
   {
-    "study_id": "PointCross",
-    "type": "cross_organ_syndrome",
-    "description": "Multi-organ co-firing (7 organs, 16 syndromes); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG (Stream 5)"
-  },
-  {
-    "study_id": "PointCross",
-    "type": "onset_concordance",
-    "description": "HIGH AST onset registered for >=5 of 10 affected subjects by day 92 (cohort 1.41x M / 1.56x F -- engine emits 1/10 SCIENCE-FLAG Stream 6)"
-  },
-  {
-    "study_id": "PointCross",
-    "type": "recovery_verdict",
-    "description": "HIGH hepatic hypertrophy: persistent verdict (main arm 9/10 sev 2.56; engine reports anomaly -- SCIENCE-FLAG)"
-  },
-  {
     "study_id": "TOXSCI-24-0062--96298 1 month rat- Compound A xpt",
     "type": "no_recovery",
     "description": "No recovery period"
+  },
+  {
+    "study_id": "TOXSCI-24-0062--96298 1 month rat- Compound A xpt",
+    "type": "onset_concordance",
+    "description": "HIGH CHOL onset registered for >=5 subjects by day 29 (cohort M 1.68x g=2.70 p<0.001 -- engine emits 0/30 SCIENCE-FLAG Stream 6 cross-study reproduction)"
   }
 ]

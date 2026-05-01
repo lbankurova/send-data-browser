@@ -80,3 +80,46 @@ assertions:
     expected_syndrome_id: "phospholipidosis"
     expected_organs: ["hepatic", "respiratory", "renal", "hematologic"]
     min_count: 32
+
+  # Onset concordance (AUDIT-22 cross-study expansion of AUDIT-8 PointCross
+  # anchor). 1-month rat with terminal LB at day 29; HIGH dose group_order=3
+  # (15M+15F = 30 subjects, all 30 present in subject_onset_days.json). Two
+  # assertions test orthogonal halves of Stream 6:
+  #
+  # 1. NAG regression pin (MATCH): renal-marker N-acetylglucosaminidase rises
+  #    strongly at HIGH F (cohort 1.84x, g=1.20, p=0.001), and the engine
+  #    correctly catches 6 HIGH-dose subjects via the 2x rule -- all 6 are
+  #    female, consistent with the F-dominant cohort signal. Locks the engine's
+  #    correct emission on dramatic-effect renal markers; would catch a
+  #    regression to fewer or zero. Demonstrates the per-subject 2x rule works
+  #    when the cohort effect is large enough to push individual subjects past
+  #    threshold -- this is the engine's design intent, not a defect.
+  #
+  # 2. CHOL SCIENCE-FLAG: cholesterol rises strongly at HIGH M (cohort 1.68x,
+  #    g=2.70, p<0.001) but engine emits 0/30 onsets -- not even the
+  #    F-dominant single-subject path that PointCross AST/ALT show. Stream 6
+  #    reproduces cleanly across study, compound (Compound A vs PointCross's
+  #    different molecule), and finding (cholesterol vs AST/ALT/ALP). Cohort
+  #    is statistically real with the largest effect size in this study's LB
+  #    panel; toxicologist would call CHOL elevation hepatic-relevant
+  #    adversity given concurrent renal involvement. Engine emits 0 because
+  #    no individual M HIGH subject reaches 2x baseline mean despite the
+  #    population shift. Same root cause as PC AST/ALT/ALP: per-subject 2x
+  #    threshold misses cohort-level adversity at <2x per-subject. min_count
+  #    set to 5 paralleling PC's "≥5 of N HIGH-dose subjects expected"
+  #    framing -- represents the toxicologist's expectation that meaningful
+  #    cohort adversity should yield onset on multiple subjects, not zero.
+  - type: "onset_concordance"
+    description: "HIGH NAG onset registered for >=6 subjects by day 29 (regression pin -- engine catches F-dominant 1.84x cohort signal, 6/30 HIGH subjects all F)"
+    dose_level: 3
+    domain: "LB"
+    finding_pattern: "^NAG$"
+    max_onset_day: 29
+    min_count: 6
+  - type: "onset_concordance"
+    description: "HIGH CHOL onset registered for >=5 subjects by day 29 (cohort M 1.68x g=2.70 p<0.001 -- engine emits 0/30 SCIENCE-FLAG Stream 6 cross-study reproduction)"
+    dose_level: 3
+    domain: "LB"
+    finding_pattern: "^CHOL$"
+    max_onset_day: 29
+    min_count: 5

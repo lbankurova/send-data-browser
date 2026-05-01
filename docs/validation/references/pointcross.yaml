@@ -311,3 +311,43 @@ assertions:
     finding_pattern: "ALOPECIA"
     max_onset_day: 90
     min_count: 1
+
+  # AUDIT-22 expansion: sister hepatic markers (ALT, ALP) reproduce Stream 6
+  # within PointCross. Same dose group, same domain, same hepatic target-organ
+  # flag (target_organ_summary[hepatic]: target_organ_flag=true, severity=3.0,
+  # grade=moderate). Cohort ratios parallel AST in magnitude:
+  #   - ALT: M 1.34x g=1.09, F 1.25x g=2.13 at day 92 HIGH
+  #   - ALP: M 1.29x g=1.51, F 1.53x g=2.81 at day 92 HIGH
+  # Engine emits:
+  #   - ALT: 1/29 HIGH subjects (same single subject as AST -- PC201708-4009;
+  #     this subject is the lone HIGH-dose individual whose hepatic chemistry
+  #     crosses the 2x rule on multiple markers simultaneously)
+  #   - ALP: 0/29 HIGH subjects (complete miss -- worst-case Stream 6 even
+  #     though F cohort ratio 1.53x exceeds AST F's 1.56x marginally and ALP's
+  #     F effect size 2.81 is the strongest of the three hepatic markers)
+  # Together with AST these three pins demonstrate Stream 6 is not an
+  # AST-specific quirk but reproduces across hepatic chemistry markers in this
+  # study, sized monotonically with how close cohort ratio approaches the 2x
+  # threshold. ALP's zero emit is the clearest demonstration: large cohort
+  # signal, moderate hepatic target-organ flag, full miss by per-subject 2x.
+  - type: "onset_concordance"
+    description: "HIGH ALT onset registered for >=1 subject by day 92 (regression pin -- engine catches PC201708-4009 via 2x rule, co-firing with AST)"
+    dose_level: 3
+    domain: "LB"
+    finding_pattern: "^ALT$"
+    max_onset_day: 92
+    min_count: 1
+  - type: "onset_concordance"
+    description: "HIGH ALT onset registered for >=5 subjects by day 92 (cohort M 1.34x / F 1.25x, hepatic flagged -- engine emits 1/29 SCIENCE-FLAG Stream 6 sister)"
+    dose_level: 3
+    domain: "LB"
+    finding_pattern: "^ALT$"
+    max_onset_day: 92
+    min_count: 5
+  - type: "onset_concordance"
+    description: "HIGH ALP onset registered for >=5 subjects by day 92 (cohort M 1.29x / F 1.53x g=2.81, hepatic flagged -- engine emits 0/29 SCIENCE-FLAG Stream 6 worst-case complete miss)"
+    dose_level: 3
+    domain: "LB"
+    finding_pattern: "^ALP$"
+    max_onset_day: 92
+    min_count: 5

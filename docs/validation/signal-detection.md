@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `e37bd675` (2026-04-30)
-**Generated:** 2026-04-30T23:33:15.288Z
+**Engine:** commit `788beb10` (2026-05-01)
+**Generated:** 2026-05-01T02:31:04.136Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -381,7 +381,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | # | Signal | Domain | Sex | Class | Effect Size | p | Verdict | Note |
 |---|--------|--------|-----|-------|-------------|---|---------|------|
 | 1 | Body weight decreased | BW | any | tr_adverse | -3.38 | <0.001 | **DETECTED** |  |
-| 2 | Body weight gain decreased | BG | any | tr_adverse | -3.40 | <0.001 | **DETECTED** |  |
+| 2 | Body weight gain decreased | BG | any | equivocal | 0.64 | 0.257 | **DETECTED** |  |
 | 3 | AST increased | LB | any | tr_adverse | 1.73 | <0.001 | **DETECTED** |  |
 | 4 | ALT increased | LB | any | tr_adverse | 1.09 | 0.007 | **DETECTED** |  |
 | 5 | ALP increased | LB | any | tr_adverse | 1.59 | 0.002 | **DETECTED** |  |
@@ -426,6 +426,9 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | onset_concordance | HIGH AST onset registered for >=1 subject by day 92 (regression pin -- engine catches PC201708-4009 via 2x rule) | 1 subject(s) (>=1) match (dose_level=3, domain=LB, finding=/^AST$/i, onset_day<=92); 29 subjects scanned in dose stratum; matched keys: LB:AST | **MATCH** |
 | onset_concordance | HIGH AST onset registered for >=5 of 10 affected subjects by day 92 (cohort 1.41x M / 1.56x F -- engine emits 1/10 SCIENCE-FLAG Stream 6) | VIOLATION: 1 subject(s) match (dose_level=3, domain=LB, finding=/^AST$/i, onset_day<=92; expected >=5); 29 subjects scanned in dose stratum; matched keys: LB:AST | **MISMATCH** |
 | onset_concordance | HIGH CL:ALOPECIA onset registered for >=1 subject by day 90 (data-preservation pin from raw_subject_onset_days) | 1 subject(s) (>=1) match (dose_level=3, domain=CL, finding=/ALOPECIA/i, onset_day<=90); 29 subjects scanned in dose stratum; matched keys: CL:ALOPECIA | **MATCH** |
+| onset_concordance | HIGH ALT onset registered for >=1 subject by day 92 (regression pin -- engine catches PC201708-4009 via 2x rule, co-firing with AST) | 1 subject(s) (>=1) match (dose_level=3, domain=LB, finding=/^ALT$/i, onset_day<=92); 29 subjects scanned in dose stratum; matched keys: LB:ALT | **MATCH** |
+| onset_concordance | HIGH ALT onset registered for >=5 subjects by day 92 (cohort M 1.34x / F 1.25x, hepatic flagged -- engine emits 1/29 SCIENCE-FLAG Stream 6 sister) | VIOLATION: 1 subject(s) match (dose_level=3, domain=LB, finding=/^ALT$/i, onset_day<=92; expected >=5); 29 subjects scanned in dose stratum; matched keys: LB:ALT | **MISMATCH** |
+| onset_concordance | HIGH ALP onset registered for >=5 subjects by day 92 (cohort M 1.29x / F 1.53x g=2.81, hepatic flagged -- engine emits 0/29 SCIENCE-FLAG Stream 6 worst-case complete miss) | VIOLATION: 0 subject(s) match (dose_level=3, domain=LB, finding=/^ALP$/i, onset_day<=92; expected >=5); 29 subjects scanned in dose stratum; matched keys: none | **MISMATCH** |
 
 ---
 
@@ -537,5 +540,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | mortality_loael | mortality_loael = 2 (1 actual death at Mid dose 125 mg/kg, accepted per engine cause analysis) | mortality_loael=2, 1 deaths + 0 accidental (expected 2) | **MATCH** |
 | class_distribution | Engine produces tr_adverse findings (LOAEL fires); all findings classified | 491 findings all domains; tr_adverse=31, not_assessed=0 | **MATCH** |
 | cross_organ_syndrome | Phospholipidosis cross-organ entry (hepatic+respiratory+renal+hematologic; n>=32) | cross_organ entry "phospholipidosis": organs=[hepatic,respiratory,renal,hematologic], n=32 | **MATCH** |
+| onset_concordance | HIGH NAG onset registered for >=6 subjects by day 29 (regression pin -- engine catches F-dominant 1.84x cohort signal, 6/30 HIGH subjects all F) | 6 subject(s) (>=6) match (dose_level=3, domain=LB, finding=/^NAG$/i, onset_day<=29); 30 subjects scanned in dose stratum; matched keys: LB:NAG | **MATCH** |
+| onset_concordance | HIGH CHOL onset registered for >=5 subjects by day 29 (cohort M 1.68x g=2.70 p<0.001 -- engine emits 0/30 SCIENCE-FLAG Stream 6 cross-study reproduction) | VIOLATION: 0 subject(s) match (dose_level=3, domain=LB, finding=/^CHOL$/i, onset_day<=29; expected >=5); 30 subjects scanned in dose stratum; matched keys: none | **MISMATCH** |
 
 ---
