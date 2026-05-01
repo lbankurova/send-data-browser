@@ -73,3 +73,15 @@ assertions:
   - type: "mortality_loael"
     description: "mortality_loael = null (zero deaths)"
     expected_value: null
+
+  # tumor_detected (Phase 3 matcher #4 -- AUDIT-16 per-study expansion). 22-day
+  # CV safety pharmacology study (Cynomolgus, within-subject dose escalation,
+  # single dose per period). Engine emits has_tumors=false with empty summaries.
+  # Defensible per regulatory toxicology convention -- 22-day single-dose-per-
+  # period CV safety pharm cannot detect neoplasms (carcinogenicity assessment
+  # requires 2-year rodent design; NHP studies in any case rarely include tumor
+  # evaluation as endpoint). Absence pin -- regression pin locking engine's
+  # correct refusal under within-subject CV-pharm conditions.
+  - type: "tumor_detected"
+    description: "No tumors expected in 22-day CV safety pharm (cyno within-subject escalation); engine has_tumors=false (regression pin)"
+    expected_has_tumors: false

@@ -60,3 +60,15 @@ assertions:
   - type: "mortality_loael"
     description: "mortality_loael = null (zero deaths)"
     expected_value: null
+
+  # tumor_detected (Phase 3 matcher #4 -- AUDIT-16 per-study expansion). ~7-week
+  # multi-compound IV study (Cynomolgus, n=10 across 5 dose levels). Engine
+  # emits has_tumors=false with empty summaries. Defensible per regulatory
+  # toxicology convention -- 7-week duration is short subchronic; NHP studies
+  # at this duration do not include tumor evaluation as endpoint, and multi-
+  # compound design further reduces per-compound power for any neoplastic
+  # signal. Absence pin -- regression pin locking engine's correct refusal
+  # under multi-compound IV-pharma conditions.
+  - type: "tumor_detected"
+    description: "No tumors expected in 7-week multi-compound IV (cyno n=10 across 5 doses); engine has_tumors=false (regression pin)"
+    expected_has_tumors: false

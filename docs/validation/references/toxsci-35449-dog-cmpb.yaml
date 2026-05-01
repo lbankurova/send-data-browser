@@ -146,3 +146,15 @@ assertions:
     domain: "MI"
     expected_verdict: "insufficient_n"
     min_count: 10
+
+  # tumor_detected (Phase 3 matcher #4 -- AUDIT-16 per-study expansion). 4-week
+  # + 4-week-recovery dog study (Compound B). Engine emits has_tumors=false
+  # with empty summaries. Defensible per regulatory toxicology convention --
+  # 4-week canine repeat-dose cannot detect neoplasms (carcinogenicity assess-
+  # ment is rodent-only, 2-year design); even chronic 1-year canine studies
+  # do not reliably detect spontaneous tumors due to small N (n=4-10/dose).
+  # Absence pin -- regression pin locking engine's correct refusal under
+  # short-duration canine conditions.
+  - type: "tumor_detected"
+    description: "No tumors expected in 4-week dog repeat-dose (Compound B, n=10/dose); engine has_tumors=false (regression pin)"
+    expected_has_tumors: false

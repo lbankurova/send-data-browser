@@ -252,3 +252,14 @@ assertions:
     finding_pattern: "^FIBRINO$"
     max_onset_day: 31
     min_count: 5
+
+  # tumor_detected (Phase 3 matcher #4 -- AUDIT-16 per-study expansion). 29-day
+  # vaccine repeat-dose study (NZW rabbit, 3 doses q2w + 28-day recovery, 2
+  # adjuvanted vaccine arms). Engine emits has_tumors=false with empty summaries.
+  # Defensible per regulatory toxicology convention -- 29-day vaccine subchronic;
+  # vaccine biology produces strong inflammation + immune-cascade signal but no
+  # neoplastic findings expected at this duration. Absence pin -- regression pin
+  # locking engine's correct refusal under vaccine-inflammation conditions.
+  - type: "tumor_detected"
+    description: "No tumors expected in 29-day adjuvanted vaccine subchronic (NZW rabbit, 3 doses q2w); engine has_tumors=false (regression pin)"
+    expected_has_tumors: false

@@ -122,3 +122,15 @@ assertions:
     expected_syndrome_id: "phospholipidosis"
     expected_organs: ["hepatic", "respiratory", "renal", "hematologic"]
     min_count: 3
+
+  # tumor_detected (Phase 3 matcher #4 -- AUDIT-16 per-study expansion). 24-week
+  # single-dose AAV gene therapy in cyno (n=3 vector + n=3 baseline + n=3 vehicle).
+  # Engine emits has_tumors=false with empty summaries. Defensible per regulatory
+  # toxicology convention -- 24-week duration is below carcinogenicity assay
+  # threshold (2-year rodent); tumor formation in NHP at 24 weeks is rare and not
+  # a study endpoint. Phospholipidosis (multi-organ AAV biodistribution) is the
+  # active syndrome; no neoplastic findings expected. Absence pin -- regression
+  # pin locking engine's correct refusal under no-control gene-therapy conditions.
+  - type: "tumor_detected"
+    description: "No tumors expected in 24-week single-dose AAV gene therapy NHP (n=3/group, no-concurrent-control); engine has_tumors=false (regression pin)"
+    expected_has_tumors: false

@@ -97,3 +97,14 @@ assertions:
   - type: "cross_organ_syndrome"
     description: "Cross-organ syndromes empty (no adverse multi-organ pattern in non-adjuvanted vaccine; engine correct refusal -- absence pin)"
     max_count: 0
+
+  # tumor_detected (Phase 3 matcher #4 -- AUDIT-16 per-study expansion). Single-
+  # arm immunogenicity characterization in 4F cynos, 20 ug/dose IM, 4 doses --
+  # tumor evaluation not in scope. Engine emits has_tumors=false with empty
+  # summaries. Defensible per regulatory toxicology convention (carcinogenicity
+  # assessment requires 2-year rodent design; immunogenicity studies in NHP
+  # cannot detect neoplasms). Absence pin locks the engine's correct refusal
+  # to fabricate tumor signal under no-tumor-evaluation conditions.
+  - type: "tumor_detected"
+    description: "No tumors expected (single-arm vaccine immunogenicity, 4F cyno, no MA findings); engine has_tumors=false (regression pin)"
+    expected_has_tumors: false

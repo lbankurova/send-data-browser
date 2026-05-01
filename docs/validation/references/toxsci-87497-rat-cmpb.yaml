@@ -97,3 +97,27 @@ assertions:
     expected_syndrome_id: "phospholipidosis"
     expected_organs: ["hepatic", "respiratory", "renal", "hematologic"]
     min_count: 1
+
+  # tumor_detected (Phase 3 matcher #4 -- AUDIT-16 per-study expansion). 4-week
+  # + 4-week-recovery rat study (Compound B, SD, 0/25/125/1000 mg/kg). Engine
+  # emits has_tumors=true on a single spontaneous benign kidney adenoma in M
+  # control animal (1/13 control, 0/10 at all treated doses; trend_p=0.22 --
+  # NOT dose-trend-positive). Defensible call: this is a background incidence
+  # in untreated control, NOT treatment-related. Engine's binary has_tumors
+  # flag is operating correctly per its definition (any isNeoplastic finding
+  # fires the surface), but the flag does not differentiate spontaneous vs
+  # treatment-related tumors -- downstream consumers (NOAEL pipeline, target-
+  # organ rollup, adversity classification) must not interpret has_tumors=
+  # true as adversity in the absence of dose-trend evidence. REGRESSION_PIN
+  # locks the engine's correct detection of the kidney adenoma in summaries;
+  # per-tumor pin asserts the morphology surfaces. Counter-example to the 13
+  # other AUDIT-16 absence-pin authoring (which lock has_tumors=false) -- this
+  # is the only AUDIT-16 study with a non-empty tumor_summary, exercising
+  # the engine's positive-detection path on a low-incidence background lesion.
+  - type: "tumor_detected"
+    description: "Single spontaneous KIDNEY ADENOMA BENIGN in M control (1/13; 0/10 at all treated; trend_p=0.22 -- background incidence, not treatment-related); engine has_tumors=true correctly fires on isNeoplastic flag (regression pin -- downstream consumers must differentiate spontaneous vs treatment-related)"
+    expected_has_tumors: true
+    expected_tumors:
+      - organ: "KIDNEY"
+        morphology_pattern: "ADENOMA"
+        min_count: 1

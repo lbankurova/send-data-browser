@@ -167,3 +167,15 @@ assertions:
   - type: "cross_organ_syndrome"
     description: "Multi-organ co-firing (14 target_organs at HIGH 100 mg/kg dog); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-SPECIES reproduction (rat -> dog parallel to Stream 6 evidence)"
     min_count: 1
+
+  # tumor_detected (Phase 3 matcher #4 -- AUDIT-16 per-study expansion). 1-month
+  # + 2-week-recovery dog study (Compound A, 14-organ multi-target co-firing
+  # study with Stream 5 + Stream 6 cross-species SCIENCE-FLAGs). Engine emits
+  # has_tumors=false with empty summaries. Defensible per regulatory toxicology
+  # convention -- 1-month canine repeat-dose cannot detect neoplasms regardless
+  # of multi-organ adversity; carcinogenicity assessment is rodent-only with
+  # 2-year design. Absence pin -- regression pin locking engine's correct
+  # refusal even under aggressive multi-organ-effect conditions.
+  - type: "tumor_detected"
+    description: "No tumors expected in 1-month dog repeat-dose (Compound A, 14 target_organs at HIGH); engine has_tumors=false (regression pin)"
+    expected_has_tumors: false

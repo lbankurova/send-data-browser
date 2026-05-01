@@ -163,3 +163,15 @@ assertions:
     finding_pattern: "^RETI$"
     max_onset_day: 31
     min_count: 5
+
+  # tumor_detected (Phase 3 matcher #4 -- AUDIT-16 per-study expansion). 1-month
+  # rat repeat-dose study (Sprague-Dawley, n=26-36/dose, multi-organ syndrome-
+  # active including hematopoiesis/erythropoiesis Stream 6 trigger). Engine
+  # emits has_tumors=false with empty summaries. Defensible per regulatory
+  # toxicology convention -- 30-day rodent repeat-dose is below carcinogenicity
+  # assay duration; tumor formation at this duration is rare/incidental and not
+  # a study endpoint regardless of multi-organ syndrome activity. Absence pin --
+  # regression pin locking engine's correct refusal.
+  - type: "tumor_detected"
+    description: "No tumors expected in 1-month rat repeat-dose (SD, n=26-36/dose); engine has_tumors=false (regression pin)"
+    expected_has_tumors: false

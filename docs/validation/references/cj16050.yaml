@@ -97,3 +97,15 @@ assertions:
     description: "Engine flags RE-domain findings as tr_adverse (biphasic effects at both doses)"
     expected_classes:
       tr_adverse: { min: 1 }
+
+  # tumor_detected (Phase 3 matcher #4 -- AUDIT-16 per-study expansion). Single-
+  # dose acute respiratory pharmacology study (Sprague-Dawley rat, 8h post-dose
+  # observation). Engine emits has_tumors=false with empty summaries. Defensible
+  # per regulatory toxicology convention -- single-dose 8h-observation acute
+  # study cannot detect neoplasms (carcinogenicity assessment requires 2-year
+  # rodent design; even subchronic 90-day rodent shows tumors only as incidental).
+  # Absence pin -- regression pin locking engine's correct refusal under acute
+  # single-dose conditions.
+  - type: "tumor_detected"
+    description: "No tumors expected in single-dose 8h acute respiratory pharm (rat); engine has_tumors=false (regression pin)"
+    expected_has_tumors: false

@@ -153,3 +153,13 @@ assertions:
   - type: "compound_class_flag"
     description: "Compound modality = vaccine (456a IM rabbit; SME-confirmed vaccine_non_adjuvanted)"
     expected_compound_class: "vaccine"
+
+  # tumor_detected (Phase 3 matcher #4 -- AUDIT-16 per-study expansion). 29-day
+  # vaccine repeat-dose study (456a IM rabbit, 3 doses q2w + 21-day recovery).
+  # Engine emits has_tumors=false with empty summaries. Defensible per regulatory
+  # toxicology convention -- 29-day duration is short subchronic; tumor formation
+  # in rabbits at this duration is rare/incidental and not a study endpoint.
+  # Absence pin locks the engine's correct refusal to fabricate tumor signal.
+  - type: "tumor_detected"
+    description: "No tumors expected in 29-day vaccine subchronic (NZW rabbit, 3 doses q2w); engine has_tumors=false (regression pin)"
+    expected_has_tumors: false

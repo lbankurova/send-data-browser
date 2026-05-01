@@ -165,3 +165,15 @@ assertions:
     finding_pattern: "^CHOL$"
     max_onset_day: 30
     min_count: 5
+
+  # tumor_detected (Phase 3 matcher #4 -- AUDIT-16 per-study expansion). 1-month
+  # rat repeat-dose study (Sprague-Dawley, 5 groups including dual control,
+  # n=30/dose). Phospholipidosis-active study (cross_organ_syndrome MATCH at
+  # n=7), but no neoplastic findings expected. Engine emits has_tumors=false
+  # with empty summaries. Defensible per regulatory toxicology convention --
+  # 30-day rodent repeat-dose is below carcinogenicity assay duration; tumor
+  # formation at this duration is rare/incidental and not a study endpoint.
+  # Absence pin -- regression pin locking engine's correct refusal.
+  - type: "tumor_detected"
+    description: "No tumors expected in 1-month rat repeat-dose (SD, n=30/dose, dual control); engine has_tumors=false (regression pin)"
+    expected_has_tumors: false

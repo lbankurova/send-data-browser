@@ -135,3 +135,14 @@ assertions:
     expected_classes:
       treatment_related_concerning: { min: 1 }
       treatment_related: { min: 1 }
+
+  # tumor_detected (Phase 3 matcher #4 -- AUDIT-16 per-study expansion). Latin-
+  # square crossover CV safety pharmacology study (Beagle dog, single-dose per
+  # period, 10+ day washout). Engine emits has_tumors=false with empty summaries.
+  # Defensible per regulatory toxicology convention -- single-dose CV safety
+  # pharm cannot detect neoplasms (tumor evaluation requires repeat-dose
+  # subchronic minimum, ideally 2-year carcinogenicity design). Absence pin --
+  # regression pin locking engine's correct refusal under acute-pharm conditions.
+  - type: "tumor_detected"
+    description: "No tumors expected in single-dose Latin-square CV safety pharm (Beagle dog, crossover); engine has_tumors=false (regression pin)"
+    expected_has_tumors: false
