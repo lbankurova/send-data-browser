@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { getDoseGroupColor, formatDoseShortLabel, getSeverityGradeColor } from "@/lib/severity-colors";
 import { useTimecourseGroup } from "@/hooks/useTimecourse";
+import { useStudyMetadata } from "@/hooks/useStudyMetadata";
+import { getDoseLabel } from "@/lib/dose-label-utils";
 import type { TimecourseResponse } from "@/types/timecourse";
 import { ci95Half } from "@/lib/stats-utils";
 import {
@@ -163,7 +165,7 @@ function SubjectForestPlot({ points, endpoints }: { points: OrganScatterPoint[];
 // ─── BW Sparkline (§1) ──────────────────────────────────
 
 interface GroupPoint { day: number; mean: number; sd: number; n: number; ciLower: number; ciUpper: number }
-interface GroupSeries { points: GroupPoint[]; label: string }
+interface GroupSeries { points: GroupPoint[] }
 
 function buildGroupSeries(data: TimecourseResponse, sex: string): Record<number, GroupSeries> {
   const result: Record<number, GroupSeries> = {};
@@ -171,7 +173,7 @@ function buildGroupSeries(data: TimecourseResponse, sex: string): Record<number,
     for (const g of tp.groups) {
       if (g.sex !== sex) continue;
       const half = ci95Half(g.sd, g.n);
-      if (!result[g.dose_level]) result[g.dose_level] = { points: [], label: g.dose_label };
+      if (!result[g.dose_level]) result[g.dose_level] = { points: [] };
       result[g.dose_level].points.push({
         day: tp.day,
         mean: g.mean,
@@ -200,6 +202,8 @@ function BWSparkline({ measurements, studyId, sex, doseLevel }: {
   );
 
   const { data: groupData } = useTimecourseGroup(studyId, "BW", "BW", sex as "M" | "F", true);
+  const { data: studyMeta } = useStudyMetadata(studyId);
+  const doseGroups = studyMeta?.dose_groups ?? undefined;
   const terminalDay = groupData?.terminal_sacrifice_day ?? null;
 
   const groupSeries = useMemo(
@@ -280,14 +284,16 @@ function BWSparkline({ measurements, studyId, sex, doseLevel }: {
   // Detect whether subject extends into recovery
   const hasRecovery = terminalDay != null && dayMax > terminalDay;
 
-  // Build legend entries: group lines only
+  // Build legend entries: group lines only.
+  // Use getDoseLabel() per design-decisions.md 3-tier convention -- never
+  // hand-concatenate group/dose strings in chart labels (GAP-308).
   const legendEntries: { key: string; label: string; color: string }[] = [];
   for (const dl of doseLevels) {
     const gs = groupSeries?.[dl];
     if (!gs) continue;
     legendEntries.push({
       key: `group-${dl}`,
-      label: `${dl === 0 ? "Control" : gs.label} mean`,
+      label: `${getDoseLabel(dl, doseGroups)} mean`,
       color: getDoseGroupColor(dl),
     });
   }
@@ -368,7 +374,7 @@ function BWSparkline({ measurements, studyId, sex, doseLevel }: {
                 strokeLinecap="round"
                 opacity={0.85}
               >
-                <title>{gs.label} mean</title>
+                <title>{getDoseLabel(dl, doseGroups)} mean</title>
               </polyline>
             );
           })}
