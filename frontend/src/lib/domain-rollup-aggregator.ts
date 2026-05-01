@@ -251,6 +251,13 @@ export function buildPerEndpointCellRich(
     return { ...empty, content: sig ? "*" : "", empty: !sig, pValue, direction, n, sig };
   }
   if (domain === "MI") {
+    // Spec F4 cited `getSeverityGrade()` from domain-types.ts:35 as the reuse
+    // anchor for the MI cell, but that function returns `f.max_effect_size`
+    // (per-finding average severity, a single number) -- a different shape
+    // and semantic from per-dose grade-count aggregation. Per-dose cell
+    // display needs the worst grade observed AT THIS DOSE and the count of
+    // animals showing it, sourced from `group_stats[doseLevel].severity_grade_counts`.
+    // Documented spec deviation: getSeverityGrade is per-endpoint, not per-dose.
     let maxGrade = 0;
     let countAtMax = 0;
     for (const f of fs) {

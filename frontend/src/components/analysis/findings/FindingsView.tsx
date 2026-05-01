@@ -19,6 +19,7 @@ import { buildDoseColumns } from "@/lib/dose-columns";
 import { deriveOrganScopeStats, deriveSyndromeScopeStats } from "@/lib/scope-stats";
 import { useSyndromeInterpretation } from "@/hooks/useSyndromeInterpretation";
 import { buildSyndromeClassificationChips } from "@/lib/syndrome-classification-chips";
+import { computeOrganNoaelDisplay } from "@/lib/organ-noael";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useSyndromeRollup } from "@/hooks/useSyndromeRollup";
 import { ViewSection } from "@/components/ui/ViewSection";
@@ -113,6 +114,14 @@ export function FindingsView() {
     () => buildSyndromeClassificationChips(syndromeInterp),
     [syndromeInterp],
   );
+
+  // F7: organ-side ScopeBanner fields. nUnscheduledDeaths comes from
+  // study-level mortality (early-death subjects); recoveryStatus reflects
+  // whether the study has a recovery cohort. organNoael (per-organ) uses
+  // the same computeOrganNoaelDisplay function as OrganContextPanel — wired
+  // here so the ScopeBanner picks it up before F12 deletes the rail-side pane.
+  const nUnscheduledDeaths = mortalityData?.early_death_details?.length ?? 0;
+  const organRecoveryStatus = studyHasRecovery ? "Recovery arm" : null;
   const [filterLabels, setFilterLabels] = useState<string[]>([]);
   const [activeEndpoint, setActiveEndpoint] = useState<string | null>(null);
   const [activeDomain, setActiveDomain] = useState<string | undefined>(undefined);
@@ -680,6 +689,11 @@ export function FindingsView() {
                 }
                 // organ / domain / pattern / compound — banner with organ-style stats
                 const stats = deriveOrganScopeStats(scopedEndpoints, scopeLabel);
+                // Organ-NOAEL only computed for true organ scope; for domain /
+                // pattern / compound the per-organ driver concept doesn't apply.
+                const organNoaelLabel = scopeType === "organ" && data?.findings
+                  ? computeOrganNoaelDisplay(data.findings, scopedEndpoints, data.dose_groups).organNoael
+                  : null;
                 return (
                   <ScopeBanner
                     kind="organ"
@@ -687,9 +701,9 @@ export function FindingsView() {
                     backLabel={backState?.label}
                     stats={{
                       ...stats,
-                      noaelLabel: null,        /* organ NOAEL move = Phase 5 (Feature 12) */
-                      nUnscheduledDeaths: 0,    /* mortality wiring deferred */
-                      recoveryStatus: null,
+                      noaelLabel: organNoaelLabel,
+                      nUnscheduledDeaths,
+                      recoveryStatus: organRecoveryStatus,
                     }}
                   />
                 );

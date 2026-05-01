@@ -81,7 +81,7 @@
 | Effect size formatting | `formatEffectSize()` from `severity-colors.ts` | Manual `toFixed(2)` | — |
 | Collapsible sections | `<CollapsiblePane>` from `components/analysis/panes/` | Custom accordion / disclosure | — |
 | Charts with time series / dose-response | ECharts via `<EChartsWrapper>` | Raw SVG for standard charts | — |
-| Charts needing custom layout (scatter, forest, heatmap) | Direct SVG (`BivarScatterChart`, `GroupForestPlot`, `OrganGroupedHeatmap`) | ECharts for highly custom layouts | — |
+| Charts needing custom layout (scatter, strip plot) | Direct SVG (`BivarScatterChart`, `StripPlotChart`) | ECharts for highly custom layouts | — |
 | Context panel back/forward | `< >` icon buttons | Breadcrumb navigation (hard rule) | A-09 |
 | Self-labeling filter default | `"All {dimension}"` (e.g., "All domains") | Generic `"All types"` or bare noun | K-08 |
 | Truncated text (>25 chars) | Add `title` tooltip | No tooltip | K-01 |

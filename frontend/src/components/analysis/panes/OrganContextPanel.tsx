@@ -31,8 +31,8 @@ import { getTierSeverityLabel, getOrganCorrelationCategory } from "@/lib/organ-w
 import { NormalizationHeatmap } from "./NormalizationHeatmap";
 import { CorrelationMatrixPane } from "./CorrelationMatrixPane";
 import { useOrganCorrelations } from "@/hooks/useOrganCorrelations";
-import { getDoseLabel } from "@/lib/dose-label-utils";
-import type { FindingsFilters, UnifiedFinding, NormalizationOverride } from "@/types/analysis";
+import { computeOrganNoaelDisplay } from "@/lib/organ-noael";
+import type { FindingsFilters, NormalizationOverride } from "@/types/analysis";
 
 // ─── Constants ─────────────────────────────────────────────
 
@@ -64,143 +64,6 @@ const DOMAIN_DESCRIPTIONS: Record<string, string> = {
 };
 
 // ─── NOAEL computation ─────────────────────────────────────
-
-/**
- * More robust NOAEL computation using the full findings data.
- * Returns sorted list with dose labels.
- */
-interface EndpointNoaelDisplay {
-  endpoint_label: string;
-  noaelLabel: string;
-  noaelDoseLevel: number; // for sorting: -1 = below range, 0+ = dose level, Infinity = all clear
-  isDriving: boolean;
-}
-
-function computeOrganNoaelDisplay(
-  findings: UnifiedFinding[],
-  organEndpoints: EndpointSummary[],
-  doseGroups?: Array<{ dose_level: number; dose_value: number | null; dose_unit: string | null; label: string }>,
-): { organNoael: string; drivingEndpoint: string; endpoints: EndpointNoaelDisplay[] } {
-  const endpointLabels = new Set(organEndpoints.map(e => e.endpoint_label));
-
-  // Group findings by endpoint
-  const byEndpoint = new Map<string, UnifiedFinding[]>();
-  for (const f of findings) {
-    const label = f.endpoint_label ?? f.finding;
-    if (!endpointLabels.has(label)) continue;
-    let list = byEndpoint.get(label);
-    if (!list) {
-      list = [];
-      byEndpoint.set(label, list);
-    }
-    list.push(f);
-  }
-
-  const dl = (level: number) => getDoseLabel(level, doseGroups);
-
-  const results: EndpointNoaelDisplay[] = [];
-  let minNoaelLevel = Infinity;
-  let drivingEndpoint = "";
-
-  for (const epSummary of organEndpoints) {
-    const label = epSummary.endpoint_label;
-    const epFindings = byEndpoint.get(label);
-
-    if (!epFindings || epFindings.length === 0) {
-      results.push({
-        endpoint_label: label,
-        noaelLabel: "No data",
-        noaelDoseLevel: Infinity,
-        isDriving: false,
-      });
-      continue;
-    }
-
-    // Aggregate pairwise across ALL findings (both sexes) — take min p-value per dose
-    const doseMinP = new Map<number, number>();
-    let hasPairwise = false;
-    for (const f of epFindings) {
-      for (const pw of f.pairwise ?? []) {
-        if (pw.dose_level <= 0) continue;
-        hasPairwise = true;
-        const p = pw.p_value_adj ?? pw.p_value;
-        if (p != null) {
-          const prev = doseMinP.get(pw.dose_level);
-          if (prev == null || p < prev) doseMinP.set(pw.dose_level, p);
-        }
-      }
-    }
-
-    if (!hasPairwise) {
-      results.push({
-        endpoint_label: label,
-        noaelLabel: "No stats",
-        noaelDoseLevel: Infinity,
-        isDriving: false,
-      });
-      continue;
-    }
-
-    // Sort dose levels ascending
-    const sorted = [...doseMinP.entries()]
-      .sort((a, b) => a[0] - b[0])
-      .map(([dose_level, p]) => ({ dose_level, p }));
-
-    // Find LOAEL
-    let loaelIdx = -1;
-    for (let i = 0; i < sorted.length; i++) {
-      if (sorted[i].p < 0.05) {
-        loaelIdx = i;
-        break;
-      }
-    }
-
-    let noaelLevel: number;
-    let noaelLabel: string;
-
-    if (loaelIdx === -1) {
-      // No significant doses — NOAEL >= highest dose
-      const highestLevel = sorted[sorted.length - 1]?.dose_level ?? 0;
-      noaelLevel = highestLevel + 1000; // large sentinel for sorting
-      noaelLabel = `>= ${dl(highestLevel)}`;
-    } else if (loaelIdx === 0) {
-      // LOAEL at lowest dose → NOAEL below range
-      noaelLevel = -1;
-      noaelLabel = `< ${dl(sorted[0].dose_level)}`;
-    } else {
-      // NOAEL = dose just below LOAEL
-      noaelLevel = sorted[loaelIdx - 1].dose_level;
-      noaelLabel = dl(noaelLevel);
-    }
-
-    if (noaelLevel < minNoaelLevel) {
-      minNoaelLevel = noaelLevel;
-      drivingEndpoint = label;
-    }
-
-    results.push({
-      endpoint_label: label,
-      noaelLabel,
-      noaelDoseLevel: noaelLevel,
-      isDriving: false, // Set below
-    });
-  }
-
-  // Mark driving endpoint and sort
-  for (const r of results) {
-    r.isDriving = r.endpoint_label === drivingEndpoint;
-  }
-  results.sort((a, b) => a.noaelDoseLevel - b.noaelDoseLevel);
-
-  // Organ NOAEL label — use the driving endpoint's label
-  let organNoael = "Not established";
-  const drivingResult = results.find(r => r.isDriving);
-  if (drivingResult) {
-    organNoael = drivingResult.noaelLabel;
-  }
-
-  return { organNoael, drivingEndpoint, endpoints: results };
-}
 
 // ─── Component ─────────────────────────────────────────────
 

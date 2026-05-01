@@ -161,8 +161,6 @@ Before creating new components, check these existing utilities:
 | Recovery dumbbell | `RecoveryDumbbellChart` (ECharts via `EChartsWrapper`) | Custom recovery viz |
 | **Charts (SVG)** | | |
 | Bivariate scatter | `BivarScatterChart` (raw SVG) | ECharts for custom scatter |
-| Organ heatmap | `OrganGroupedHeatmap` (raw SVG) | ECharts for heatmaps |
-| Forest plot | `GroupForestPlot` (raw SVG) | ECharts for forest plots |
 | Strip/dot plot | `StripPlotChart` (raw SVG) | ECharts for strip plots |
 | **Tables** | | |
 | Analysis findings table | `FindingsTable` (content-hugging, absorber column) | Custom `<table>` |
