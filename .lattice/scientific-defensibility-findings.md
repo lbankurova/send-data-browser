@@ -290,7 +290,7 @@ Single source of truth for audit-related work outstanding. Action items separate
 | ID | Title | Origin | Est. effort |
 |---|---|---|---|
 | **AUDIT-3** | NOEL `treatment_related_concerning` doesn't propagate downstream | Stream 3 retraction note (`research-stream-3-safety-pharm-investigation.md`) | Contract-triangle hygiene per CLAUDE.md rule 18: declaration says 8 finding_class values, consumption sites assume 5. Affects `target_organ_summary.json`, `noael_summary.json`, `adverse_effect_summary.json`. ~1-2 days |
-| **AUDIT-4** | QTc 10ms concern threshold not in typed knowledge graph | Stream 3 retraction note | `_CONCERN_THRESHOLDS` in `classification.py:1237-1243` should be promoted to `knowledge-graph.md` as a `clinical_threshold` fact with `derives_from: ICH E14/S7B` per CLAUDE.md rule 22. ~30 min |
+| ~~**AUDIT-4**~~ | ~~QTc 10ms concern threshold not in typed knowledge graph~~ | DONE 2026-04-30 -- 5 typed `threshold` facts (CV-FACT-001 QTc family / CV-FACT-002 MAP / CV-FACT-003 SYSBP / CV-FACT-004 DIABP / CV-FACT-005 HR) added to `knowledge-graph.md`; `classification.py:_CONCERN_THRESHOLDS` now cites the fact IDs as authoritative home. KG audit: 33 -> 38 facts, PASS. Query: `python scripts/query-knowledge.py --kind threshold` surfaces all 5. Scope expanded beyond AUDIT-4's QTc-only spec because the same un-typed registry pattern affected MAP/SYSBP/DIABP/HR (rule 22 violation class, not just instance); per memory `feedback_split_dont_pool_with_caveat` decomposed per-endpoint rather than pooled. |
 
 ### Audit infrastructure — Phase 3 remaining matchers
 
