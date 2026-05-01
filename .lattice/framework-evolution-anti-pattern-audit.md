@@ -78,6 +78,30 @@
 | 10 | Auto-resolve LLM verdict block parsing — `auto-resolve.ts:300-355` regex'es a fenced ` ```verdict ` block in Claude CLI's free-text output | LOW | MEDIUM (`--output-format json` + tool-use schema) |
 | 11 | Reconcile state-from-trailers via git log grep — `Topic:` and `Phase:` trailer extraction from `git log` (mostly fine; trailers ARE structured) | LOW | N/A (not a strong candidate) |
 | 12 | `/lattice:prioritize` MEMORY.md scan for "user has expressed specific opinions" | MED | LARGE (touches user-personal memory layer; needs user buy-in) |
+| 13 | lattice→pcc post-commit sync clobbers concurrent pcc edits — wholesale `cp -r` overwrites all 26 skills + 6 commands + 4 agents + 16 scripts on every lattice commit, regardless of what lattice's commit actually changed or what pcc has staged/modified | HIGH (parallel-session safety) | SMALL (~30 min; surgical sync via `git diff --name-only HEAD~ HEAD` + skip-on-conflict + sync-skip log) |
+
+**Finding #13 detail (added 2026-05-01 from observed incident).** Cross-repo sync hook in `lattice/.githooks/post-commit` (or wherever the sync runs) does a directory-level overwrite from `lattice/commands/` and `lattice/scripts/` into `pcc/.claude/` and `pcc/scripts/`. A pcc session editing any synced path while lattice commits gets its working changes silently clobbered. The commit-intent + cycle-lock + commit-lock protocols are pcc-internal; nothing tells lattice "pcc has in-flight edits to a synced path, hold off."
+
+**Failure mode (observed):** session A is mid-build editing `pcc/scripts/audit-X.py`. Session B (or this session) commits to lattice. Lattice post-commit sync runs, overwrites all 16 scripts in pcc, clobbering session A's working changes. Mid-review state goes incoherent. Re-application required from session A.
+
+**Typed/structural replacement:**
+
+```bash
+# Replace wholesale cp -r with file-level diff:
+CHANGED_FILES=$(git diff --name-only HEAD~ HEAD -- commands/ scripts/)
+for src in $CHANGED_FILES; do
+  dst="$PCC_ROOT/$(map_lattice_to_pcc_path "$src")"
+  if pcc_has_uncommitted_change "$dst"; then
+    echo "SKIP: $dst has uncommitted pcc changes" >> "$PCC_ROOT/.lattice/sync-skip.log"
+    continue
+  fi
+  cp "$src" "$dst"
+done
+```
+
+Files that lattice didn't touch are never copied → never clobbered. Files where lattice + pcc both edit get skipped with a log entry; the next clean state retries automatically.
+
+**Why this matters for Phase B (off-keyboard autopilot):** Phase B's value depends on parallel sessions safely advancing in parallel. As long as the cross-repo sync can clobber any of pcc's working files, scheduling autopilot off-keyboard means autopilot's runs can clobber the user's interactive sessions and vice versa. Slot finding #13 ahead of B.
 
 3 more candidates surveyed but cut: `audit-bug-patterns.py --staged-check` (already typed), `engine-surface-coverage.md` Tier tables (humans-only consumer), `coherence-report.md` markdown re-render (write-only).
 
@@ -87,17 +111,31 @@ The audit confirms the pattern is widespread. We've fixed 1 (probe_outcome). The
 
 | Phase | Deliverable | Effort | Rationale |
 |---|---|---|---|
-| **A** | Typed `engine_paths_touched` + intersection (finding #1) | 4-6h | Already scoped. Unblocks autopilot's safe-advance gate. |
+| **A** | Typed `engine_paths_touched` + intersection (finding #1) | 4-6h | Scoped (`framework-evolution-phase-a.md`). Unblocks autopilot's safe-advance gate. |
 | **A.5** | Roll #6 + #7 into the Phase A coherence.ts touch (delete `extractCrossTopicInteractions` line-state-machine; delete `extractKeyDecisions` regex-on-redumped-yaml; both replaced by direct YAML reads) | +30min within Phase A | While we're in the file. Trivial. |
-| **B** | Schedule autopilot off-keyboard via `/schedule` | 2h | Already scoped. Depends on Phase A. |
-| **C** | `ESCALATION.md` → `escalations.jsonl` (finding #4) | 3-4h | Small cost; CRITICAL for Phase B's value (autopilot needs structured escalation queue to dedupe and the user needs queryability when reading once a day). |
-| **D** | TODO autopilot/score → `todo-index.yaml` (finding #2) | 3-4h | Small cost; CRITICAL for autopilot's queue input. Without it, autopilot's selection is fragile to TODO.md prose changes. |
-| **E** | `decisions.log` field 6 typed sub-records (finding #3) | 6-8h | Medium cost; touches dedup logic in cycle/autopilot/synthesize. |
-| **F** | Cycle-state `subsystem_interactions[]` (finding #5) | 4-6h | Medium cost; eliminates the last cousin of the original coherence-parser bug. |
-| **G (tail)** | #8 MANIFEST hook, #9 BUG retros, #10 auto-resolve LLM JSON | 6-8h total | Lower stakes; do as opportunity arises. |
+| **C** | `ESCALATION.md` → `escalations.jsonl` (finding #4) | 5-6h | Scoped (`framework-evolution-phase-c.md`). CRITICAL for Phase B's value — autopilot needs structured escalation queue to dedupe; user needs queryability when reading once a day. |
+| **D** | TODO autopilot/score → `todo-index.yaml` (finding #2) | 3-4h | Scoped (`framework-evolution-phase-d.md`). CRITICAL for autopilot's queue input — fragile to TODO.md prose changes today. |
+| **E** | RG/DG typed scope tags (`blocks_phases`, `superseded_by`) + cycle-dispatcher gate | 4-6h | NOT YET SCOPED. Closes the prose-grep gap on REGISTRY.md / TODO.md gap entries — same defect class, different file. Unblocks "advance only if no RG with `blocks_phases:[next-phase]` is open." |
+| **H** | Surgical lattice→pcc sync (finding #13) | ~30 min | NEW from observed-incident 2026-05-01. **Slot BEFORE Phase B.** Phase B value depends on parallel sessions not stepping on each other; today's wholesale-overwrite sync clobbers concurrent pcc edits. |
+| **B** | Schedule autopilot off-keyboard via `/schedule` | 2h | Scoped (in `framework-evolution-phase-a.md` and thesis). Depends on A + C + D + E + H. |
+| **F** | `decisions.log` field 6 typed sub-records (finding #3) | 6-8h | Medium cost; touches dedup logic in cycle/autopilot/synthesize. After B. |
+| **G** | Cycle-state `subsystem_interactions[]` (finding #5) | 4-6h | Medium cost; eliminates the last cousin of the original coherence-parser bug. After B. |
+| **Tail** | #8 MANIFEST hook, #9 BUG retros, #10 auto-resolve LLM JSON | 6-8h total | Lower stakes; do as opportunity arises. |
 | **Skip** | #11 (already approximately right), #12 (user-personal layer; needs buy-in) | — | — |
 
-Total estimated effort to reach "framework reasoning is mechanical, not prose-driven" steady state: **~25-30 hours** across phases A through F. Phases C + D are the highest-value follow-ups to Phase A+B because they directly enable off-keyboard autopilot to be useful (not just running).
+Total estimated effort to reach "framework reasoning is mechanical, not prose-driven" steady state: **~30-35 hours** across phases A, C, D, E, H, B, F, G. Phases C + D + E + H are the highest-value follow-ups to Phase A because they directly enable off-keyboard autopilot to be useful (not just running).
+
+**Sequencing dependency graph:**
+
+```
+A ─┬─→ C ─┐
+   ├─→ D ─┼─→ B (off-keyboard autopilot)
+   ├─→ E ─┤
+   └─→ H ─┘
+B ─→ F, G (after B; further structural cleanup)
+```
+
+A is independent of all others and ships first. C, D, E, H are all independent of each other; can ship in parallel or any order between A and B. B requires all four prerequisites. F and G are post-B improvements.
 
 ## Strategic note
 
