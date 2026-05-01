@@ -1,6 +1,6 @@
 # Syndrome Engine Reference
 
-**Generated:** 2026-04-30  
+**Generated:** 2026-05-01  
 **Source:** Live code extraction via `generate-engine-reference.test.ts`  
 **Syndromes:** 33  
 **Magnitude floor classes:** 14 + 3 organ weight subclasses  

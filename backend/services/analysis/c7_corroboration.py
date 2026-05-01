@@ -115,10 +115,34 @@ def _organ_id(finding: dict) -> str:
 
 
 def _has_class_direction_at_dose(
-    sex_findings: list[dict], target_class: str, dose_level: int, direction: str,
+    sex_findings: list[dict],
+    target_class: str,
+    dose_level: int,
+    direction: str,
+    magnitude_threshold: float = 0.3,
 ) -> bool:
-    """True if any finding of target_class has a pairwise at dose_level with
-    effect direction matching `direction` ("up" or "down").
+    """True if any finding of target_class has a SUBSTANTIVE pairwise at
+    dose_level with effect direction matching ``direction``.
+
+    Substantiveness gate (DATA-GAP-NOAEL-ALG-22 Phase 3, AR-7): a candidate
+    pairwise counts as a corroboration trigger only when (i) ``g_lower >
+    magnitude_threshold`` (default 0.3, aligned to C1 primary-evidence
+    threshold by symmetry, not by knowledge-graph derivation) OR (ii) when
+    ``g_lower is None``, ``abs(effect_size) >= 0.5`` (Cohen 1988 "medium
+    effect" floor as defensive fallback for incidence-only / missing-CI
+    cases). Pre-Phase-3 this helper checked sign only, admitting effect=
+    +0.030 / g_lower=0.0 as evidence equivalent to effect=+1.5; the gate
+    closes the asymmetry vs the pathology-trigger helpers
+    (``_has_pathology_at_dose_same_organ``, ``_has_cl_keyword_with_incidence``)
+    which already substantiveness-gate via ``incidence > 0``.
+
+    The Cohen's d 0.5 fallback is defensive against ``g_lower=None`` inputs
+    only; primary path is the ``g_lower`` branch. Note: the fallback presumes
+    ``effect_size`` is a Cohen's-d-equivalent standardized mean difference
+    (current engine contract per
+    ``backend/services/analysis/statistics.py``); a future code path that
+    emits raw fold-change or percent-change as ``effect_size`` would need to
+    avoid this fallback.
     """
     for f in _findings_in_class(sex_findings, target_class):
         pw = _pairwise_at(f, dose_level)
@@ -127,9 +151,16 @@ def _has_class_direction_at_dose(
         effect = pw.get("effect_size")
         if effect is None:
             continue
-        if direction == "up" and effect > 0:
-            return True
-        if direction == "down" and effect < 0:
+        sign_matches = (direction == "up" and effect > 0) or (
+            direction == "down" and effect < 0
+        )
+        if not sign_matches:
+            continue
+        g_lower = pw.get("g_lower")
+        if g_lower is not None:
+            if g_lower > magnitude_threshold:
+                return True
+        elif abs(effect) >= 0.5:
             return True
     return False
 
@@ -138,9 +169,18 @@ def _has_cl_keyword_with_incidence(
     sex_findings: list[dict], keywords: tuple[str, ...], dose_level: int,
 ) -> bool:
     """True if any CL_incidence finding's name/term contains a keyword AND
-    has nonzero incidence at dose_level.
+    has nonzero incidence at dose_level AND is treatment-related.
+
+    Treatment-relatedness filter (DATA-GAP-NOAEL-ALG-22 Phase 3 peer-review
+    R1+R2 Finding 1, 2026-05-01): a corroborating finding the upstream
+    ECETOC classification pipeline judged ``not_treatment_related`` or
+    ``normal`` cannot serve as evidence the primary finding IS treatment-
+    related — that's a logical self-contradiction. The pipeline already
+    accounts for incidence rate vs background via these classifications.
     """
     for f in _findings_in_class(sex_findings, "CL_incidence"):
+        if f.get("finding_class") in ("not_treatment_related", "normal"):
+            continue
         label = ((f.get("finding") or "") + " " + (f.get("finding_term") or "")).lower()
         if not any(kw in label for kw in keywords):
             continue
@@ -158,7 +198,15 @@ def _has_pathology_at_dose_same_organ(
     dose_level: int,
 ) -> bool:
     """True if a target_domain (MA or MI) finding at the same organ has
-    keyword in its finding term AND nonzero incidence at dose_level.
+    keyword in its finding term AND nonzero incidence at dose_level AND
+    is treatment-related.
+
+    Treatment-relatedness filter (DATA-GAP-NOAEL-ALG-22 Phase 3 peer-review
+    R1+R2 Finding 1, 2026-05-01): same rationale as
+    :func:`_has_cl_keyword_with_incidence` — using ``not_treatment_related``
+    or ``normal`` findings as treatment-related corroboration is a logical
+    self-contradiction. PointCross MI TESTIS ATROPHY M dose 1 (1/10
+    incidence, fc=NTR) was the canonical example.
     """
     if not organ_id:
         return False
@@ -166,6 +214,8 @@ def _has_pathology_at_dose_same_organ(
         if (f.get("domain") or "").upper() != target_domain.upper():
             continue
         if _organ_id(f) != organ_id:
+            continue
+        if f.get("finding_class") in ("not_treatment_related", "normal"):
             continue
         label = ((f.get("finding") or "") + " " + (f.get("finding_term") or "")).lower()
         if not any(kw in label for kw in keywords):
@@ -232,9 +282,17 @@ def evaluate_c7_corroboration(
 
     Looks up the finding's endpoint class via
     :func:`lookup_endpoint_class`, fetches its registered corroboration
-    triggers, and partitions them into mechanism (``compound_class:*``)
-    vs observation. Mechanism: any-one fires => corroborated. Observation:
-    >= 2 fires => corroborated.
+    triggers, and partitions them into mechanism vs observation:
+
+    - **Mechanism** (any-one fires => corroborated): ``compound_class:*``
+      published-class triggers AND ``*_same_organ_*`` direct same-organ
+      pathology triggers (e.g., ``MI_atrophy_same_organ_same_dose_sex``
+      for OM-down). Same-organ pathology is direct mechanistic evidence
+      and a single fire is regulatorily sufficient.
+    - **Observation** (>=2 fires => corroborated): cross-domain general
+      triggers (e.g., ``FW_up_same_dose_sex`` for BW-up). Multiple are
+      required because any single cross-domain co-occurrence is
+      coincidence-permissive.
 
     Returns ``CorroborationResult(corroborated=False, ...)`` for findings
     whose endpoint class has no triggers (e.g., CL_incidence,
@@ -261,7 +319,20 @@ def evaluate_c7_corroboration(
             key, finding, dose_level, sex_findings, study_compound_class,
         ):
             continue
-        if key.startswith("compound_class:"):
+        # Mechanism-class triggers (any-one fires = corroborated):
+        # 1. ``compound_class:*`` — published-literature class effect.
+        # 2. ``*_same_organ_*`` — direct same-organ pathology (e.g.,
+        #    ``MI_atrophy_same_organ_same_dose_sex`` for OM-down). Same-organ
+        #    pathology is direct mechanistic evidence, not coincidental
+        #    cross-domain corroboration; the >=2-cardinality rule (designed
+        #    for cross-domain triggers like ``FW_up_same_dose_sex`` for
+        #    BW-up where coincidence is real) does not apply. Discovered
+        #    as a spec-implementation gap during DATA-GAP-NOAEL-ALG-22
+        #    Phase 3 algorithm-defensibility check on PointCross OM TESTIS
+        #    M dose 1 (single ``MI_atrophy`` fire); the Phase 2 derivation
+        #    expected single-fire corroboration for same-organ triggers but
+        #    did not specify the cardinality split.
+        if key.startswith("compound_class:") or "_same_organ_" in key:
             mechanism_fires.append(key)
         else:
             observation_fires.append(key)

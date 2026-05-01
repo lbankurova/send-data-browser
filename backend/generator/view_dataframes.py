@@ -51,6 +51,83 @@ INTRINSICALLY_ADVERSE = frozenset({
 })
 
 
+# Magnitude-escape threshold for the C7 corroboration gate (Layer 2c path b).
+#
+# When a non-canonical-direction finding lacks registry-mandated cross-finding
+# corroboration, but its firing-dose ``g_lower`` clears this threshold, Layer
+# 2c falls through to the Layer 3 per-dose evidence list rather than blocking
+# the fire. The gate's intent is "registry-contract violations on borderline
+# magnitudes are blocked; clearly-adverse magnitudes are defensible without
+# registry corroboration".
+#
+# Empirical default 0.7, derived from PointCross OM-down findings (DATA-GAP-
+# NOAEL-ALG-22 Phase 2): HEART M dose 3 (g_lower=2.046) and KIDNEY M dose 3
+# (g_lower=1.619) escape cleanly and are toxicologist-defensible per Phase 2;
+# HEART M dose 1 (0.435), HEART M dose 2 (0.454) sit below threshold and are
+# toxicologist-INDEFENSIBLE per Phase 2; BRAIN M dose 3 (0.973) just clears
+# the threshold and is defensible. The empirical defensible/indefensible
+# boundary on the corpus falls between 0.45 and 0.97; 0.7 sits inside that
+# gap.
+#
+# **No external authority anchor.** ``query-knowledge.py --kind
+# clinical_threshold`` returned no fact corresponding to a "clearly-adverse
+# magnitude bypass". Per CLAUDE.md rule 21 (algorithm-as-advisor), this is a
+# local empirical decision a credentialed reviewer can override case-by-case
+# via the audit-field rationale path; ``c7_magnitude_escape`` records the
+# per-finding basis so the toxicologist sees the value.
+_MAGNITUDE_ESCAPE_GLOWER_THRESHOLD = 0.7
+
+
+# Loose statistical-significance threshold for the Layer 2c path (a)
+# substantiveness gate (DATA-GAP-NOAEL-ALG-22 Phase 3 peer-review R2 F2).
+#
+# OECD TG 408 §5.4.1 ("LOAEL designation requires statistical and/or
+# biological significance") permits dual-criterion gates with the "and/or"
+# language. Path (a)'s substantiveness gate admits findings clearing
+# EITHER ``g_lower > effect_threshold`` (biological criterion) OR
+# ``p < _PATH_A_LOOSE_SIGNIFICANCE_P`` (statistical criterion). The
+# statistical criterion is loose by design: alpha=0.10 is strictly looser
+# than the typical alpha=0.05 cited by NTP/Haseman precedent (Combined
+# alpha ~0.06-0.08 at small N), so path (a) corroboration can rescue
+# near-significance findings that don't quite clear C1's bar. Findings
+# clearing NEITHER are essentially-noise.
+#
+# **No external authority anchor for 0.10 specifically.** OECD TG 408 does
+# not define which p-value constitutes "statistical significance"; the
+# choice between 0.05, 0.10, or another value is an implementation
+# decision. The 0.10 default was chosen (vs 0.05) so the gate functions as
+# a permissive rescue rather than a duplicate of C1's primary-evidence
+# bar. Tracked in ``docs/_internal/knowledge/knowledge-graph.md`` as
+# NOAEL-FACT-022 with ``confidence: heuristic``.
+_PATH_A_LOOSE_SIGNIFICANCE_P = 0.10
+
+
+def _is_biphasic_pairwise(pairwise: list[dict]) -> bool:
+    """True iff ``pairwise`` has at least one positive AND at least one
+    negative ``effect_size`` across non-null, non-zero entries.
+
+    Used by the C6 biphasic suspension gate (Layer 2b) — sign-flipping
+    pairwise indicates the finding-level ``direction`` summary may not
+    reliably represent each per-dose evaluation. Entries with
+    ``effect_size is None`` or ``effect_size == 0`` are SKIPPED (missing /
+    zero is not a sign-bearing observation per Phase 1 enumeration
+    semantics).
+    """
+    has_positive = False
+    has_negative = False
+    for pw in pairwise:
+        e = pw.get("effect_size")
+        if e is None or e == 0:
+            continue
+        if e > 0:
+            has_positive = True
+        elif e < 0:
+            has_negative = True
+        if has_positive and has_negative:
+            return True
+    return False
+
+
 def _get_pairwise_at_dose(finding: dict, dose_level: int) -> dict | None:
     """Get the pairwise result for a specific dose level."""
     for pw in finding.get("pairwise", []):
@@ -68,16 +145,8 @@ def _get_group_stats_at_dose(finding: dict, dose_level: int) -> dict | None:
 
 
 def _effect_matches_trend_direction(finding: dict, pw: dict) -> bool:
-    """True if the pairwise effect direction matches the overall trend direction.
-
-    Defensive null handling on effect_size: dict.get() with default returns the
-    default only when the key is missing, NOT when the value is None. Pairwise
-    rows in some studies (FFU, PDS) carry `effect_size: null` for incidence
-    findings or domain rows where the magnitude wasn't computed; without the
-    `or 0` coalesce, the next-line comparison `d > 0` raises TypeError and
-    silently aborts Phase 2 view-DataFrame assembly. AUDIT-3 collateral fix.
-    """
-    d = pw.get("effect_size") or 0
+    """True if the pairwise effect direction matches the overall trend direction."""
+    d = pw.get("effect_size", 0)
     direction = finding.get("direction")
     if direction == "up" and d > 0:
         return True
@@ -96,55 +165,84 @@ def _is_loael_driving_woe(
     """Weight-of-evidence LOAEL gate (B4c, peer-reviewed).
 
     Returns True if *finding* should drive LOAEL at *dose_level* using
-    multi-criteria OR.  Combined alpha ~0.06-0.08 at N=3 with mitigations
-    (Haseman 1990/1996 NTP precedent: ~7-8%).
+    layered-gate evaluation. Combined alpha ~0.06-0.08 at N=3 with
+    mitigations (Haseman 1990/1996 NTP precedent: ~7-8%).
 
-    C7 wiring (DATA-GAP-NOAEL-ALG-02 2026-04-28). When both ``sex_findings``
-    and ``study_pharmacologic_class`` are provided, two additional gates fire:
+    Architecture (DATA-GAP-NOAEL-ALG-22 Phase 3 layered-gate refactor):
 
-    - **C7 suppression** (between not_treatment_related override and C1):
-      direction-exception predicate evaluation (e.g., FW palatability
-      rebound). Match suppresses all C1-C5 firing AND emits the
-      ``c7_suppression_reason`` audit-trail field on the finding (A4
-      reframe -- does NOT change ``finding_class``).
-    - **C7 corroboration** (after C5, before final return False): when
-      observed effect direction is non-canonical for the endpoint class
-      (e.g., BW-up, FW-up, OM-down), evaluate cross-finding corroboration
-      triggers. Mechanism (compound_class:* flag): any-one fires =
-      corroborated. Observation (cross-domain FW/CL/OM/MA/MI): >=2 same-
-      dose fires = corroborated. Corroborated => returns True; emits
-      ``c7_corroboration`` audit-trail field.
+    - **Layer 1 (Hard tox-override)** — credentialed-reviewer override is
+      final per CLAUDE.md rule 21; ``not_treatment_related`` blocks every
+      subsequent layer.
+    - **Layer 2 (Registry-contract gates)**, ordered:
+        2a. C7 suppression — direction-exception predicate (e.g., FW
+            palatability_rebound). Audit field
+            ``c7_suppression_reason``.
+        2b. C6 biphasic suspension — suspends at firing dose iff pairwise
+            is sign-flipping AND firing-dose direction differs from
+            finding-level ``direction`` (Axis-2b proxy). Preserves
+            HD-only Axis-2a fires whose firing-dose sign aligns with the
+            finding-level direction summary. Audit field
+            ``c6_biphasic_suspension``.
+        2c. C7 corroboration as gate — for non-canonical-direction
+            findings with registered triggers, three paths:
+              (a) corroborated AND primary substantive (``g_lower >
+                  effect_threshold`` OR ``p < 0.10`` OR incidence
+                  finding) -> return True (LOAEL fires; audit
+                  ``c7_corroboration``). Substantiveness gate (peer-
+                  review R1 F2, 2026-05-01) honors OECD TG 408 §5.4.1
+                  "statistical and/or biological significance"; primary
+                  findings clearing NEITHER are essentially-noise and
+                  don't fire even when corroborated.
+              (b) primary non-substantive OR non-corroborated, AND
+                  ``g_lower >= _MAGNITUDE_ESCAPE_GLOWER_THRESHOLD`` ->
+                  fall through to Layer 3 (audit
+                  ``c7_magnitude_escape``).
+              (c) primary non-substantive OR non-corroborated, AND
+                  sub-magnitude -> return False (audit
+                  ``c7_corroboration_blocked``).
+            Canonical-direction findings skip Layer 2c entirely.
+    - **Layer 3 (Per-dose evidence list, OR-list)** — C1, C2b, C4, C5
+      criteria each able to fire independently when their per-dose
+      preconditions hold.
 
-    Both kwargs default to None for back-compat with callers that haven't
-    been plumbed yet -- C7 silently no-ops in that case (existing C1-C5
-    behavior preserved).
+    C7 layers silently no-op when ``sex_findings is None`` (back-compat
+    for unplumbed callers).
+
+    Audit-field shape: all emissions use ``finding.setdefault(...)`` so
+    re-evaluation across the 9 dispatch sites does not overwrite earlier
+    audit content. The four Layer-2 audit fields (``c6_biphasic_suspension``,
+    ``c7_corroboration``, ``c7_corroboration_blocked``, ``c7_magnitude_escape``)
+    are advisory metadata consumed only by ``/lattice:review`` ALGORITHM
+    CHECK and future Findings-rail UI; they do not gate downstream
+    pipeline. Per CLAUDE.md rule 18, the triangle-exempt mechanism applies
+    here (audit-trail fields, no enforcement-site assertion required).
     """
     pw = _get_pairwise_at_dose(finding, dose_level)
     if not pw:
         return False
     p = pw.get("p_value_adj") or pw.get("p_value")
     d = abs(pw.get("effect_size") or 0)
+    g_lower = pw.get("g_lower")  # may be None for incidence
     fc = finding.get("finding_class")
 
-    # Hard tox-override gate: when a toxicologist explicitly classifies a
-    # finding as not_treatment_related (typically via the override pipeline at
-    # services/analysis/override_reader.py), human judgment must trump every
-    # WoE criterion below. Without this early-return, C2b's no-fc-gate path
-    # would re-fire on the same finding's raw pairwise effect, defeating the
-    # override. CLAUDE.md rule 19: regulatory reviewer expects override
-    # semantics to be uniform across the gate. Per CLAUDE.md rule 21
-    # (algorithm-as-advisor), C7 also DOES NOT override not_treatment_related
-    # -- the credentialed reviewer's override is final.
+    # ---------- Layer 1: Hard tox-override ----------
+    # Credentialed reviewer override is final per CLAUDE.md rule 21. NO
+    # downstream layer reverses this — Layer 2 corroboration cannot promote a
+    # ``tr_adverse -> not_treatment_related`` override back to LOAEL-driving.
+    # Without this early-return, C2b's no-fc-gate path would re-fire on the
+    # same finding's raw pairwise effect, defeating the override.
     if fc == "not_treatment_related":
         return False
 
-    # C7 suppression: direction-exception predicate match (e.g., FW
-    # palatability_rebound). When the registered exception's all_of
-    # predicates all evaluate True, the finding is suppressed from
-    # LOAEL-driving regardless of C1-C5 firings. The finding's adversity
-    # classification (finding_class) is unchanged -- only its LOAEL-driving
-    # status. Caller-visible audit trail via the c7_suppression_reason
-    # field on the finding (A4 reframe; no finding_class enum widening).
+    # ---------- Layer 2: Registry-contract gates ----------
+    # 2a. C7 suppression — direction-exception predicate match (e.g., FW
+    #     palatability_rebound). When the registered exception's ``all_of``
+    #     predicates all evaluate True, the finding is suppressed from
+    #     LOAEL-driving regardless of Layer-3 firings. The finding's
+    #     adversity classification (``finding_class``) is unchanged — only
+    #     its LOAEL-driving status. Caller-visible audit trail via
+    #     ``c7_suppression_reason`` (A4 reframe; no enum widening).
+    #     triangle-audit:exempt -- audit-trail field, consumed only by review tooling.
     if sex_findings is not None:
         from services.analysis.c7_corroboration import evaluate_direction_exception
         suppression = evaluate_direction_exception(finding, dose_level, sex_findings)
@@ -152,15 +250,144 @@ def _is_loael_driving_woe(
             finding.setdefault("c7_suppression_reason", suppression)
             return False
 
+    # 2b. C6 biphasic suspension — suspends at the firing dose iff pairwise
+    #     is biphasic (sign-flipping across dose levels) AND firing-dose
+    #     effect direction differs from finding-level ``direction``
+    #     (Axis-2b proxy from Phase 1 enumeration). Preserves Axis-2a
+    #     HD-only fires (firing-dose direction matches finding-level
+    #     direction; the biphasic shape is sub-threshold low-dose noise
+    #     that doesn't undermine the HD signal).
+    #     triangle-audit:exempt -- audit-trail field, consumed only by review tooling.
+    pairwise = finding.get("pairwise") or []
+    if (
+        _is_biphasic_pairwise(pairwise)
+        and not _effect_matches_trend_direction(finding, pw)
+    ):
+        finding.setdefault("c6_biphasic_suspension", {
+            "reason": "sign_flipping_pairwise_at_non_aligned_firing_dose",
+            "firing_dose_level": dose_level,
+            "firing_dose_effect": pw.get("effect_size"),
+            "finding_direction": finding.get("direction"),
+        })
+        return False
+
+    # 2c. C7 corroboration as GATE (promoted from additive position). For
+    #     non-canonical-direction findings with registered corroboration
+    #     triggers, three paths:
+    #       (a) corroborated -> return True (LOAEL fires; preserves the
+    #           pre-patch C7-additive behavior on canonical metabolic-
+    #           syndrome corroboration when the corroborators are real).
+    #       (b) non-corroborated AND g_lower >=
+    #           _MAGNITUDE_ESCAPE_GLOWER_THRESHOLD -> fall through to Layer
+    #           3 (large effect is defensible without registry-mandated
+    #           mechanism evidence per the empirical PointCross calibration;
+    #           see constant docstring for the "no external authority
+    #           anchor" caveat).
+    #       (c) non-corroborated AND sub-magnitude -> return False
+    #           unconditionally. Registry contract requires corroboration
+    #           for non-canonical-direction adversity at sub-threshold
+    #           magnitude.
+    #     Canonical-direction findings (e.g., LB Leukocytes M up, BW M down)
+    #     skip Layer 2c entirely and proceed to Layer 3.
+    if sex_findings is not None:
+        from services.analysis.c7_corroboration import evaluate_c7_corroboration
+        from services.analysis.endpoint_adverse_direction import (
+            corroboration_triggers,
+            is_direction_canonical_adverse,
+            lookup_endpoint_class,
+        )
+        endpoint_class = lookup_endpoint_class(
+            finding.get("endpoint_label"),
+            send_domain=finding.get("domain"),
+        )
+        finding_direction = finding.get("direction")
+        non_canonical = (
+            finding_direction in ("up", "down")
+            and not is_direction_canonical_adverse(endpoint_class, finding_direction)
+        )
+        # fast-path: skip evaluator entirely on classes with no triggers
+        # (e.g., LB_per_analyte). The inner ``evaluate_c7_corroboration``
+        # also re-checks ``corroboration_triggers`` for its own early-exit;
+        # the apparent double-call is intentional — the outer guard avoids
+        # constructing the CorroborationResult dataclass for the no-trigger
+        # case (LB_per_analyte short-circuit).
+        if non_canonical and corroboration_triggers(endpoint_class):
+            result = evaluate_c7_corroboration(
+                finding, dose_level, sex_findings, study_pharmacologic_class,
+            )
+            # Primary-finding substantiveness gate (DATA-GAP-NOAEL-ALG-22
+            # Phase 3 peer-review R1 Finding 2, 2026-05-01): path (a) cannot
+            # fire LOAEL on corroboration alone when the primary finding has
+            # NEITHER biological NOR statistical signal. Per OECD TG 408
+            # §5.4.1 ("LOAEL designation requires statistical and/or
+            # biological significance"), the dual-criterion gate admits
+            # findings with EITHER ``g_lower > effect_threshold``
+            # (biological signal aligned with C1's primary-evidence bar)
+            # OR ``p < 0.10`` (loose statistical signal — strictly looser
+            # than alpha=0.05 so path (a) can still rescue near-significance
+            # findings). Findings clearing NEITHER are essentially-noise
+            # (PointCross KIDNEY OM M dose 1 g_lower=0.013 p=0.599 was the
+            # canonical exemplar). Incidence findings (g_lower=None) bypass
+            # — Layer 3 C4/C5 evaluate incidence rate independently.
+            data_type = finding.get("data_type", "continuous")
+            primary_substantive = (
+                data_type == "incidence"
+                or (g_lower is not None and g_lower > effect_threshold)
+                or (p is not None and p < _PATH_A_LOOSE_SIGNIFICANCE_P)
+            )
+            if result.corroborated and primary_substantive:
+                # Path (a): corroborated AND primary substantive -> LOAEL fires.
+                # triangle-audit:exempt -- audit-trail field, consumed only by review tooling.
+                finding.setdefault("c7_corroboration", {
+                    "corroborated": True,
+                    "mechanism_fires": list(result.mechanism_fires),
+                    "observation_fires": list(result.observation_fires),
+                })
+                return True
+            # Paths (b)/(c): non-corroborated OR corroborated-but-non-
+            # substantive. Check magnitude-escape on primary g_lower.
+            magnitude_escape = (
+                g_lower is not None
+                and g_lower >= _MAGNITUDE_ESCAPE_GLOWER_THRESHOLD
+            )
+            if magnitude_escape:
+                # Path (b): escape applies; fall through to Layer 3.
+                # triangle-audit:exempt -- audit-trail field, consumed only by review tooling.
+                finding.setdefault("c7_magnitude_escape", {
+                    "g_lower": g_lower,
+                    "threshold": _MAGNITUDE_ESCAPE_GLOWER_THRESHOLD,
+                    "reason": "clearly_adverse_magnitude_no_corroboration",
+                })
+            else:
+                # Path (c): suppress unconditionally. Rationale captures
+                # whether suppression was non-corroboration or corroborated-
+                # but-substantively-insufficient.
+                if result.corroborated:
+                    blocked_rationale = (
+                        f"corroborated but primary g_lower="
+                        f"{g_lower if g_lower is not None else 'None'} "
+                        f"and p={p if p is not None else 'None'} "
+                        f"below substantiveness floor "
+                        f"(g_lower>{effect_threshold} OR "
+                        f"p<{_PATH_A_LOOSE_SIGNIFICANCE_P})"
+                    )
+                else:
+                    blocked_rationale = result.rationale
+                # triangle-audit:exempt -- audit-trail field, consumed only by review tooling.
+                finding.setdefault("c7_corroboration_blocked", {
+                    "rationale": blocked_rationale,
+                    "mechanism_fires": list(result.mechanism_fires),
+                    "observation_fires": list(result.observation_fires),
+                })
+                return False
+
+    # ---------- Layer 3: Per-dose evidence list (UNCHANGED) ----------
     # C1: Effect relevance — gLower > threshold (sample-size-invariant).
     # Incidence: falls to p-value (h_lower excluded, degenerate at small N).
     # Per-dose direction must match the finding's overall trend direction
     # (BUG-033 tightening 2026-04-28): a wrong-direction NS pairwise effect
     # whose g_lower happens to clear the threshold no longer fires LOAEL at
-    # that dose. PointCross BW M day-92 dose 1 (g=+0.78 NS, finding direction
-    # =down) is the canonical exemplar surfaced by BUG-032's terminal-day
-    # selection fix. Prior to direction-match here, the gate fired on
-    # magnitude alone — defensible per Rule 19 only when sign is consistent.
+    # that dose.
     if (
         _dose_exceeds_effect_threshold(pw, effect_threshold, finding.get("data_type", "continuous"))
         and is_adverse_class(fc)
@@ -223,47 +450,6 @@ def _is_loael_driving_woe(
         ctrl = _get_group_stats_at_dose(finding, 0)
         if gs and ctrl:
             if gs.get("incidence", 0) >= 0.5 and ctrl.get("incidence", 0) == 0:
-                return True
-
-    # C7: Bidirectional adverse-direction corroboration (DATA-GAP-NOAEL-ALG-02
-    # 2026-04-28). When the FINDING-LEVEL direction is non-canonical for the
-    # endpoint class (e.g., a BW finding with direction="up" against canonical
-    # BW-down adversity, indicating sustained body-weight gain across the
-    # study), C1-C5 would not have fired -- but the synthesis F1d/F1e contract
-    # is that such effects ARE adverse when corroborated by either (a)
-    # compound-class mechanism (any one compound_class:* trigger; PPAR-gamma,
-    # glucocorticoid, etc.) or (b) >=2 cross-domain observations at the same
-    # dose+sex (FW_up + CL_fluid_retention + OM_organomegaly for BW-up
-    # corroboration). C7 fires only on finding-level direction (the
-    # `finding.direction` field), NOT on per-dose pairwise sign -- per the
-    # BUG-033 lesson, per-dose sign-flips are noise on canonical-direction
-    # findings and must NOT activate C7 (would re-fire LOAEL on the exact
-    # patterns the BUG-033 direction-match guard exists to suppress).
-    # C7 does NOT override `not_treatment_related` (early gate above) per
-    # CLAUDE.md rule 21. Back-compat: when sex_findings is None, C7 is silent.
-    if sex_findings is not None:
-        from services.analysis.c7_corroboration import evaluate_c7_corroboration
-        from services.analysis.endpoint_adverse_direction import (
-            is_direction_canonical_adverse,
-            lookup_endpoint_class,
-        )
-        endpoint_class = lookup_endpoint_class(
-            finding.get("endpoint_label"),
-            send_domain=finding.get("domain"),
-        )
-        finding_direction = finding.get("direction")
-        if finding_direction in ("up", "down") and not is_direction_canonical_adverse(
-            endpoint_class, finding_direction,
-        ):
-            result = evaluate_c7_corroboration(
-                finding, dose_level, sex_findings, study_pharmacologic_class,
-            )
-            if result.corroborated:
-                finding.setdefault("c7_corroboration", {
-                    "corroborated": True,
-                    "mechanism_fires": list(result.mechanism_fires),
-                    "observation_fires": list(result.observation_fires),
-                })
                 return True
 
     return False

@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any
 
 from config import SHARED_DIR
@@ -89,7 +90,14 @@ def lookup_endpoint_class(endpoint_label: str | None, send_domain: str | None = 
         return None
     for class_name, entry in registry.items():
         for pattern in entry.get("endpoint_label_patterns", []):
-            if pattern.lower() in label_lower:
+            # Word-boundary match (BUG-035, DATA-GAP-NOAEL-ALG-22 Phase 3
+            # Note A): bare patterns like "om", "fc", "bw" must not
+            # substring-match unrelated multi-word labels (e.g., "om" inside
+            # "prothrombin", "fc" inside "uniform charge"). Long patterns
+            # (e.g., "body weight gain") still match because word boundaries
+            # are present at both ends. ``re.escape`` is defensive against
+            # future registry patterns containing regex metachars.
+            if re.search(r'\b' + re.escape(pattern.lower()) + r'\b', label_lower):
                 return class_name
     return None
 
