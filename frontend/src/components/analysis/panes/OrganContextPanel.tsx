@@ -13,15 +13,8 @@ import { useFindings } from "@/hooks/useFindings";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { ContextPanelHeader } from "./ContextPanelHeader";
-import {
-  titleCase,
-  getDirectionSymbol,
-  formatPValue,
-  formatEffectSize,
-} from "@/lib/severity-colors";
+import { titleCase } from "@/lib/severity-colors";
 import type { EndpointSummary } from "@/lib/derive-summaries";
-import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
-import { getSyndromeNearMissInfo } from "@/lib/cross-domain-syndromes";
 import { findClinicalMatchForEndpoint, getClinicalTierTextClass, getClinicalTierCardBorderClass, getClinicalSeverityLabel } from "@/lib/lab-clinical-catalog";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { useNormalizationOverrides } from "@/hooks/useNormalizationOverrides";
@@ -42,14 +35,6 @@ const ALL_FILTERS: FindingsFilters = {
   organ_system: null, endpoint_label: null, dose_response_pattern: null,
 };
 
-/** Organ → relevant syndrome IDs, per spec */
-const ORGAN_SYNDROME_MAP: Record<string, string[]> = {
-  hepatic: ["XS01", "XS02", "XS06"],
-  renal: ["XS03"],
-  hematologic: ["XS04", "XS05"],
-  immune: ["XS07", "XS08"],
-  general: ["XS08", "XS09"],
-};
 
 /** Domain code → human-readable name for convergence text */
 const DOMAIN_DESCRIPTIONS: Record<string, string> = {
@@ -313,15 +298,6 @@ export function OrganContextPanel({ organKey, nav }: OrganContextPanelProps) {
   // Coherence data from analytics context
   const coherence = analytics.organCoherence.get(organKey);
 
-  // Signal scores for sorting member endpoints
-  const sortedEndpoints = useMemo(() => {
-    return [...organEndpoints].sort((a, b) => {
-      const sa = analytics.signalScores.get(a.endpoint_label) ?? 0;
-      const sb = analytics.signalScores.get(b.endpoint_label) ?? 0;
-      return sb - sa;
-    });
-  }, [organEndpoints, analytics.signalScores]);
-
   // Stats
   const totalEndpoints = organEndpoints.length;
   const adverseCount = organEndpoints.filter(e => e.worstSeverity === "adverse").length;
@@ -407,20 +383,8 @@ export function OrganContextPanel({ organKey, nav }: OrganContextPanelProps) {
     return worst;
   }, [clinicalMap]);
 
-  // ── Related syndromes ────────────────────────────────────
-  const relevantSyndromeIds = useMemo(
-    () => ORGAN_SYNDROME_MAP[organKey.toLowerCase()] ?? [],
-    [organKey],
-  );
-  const hasRelevantSyndromes = relevantSyndromeIds.length > 0;
-
-  const relatedSyndromes = useMemo(() => {
-    if (!hasRelevantSyndromes) return [];
-    return relevantSyndromeIds.map(id => {
-      const detected = analytics.syndromes.find(s => s.id === id);
-      return { id, detected };
-    });
-  }, [relevantSyndromeIds, hasRelevantSyndromes, analytics.syndromes]);
+  // Related-syndromes computation + ORGAN_SYNDROME_MAP removed per F12
+  // (covered by RelatedSyndromesTable in the center pane).
 
   // ── Handlers ─────────────────────────────────────────────
   const handleEndpointClick = (endpointLabel: string) => {
@@ -474,27 +438,15 @@ export function OrganContextPanel({ organKey, nav }: OrganContextPanelProps) {
         onForward={nav?.onForward}
       />
 
-      {/* Pane 1: CONVERGENCE — always visible, not collapsible */}
+      {/* Pane 1: CONVERGENCE — narrative only (per-domain endpoint list moved
+          to DomainDoseRollup in the center pane per radar-forest-cleanup F12). */}
       <div className="border-b px-4 py-3">
         <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Convergence
         </div>
         <div className="mb-2 text-xs font-semibold">{convergenceLabel}</div>
-        {domainBreakdown.map(({ domain, endpoints, count }) => (
-          <div key={domain} className="flex items-start gap-2 py-0.5">
-            <span className="shrink-0 text-[10px] font-semibold text-muted-foreground">
-              {domain.toUpperCase()}
-            </span>
-            <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground" title={endpoints.join(", ")}>
-              {endpoints.join(", ")}
-            </span>
-            <span className="shrink-0 text-[11px] text-muted-foreground">
-              {count} endpt
-            </span>
-          </div>
-        ))}
         {domainBreakdown.length > 0 && (
-          <p className="mt-2 text-xs leading-relaxed text-foreground/80">
+          <p className="text-xs leading-relaxed text-foreground/80">
             {convergenceInterpretation}
           </p>
         )}
@@ -595,24 +547,20 @@ export function OrganContextPanel({ organKey, nav }: OrganContextPanelProps) {
         </CollapsiblePane>
       )}
 
-      {/* Pane 2: ORGAN NOAEL */}
-      <CollapsiblePane title="Organ NOAEL" defaultOpen={false} sessionKey="pcc.organ.noael" expandAll={expandGen} collapseAll={collapseGen}>
+      {/* Pane 2: PER-ENDPOINT NOAEL (was "Organ NOAEL")
+          F12: headline value moved to ScopeBanner (FindingsView wires
+          noaelLabel via computeOrganNoaelDisplay). The per-endpoint list +
+          clinical-tier annotation stays here -- unique analytical content
+          not surfaced in any center-pane component (rule-14 science
+          preservation; see .lattice/research-temp/F12-coverage-proof.md). */}
+      <CollapsiblePane title="Per-endpoint NOAEL" defaultOpen={false} sessionKey="pcc.organ.noael" expandAll={expandGen} collapseAll={collapseGen}>
         {noaelData ? (
           <div>
-            <div className="text-sm font-semibold">
-              NOAEL: {noaelData.organNoael}
-            </div>
-            {noaelData.drivingEndpoint && (
-              <div className="text-[11px] text-muted-foreground">
-                (driven by {noaelData.drivingEndpoint} — lowest endpoint NOAEL)
-              </div>
-            )}
             {worstClinical && (
               <div className={`mb-2 text-xs font-medium ${getClinicalTierTextClass(worstClinical.tier)}`}>
                 Worst clinical: {worstClinical.tier} {getClinicalSeverityLabel(worstClinical.tier)} ({worstClinical.endpoint}, rule {worstClinical.ruleId})
               </div>
             )}
-            {!worstClinical && noaelData.drivingEndpoint && <div className="mb-2" />}
             <div className="space-y-0.5">
               {noaelData.endpoints.map(ep => {
                 const clinical = clinicalMap.get(ep.endpoint_label);
@@ -642,171 +590,18 @@ export function OrganContextPanel({ organKey, nav }: OrganContextPanelProps) {
         )}
       </CollapsiblePane>
 
-      {/* Pane 3: RELATED SYNDROMES (only for organs with syndrome associations) */}
-      {hasRelevantSyndromes && (
-        <CollapsiblePane title="Related syndromes" defaultOpen={false} sessionKey="pcc.organ.syndromes" expandAll={expandGen} collapseAll={collapseGen}>
-          <div className="space-y-2">
-            {relatedSyndromes.map(({ id, detected }) => (
-              <RelatedSyndromeRow
-                key={id}
-                syndromeId={id}
-                detected={detected ?? null}
-                organEndpoints={organEndpoints}
-                onSyndromeClick={(sid) => selectGroup("syndrome", sid)}
-              />
-            ))}
-          </div>
-        </CollapsiblePane>
-      )}
+      {/* RELATED SYNDROMES pane dropped per F12 -- covered by RelatedSyndromesTable
+          in the center pane (28f1af0e). Click-to-navigate paths preserved through
+          F8 cross-scope navigation wiring. */}
 
-      {/* Pane 4: MEMBER ENDPOINTS */}
-      <CollapsiblePane title="Member endpoints" defaultOpen={false} sessionKey="pcc.organ.members" expandAll={expandGen} collapseAll={collapseGen}>
-        <div className="space-y-0.5">
-          {sortedEndpoints.map(ep => (
-            <MemberEndpointRow
-              key={ep.endpoint_label}
-              endpoint={ep}
-              onClick={() => handleEndpointClick(ep.endpoint_label)}
-            />
-          ))}
-          {sortedEndpoints.length === 0 && (
-            <p className="text-xs text-muted-foreground">No endpoints in this organ.</p>
-          )}
-        </div>
-      </CollapsiblePane>
+      {/* MEMBER ENDPOINTS pane dropped per F12 -- covered by FindingsTable
+          (organ-filtered via scopedEndpoints in FindingsView). selectFinding
+          callback path preserved end-to-end. */}
     </div>
   );
 }
 
-// ─── Sub-components ────────────────────────────────────────
-
-/** Syndrome name map for display */
-const SYNDROME_NAMES: Record<string, string> = {
-  XS01: "Hepatocellular injury",
-  XS02: "Cholestatic injury",
-  XS03: "Nephrotoxicity",
-  XS04: "Myelosuppression",
-  XS05: "Hemolytic anemia",
-  XS06: "Phospholipidosis",
-  XS07: "Immunotoxicity",
-  XS08: "Stress response",
-  XS09: "Target organ wasting",
-};
-
-function RelatedSyndromeRow({
-  syndromeId,
-  detected,
-  organEndpoints,
-  onSyndromeClick,
-}: {
-  syndromeId: string;
-  detected: CrossDomainSyndrome | null;
-  organEndpoints: EndpointSummary[];
-  onSyndromeClick: (id: string) => void;
-}) {
-  const name = detected?.name ?? SYNDROME_NAMES[syndromeId] ?? syndromeId;
-
-  if (detected) {
-    // Detected syndrome: show confidence + member endpoints from this organ
-    const organLabels = organEndpoints.map(e => e.endpoint_label);
-    const memberEps = detected.matchedEndpoints
-      .filter(m => organLabels.includes(m.endpoint_label))
-      .map(m => m.endpoint_label);
-
-    return (
-      <div>
-        <div className="flex items-center gap-2">
-          <button
-            className="text-xs font-medium text-foreground hover:underline"
-            onClick={() => onSyndromeClick(syndromeId)}
-          >
-            {name} ({syndromeId})
-          </button>
-          <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
-            {detected.confidence}
-          </span>
-        </div>
-        {memberEps.length > 0 && (
-          <div className="mt-0.5 text-[11px] text-muted-foreground">
-            {memberEps.join(", ")}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Not detected — show as near-miss with explanation
-  const nearMiss = getSyndromeNearMissInfo(syndromeId, organEndpoints);
-
-  return (
-    <div>
-      <div className="flex items-center gap-2">
-        <button
-          className="text-xs text-muted-foreground hover:underline"
-          onClick={() => onSyndromeClick(syndromeId)}
-        >
-          {name} ({syndromeId})
-        </button>
-        <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
-          not detected
-        </span>
-      </div>
-      {nearMiss && (
-        <div className="mt-0.5 space-y-0.5 text-[11px] text-muted-foreground">
-          <div>Would require: {nearMiss.wouldRequire}</div>
-          {nearMiss.matched.length > 0 && nearMiss.missing.length > 0 && (
-            <div>
-              {nearMiss.matched.join(", ")} present but {nearMiss.missing.join(", ")} not found
-            </div>
-          )}
-          {nearMiss.matched.length === 0 && (
-            <div>None of the required terms found</div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MemberEndpointRow({
-  endpoint,
-  onClick,
-}: {
-  endpoint: EndpointSummary;
-  onClick: () => void;
-}) {
-  const dirSymbol = getDirectionSymbol(endpoint.direction);
-  return (
-    <button
-      className="flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-xs hover:bg-accent/50 transition-colors"
-      onClick={onClick}
-    >
-      <span className="shrink-0 text-[10px] font-semibold text-muted-foreground">
-        {endpoint.domain.toUpperCase()}
-      </span>
-      <span className="min-w-0 flex-1 truncate" title={endpoint.endpoint_label}>
-        {endpoint.endpoint_label}
-      </span>
-      <span className="shrink-0 text-muted-foreground">{dirSymbol}</span>
-      {endpoint.maxEffectSize != null && (
-        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
-          |d|={formatEffectSize(endpoint.maxEffectSize)}
-        </span>
-      )}
-      {endpoint.minPValue != null && (
-        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
-          p={formatPValue(endpoint.minPValue)}
-        </span>
-      )}
-      <SeverityDot severity={endpoint.worstSeverity} />
-    </button>
-  );
-}
-
-function SeverityDot({ severity }: { severity: "adverse" | "warning" | "normal" | "not_assessed" }) {
-  const color =
-    severity === "adverse" ? "bg-red-500" :
-    severity === "warning" ? "bg-amber-500" :
-    "bg-gray-400";
-  return <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${color}`} />;
-}
+// SYNDROME_NAMES, RelatedSyndromeRow, MemberEndpointRow, SeverityDot removed
+// per F12 -- their host panes (RELATED SYNDROMES, MEMBER ENDPOINTS) are
+// dropped because the same content is now in RelatedSyndromesTable and
+// FindingsTable in the center pane.
