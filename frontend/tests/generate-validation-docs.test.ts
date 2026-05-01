@@ -169,6 +169,32 @@ interface RefAssertion {
   // min_count (line 86, mortality_cause_concordance + recovery_verdict).
   expected_syndrome_id?: string;
   max_count?: number;
+  // cofiring_presentation: assertion over syndrome_rollup.json:cofiring_presentations
+  // (AUDIT-19 / Stream 5 engine surface). An entry appears in this array iff a
+  // (dose, phase) cell has >= COFIRING_MIN_DISTINCT_ORGANS distinct PRIMARY
+  // organ_systems with at least one syndrome firing -- the multi-syndrome
+  // multi-organ presentation surface, distinct from the single-syndrome
+  // multi-organ-defined surface in cross_organ_syndromes (e.g. phospholipidosis).
+  // The two surfaces are orthogonal. See generator/syndrome_rollup.py:_compute_cofiring_entries.
+  //
+  // Match modes:
+  // - aggregate (most common SCIENCE-FLAG / regression pin): min_count alone --
+  //   asserts the array length is >= N. Set min_count: 1 to assert "engine
+  //   surfaces at least one co-firing presentation cell anywhere in the study"
+  //   (the canonical Stream 5 fire-pin form).
+  // - rich-presentation pin: min_organ_systems alone or with min_count --
+  //   asserts at least one cell has >= min_organ_systems distinct organ_systems.
+  //   Use when the toxicologist's call is "broad multi-organ" rather than just
+  //   "any multi-organ present" (e.g. PC HIGH = 5 organs vs the floor of 3).
+  // - absence pin (REGRESSION_PIN of structural-not-multi-organ studies):
+  //   max_count: 0 -- pins studies whose data shows focal/single-organ
+  //   pathology to engine emitting empty cofiring_presentations. Used for
+  //   Nimble (focal lymphoid signature: vagina lymphoma + thymus atrophy +
+  //   mortality maps to <=2 distinct primary organ_systems even if upstream
+  //   syndrome detection were widened).
+  //
+  // Reuses: min_count (line 86), max_count (line 171, cross_organ_syndrome).
+  min_organ_systems?: number;
   // onset_concordance: assertion over subject_onset_days.json:subjects.
   // Engine surface: per-subject onset_day map, keyed by composite finding
   // identifier ("LB:AST", "CL:ALOPECIA", "MI:LIVER:HYPERTROPHY"). Computed
@@ -1127,6 +1153,42 @@ function checkAssertion(
         n === 0 ? "no cross_organ_syndromes" : `${n} entries: ${entries.map((e) => `${e.syndrome_id ?? "?"} (n=${e.n_subjects_total ?? 0})`).join("; ")}`;
       const actual = passed
         ? `cross_organ_syndromes length=${n} satisfies constraints; ${summary}`
+        : `VIOLATION: ${issues.join("; ")}; ${summary}`;
+      return { assertion, passed, actual };
+    }
+    case "cofiring_presentation": {
+      // Reads syndrome_rollup.json:cofiring_presentations -- the engine surface
+      // for multi-syndrome multi-organ presentations (AUDIT-19 / Stream 5,
+      // distinct from definition-spanning cross_organ_syndromes). Each entry
+      // represents a (dose, phase) cell where >= COFIRING_MIN_DISTINCT_ORGANS
+      // distinct primary organ_systems have at least one syndrome firing.
+      // See generator/syndrome_rollup.py:_compute_cofiring_entries.
+      if (!studyDir) return { assertion, passed: false, actual: "no study dir" };
+      const sr = loadJson<{
+        cofiring_presentations?: { cell?: string; dose_value?: number | null; phase?: string; n_organ_systems?: number; organ_systems?: string[]; n_subjects_total?: number; member_syndromes?: { syndrome_id?: string; syndrome_name?: string; organ_system?: string }[] }[];
+      }>(studyDir, "syndrome_rollup.json");
+      if (!sr) return { assertion, passed: false, actual: "syndrome_rollup.json not found" };
+      const entries = sr.cofiring_presentations ?? [];
+      const minCount = assertion.min_count;
+      const maxCount = assertion.max_count;
+      const minOrganSystems = assertion.min_organ_systems;
+      const n = entries.length;
+      const issues: string[] = [];
+      if (minCount !== undefined && n < minCount) issues.push(`length=${n} < min ${minCount}`);
+      if (maxCount !== undefined && n > maxCount) issues.push(`length=${n} > max ${maxCount}`);
+      if (minOrganSystems !== undefined) {
+        const maxOrgansAcrossCells = Math.max(0, ...entries.map((e) => e.n_organ_systems ?? 0));
+        if (maxOrgansAcrossCells < minOrganSystems) {
+          issues.push(`max n_organ_systems across cells = ${maxOrgansAcrossCells} < min ${minOrganSystems}`);
+        }
+      }
+      const passed = issues.length === 0;
+      const summary =
+        n === 0
+          ? "no cofiring_presentations"
+          : `${n} cells: ${entries.map((e) => `${e.cell ?? "?"}=[${(e.organ_systems ?? []).join(",")}] (n_subj=${e.n_subjects_total ?? 0})`).slice(0, 3).join("; ")}${n > 3 ? ` ... +${n - 3} more` : ""}`;
+      const actual = passed
+        ? `cofiring_presentations length=${n} satisfies constraints; ${summary}`
         : `VIOLATION: ${issues.join("; ")}; ${summary}`;
       return { assertion, passed, actual };
     }

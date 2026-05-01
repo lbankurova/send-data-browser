@@ -115,16 +115,6 @@
     "description": "TK satellites (~18/group) excluded from analysis"
   },
   {
-    "study_id": "Nimble",
-    "type": "cross_organ_syndrome",
-    "description": "Multi-organ co-firing (8 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction of PC 7-organ pattern"
-  },
-  {
-    "study_id": "PDS",
-    "type": "cross_organ_syndrome",
-    "description": "Multi-organ co-firing (14 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction (broader pattern than PC 7-organ)"
-  },
-  {
     "study_id": "PDS",
     "type": "recovery_detected",
     "description": "2 recovery pairs (Vehicle + High) detected"
@@ -133,11 +123,6 @@
     "study_id": "PDS",
     "type": "sex_stratified_merge",
     "description": "Recovery arms merged into pooled N of 18M/18F for Vehicle and High"
-  },
-  {
-    "study_id": "PointCross",
-    "type": "cross_organ_syndrome",
-    "description": "Multi-organ co-firing (7 organs, 16 syndromes); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG (Stream 5)"
   },
   {
     "study_id": "PointCross",
@@ -153,11 +138,6 @@
     "study_id": "PointCross",
     "type": "recovery_verdict",
     "description": "HIGH hepatic hypertrophy: persistent verdict (main arm 9/10 sev 2.56; engine reports anomaly -- SCIENCE-FLAG)"
-  },
-  {
-    "study_id": "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt",
-    "type": "cross_organ_syndrome",
-    "description": "Multi-organ co-firing (14 target_organs at HIGH 100 mg/kg dog); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-SPECIES reproduction (rat -> dog parallel to Stream 6 evidence)"
   },
   {
     "study_id": "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt",

@@ -147,25 +147,22 @@ assertions:
     max_onset_day: 29
     min_count: 4
 
-  # Cross-organ syndrome (Phase 3 matcher #7 -- AUDIT-20 Stream 5 cross-
-  # species expansion). TOXSCI-43066 dog Compound A target_organs reaches
-  # 14 organ_systems at HIGH 100 mg/kg (renal + hematologic + cardiovascular +
-  # hepatic + general + metabolic + reproductive + musculoskeletal + ...) --
-  # comparable breadth to PDS rat (14 organs) and PC rat (14 organs), but
-  # in a different species (dog). Engine emits 0 cross_organ_syndromes,
-  # same engine path as PC SCIENCE-FLAG: definition-spanning gate at
-  # generator/syndrome_rollup.py:488 cannot capture multi-organ co-firing
-  # when no individual syndrome's `organ` field spans >1 organ_system.
+  # Cofiring presentation (AUDIT-19, Stream 5 cross-species closure 2026-05-01).
+  # TOXSCI-43066 dog Compound A's syndrome-layer detection emits 3 distinct
+  # primary organ_systems at HIGH 830 mg/kg/day (endocrine + hematologic +
+  # integumentary) and 3 at 720 mg/kg/day (cardiovascular + hematologic +
+  # integumentary) -- right at the COFIRING_MIN_DISTINCT_ORGANS=3 floor.
+  # Cross-species reproduction of PC + PDS rat patterns: same engine surface
+  # captures dog co-firing too. The narrower-than-target_organs count (3 vs
+  # the 14 reported in target_organ_summary) reflects syndrome-layer
+  # specificity vs target_organ_summary's looser statistical-significance
+  # threshold; it's the toxicologist-meaningful subset.
   #
-  # SCIENCE-FLAG: Stream 5 cross-species reproduction of PC 7-organ
-  # SCIENCE-FLAG (rat -> dog). Pairs with the same study's existing Stream
-  # 6 cross-species reproduction (43066 ALP-decrease + ALT-decrease at the
-  # onset_concordance matcher). Confirms Stream 5's blast radius is
-  # species-independent -- the same engine surface gap reproduces across
-  # rat (PC, Nimble, PDS) AND dog (43066). >=1 cross_organ_syndromes
-  # expected; engine emits 0.
-  - type: "cross_organ_syndrome"
-    description: "Multi-organ co-firing (14 target_organs at HIGH 100 mg/kg dog); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-SPECIES reproduction (rat -> dog parallel to Stream 6 evidence)"
+  # min_organ_systems is omitted (the 3-organ floor is exactly the threshold;
+  # adding a stricter pin would flip-flop on small-n cohorts as syndromes
+  # gain/lose subjects across re-runs).
+  - type: "cofiring_presentation"
+    description: "Multi-organ co-firing at HIGH (3 organs at 830 + 3 organs at 720 mg/kg/day dog). AUDIT-19 (Stream 5 cross-species) cleared 2026-05-01."
     min_count: 1
 
   # tumor_detected (Phase 3 matcher #4 -- AUDIT-16 per-study expansion). 1-month

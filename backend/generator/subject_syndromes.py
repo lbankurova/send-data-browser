@@ -84,7 +84,10 @@ HISTOPATH_RULES: list[dict[str, Any]] = [
         "syndrome_name": "Hepatocellular Adaptation",
         "organ": ["LIVER"],
         "sex": "both",
-        "required_findings": ["hypertrophy", "hepatocellular hypertrophy"],
+        # AUDIT-25 vocab: "enlarged"/"enlargement" added as gross macroscopic
+        # correlate of adaptive hepatocellular hypertrophy per Hall et al. 2012
+        # ESTP Liver Hypertrophy workshop (Tox Path 40(7):971-994).
+        "required_findings": ["hypertrophy", "hepatocellular hypertrophy", "enlarged", "enlargement"],
         "supporting_findings": ["increased liver weight", "enzyme induction"],
         "min_supporting": 0,
         "exclusion_findings": ["necrosis", "hepatocellular necrosis", "single cell necrosis", "apoptosis", "inflammation"],
@@ -108,7 +111,10 @@ HISTOPATH_RULES: list[dict[str, Any]] = [
         "exclusion_findings": [],
         "max_severity_for_required": None,
         "related_organ_findings": [
-            {"organ": "URINARY BLADDER", "findings": ["hyperplasia", "inflammation"]},
+            # AUDIT-25 vocab: hematuria proxies (gross "contents, red"/"contents, dark red"
+            # in urinary bladder = blood in urine, urothelial/glomerular injury per
+            # Frazier et al. 2012 INHAND urinary system, Tox Path 40(4S):14S-86S.
+            {"organ": "URINARY BLADDER", "findings": ["hyperplasia", "inflammation", "hemorrhage", "contents, red", "contents, dark red", "hematuria"]},
         ],
         "related_endpoints": [
             {"type": "organ_weight", "organ": "KIDNEY", "direction": "increased"},
@@ -141,9 +147,11 @@ HISTOPATH_RULES: list[dict[str, Any]] = [
         "exclusion_findings": [],
         "max_severity_for_required": None,
         "related_organ_findings": [
-            {"organ": "SPLEEN", "findings": ["atrophy", "decreased cellularity", "lymphoid depletion"]},
-            {"organ": "THYMUS", "findings": ["atrophy", "decreased cellularity", "lymphoid depletion"]},
-            {"organ": "LYMPH NODE", "findings": ["atrophy", "decreased cellularity", "lymphoid depletion"]},
+            # AUDIT-25 vocab: gross "small" matches MA-domain spleen/thymus/lymph
+            # node findings (Nimble pattern) -- INHAND-aligned per Willard-Mack 2019.
+            {"organ": "SPLEEN", "findings": ["atrophy", "decreased cellularity", "lymphoid depletion", "small"]},
+            {"organ": "THYMUS", "findings": ["atrophy", "decreased cellularity", "lymphoid depletion", "small"]},
+            {"organ": "LYMPH NODE", "findings": ["atrophy", "decreased cellularity", "lymphoid depletion", "small"]},
         ],
         "related_endpoints": [],
     },
@@ -152,7 +160,13 @@ HISTOPATH_RULES: list[dict[str, Any]] = [
         "syndrome_name": "Lymphoid Depletion",
         "organ": ["SPLEEN", "THYMUS", "LYMPH NODE"],
         "sex": "both",
-        "required_findings": ["lymphoid depletion", "atrophy", "decreased cellularity"],
+        # AUDIT-25 vocab: "small" added as gross macroscopic correlate of microscopic
+        # thymic atrophy / lymphoid depletion per INHAND (Willard-Mack et al. 2019,
+        # Tox Path 47(6):665-783, §Aplasia/Hypoplasia: "At the gross and subgross
+        # level, the entire organ is small compared to concurrent controls.") and
+        # ICH S8 §4.1 (immunotoxicity guideline). Closes Nimble's 0-syndrome gap
+        # (MA THYMUS Small was tr_adverse but unmatched by histopath-only vocabulary).
+        "required_findings": ["lymphoid depletion", "atrophy", "decreased cellularity", "small"],
         "supporting_findings": ["necrosis", "apoptosis"],
         "min_supporting": 0,
         "exclusion_findings": [],
@@ -193,7 +207,10 @@ HISTOPATH_RULES: list[dict[str, Any]] = [
         "syndrome_name": "Adrenal Cortical Hypertrophy",
         "organ": ["ADRENAL GLAND", "ADRENAL"],
         "sex": "both",
-        "required_findings": ["cortical hypertrophy", "hypertrophy"],
+        # AUDIT-25 vocab: "enlargement"/"enlarged"/"swollen" added as gross macroscopic
+        # correlate of cortical hypertrophy per Yoshitomi et al. 2018 INHAND endocrine
+        # (PMC6108091) + NTP NNL atlas Adrenal Gland Cortex-Hypertrophy.
+        "required_findings": ["cortical hypertrophy", "hypertrophy", "enlargement", "enlarged", "swollen"],
         "supporting_findings": ["vacuolation", "increased weight"],
         "min_supporting": 0,
         "exclusion_findings": [],
@@ -247,9 +264,16 @@ HISTOPATH_RULES: list[dict[str, Any]] = [
     {
         "syndrome_id": "injection_site_reaction",
         "syndrome_name": "Injection Site Reaction",
-        "organ": ["INJECTION SITE", "SKIN"],
+        # AUDIT-25 vocab: SEND-CDISC specimen tokens "SITE, INJECTION" / "SITE,
+        # APPLICATION" added (CDISC SEND IG v3.1 §6 -- the canonical SEND code
+        # is comma-prefixed with the site qualifier first). Without these aliases
+        # the rule cannot fire on CBER vaccine + gene-therapy injection-site
+        # findings. "ulceration" added to required per van Meer et al. 2016
+        # subcutaneous oligonucleotide injection-site reactions (Br J Clin
+        # Pharmacol 82(2):340-351).
+        "organ": ["INJECTION SITE", "SKIN", "SITE, INJECTION", "SITE, APPLICATION", "APPLICATION SITE"],
         "sex": "both",
-        "required_findings": ["inflammation", "necrosis"],
+        "required_findings": ["inflammation", "necrosis", "ulceration"],
         "supporting_findings": ["fibrosis", "hemorrhage", "edema", "granuloma"],
         "min_supporting": 0,
         "exclusion_findings": [],

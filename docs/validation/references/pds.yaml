@@ -106,20 +106,23 @@ assertions:
     expected_verdict: "reversed"
     min_count: 10
 
-  # Cross-organ syndrome (Phase 3 matcher #7 -- AUDIT-20 Stream 5 expansion).
-  # PDS target_organs reaches 14 organ_systems at HIGH dose
-  # (hepatic + electrolyte + hematologic + general + neurological + metabolic +
-  # renal + cardiovascular + ...), one of the broadest multi-organ profiles
-  # in the corpus. Engine emits 0 cross_organ_syndromes -- definition-
-  # spanning gate at generator/syndrome_rollup.py:488 fails to capture the
-  # 14-organ co-firing because no individual syndrome's `organ` field spans
-  # >1 organ_system in shared/syndrome-definitions.json. SCIENCE-FLAG:
-  # Stream 5 cross-study reproduction of PC 7-organ pattern, transposed to
-  # an even broader 14-organ pattern. >=1 cross_organ_syndromes expected;
-  # engine emits 0.
-  - type: "cross_organ_syndrome"
-    description: "Multi-organ co-firing (14 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction (broader pattern than PC 7-organ)"
+  # Cofiring presentation (AUDIT-19, Stream 5 closure 2026-05-01). PDS
+  # target_organs at HIGH spans many systems but only a subset translate to
+  # firing syndromes -- post-AUDIT-19 the cofiring surface emits 4 distinct
+  # primary organ_systems at HIGH 400 (general, hematologic, hepatic, ocular)
+  # with 17/26 subjects affected, plus 3 organ_systems at HIGH Recovery
+  # (endocrine, hematologic, reproductive). The narrower-than-target_organs
+  # count reflects the syndrome layer's stricter detection (XS04 myelosuppression,
+  # XS01 hepatocellular injury, XS07 immunotoxicity, etc. require specific finding
+  # patterns); target_organ_summary's broader 14 reflects mere statistical
+  # significance. cofiring presentation captures the toxicologist-meaningful
+  # multi-organ pattern.
+  #
+  # min_organ_systems=4 pins the rich-presentation form per the HIGH cell.
+  - type: "cofiring_presentation"
+    description: "Multi-organ co-firing at HIGH (4 organs Main + 3 organs Recovery; 17/26 subjects). AUDIT-19 (Stream 5) cleared 2026-05-01."
     min_count: 1
+    min_organ_systems: 4
 
   # Onset concordance (Phase 3 matcher #8 -- AUDIT-22 corpus-wide expansion to
   # rat PDS, 4th rat study after PointCross + TOXSCI-96298 + instem). Anchors:

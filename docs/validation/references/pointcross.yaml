@@ -229,30 +229,28 @@ assertions:
     expected_verdict: "persistent"
     min_count: 10
 
-  # Cross-organ syndrome (Phase 3 matcher #7 -- AUDIT-10). PointCross has clear
-  # multi-organ toxicity: 16 single-organ-defined syndromes co-fire across 7
-  # organs at HIGH dose -- hepatic XS01 (hepatocellular injury, 7 subjects),
-  # hematologic XS04 (myelosuppression, 31 subjects) + XC01a/c (BM suppression),
-  # renal XS03 (nephrotoxicity), ocular XC12c (corneal effects, 24 subjects),
-  # endocrine XC04a (adrenal cortical hypertrophy), reproductive XC06a/b
-  # (testicular germ cell + Leydig), general XS07 (immunotoxicity). A
-  # toxicologist would absolutely flag this co-firing pattern as a multi-organ
-  # syndrome of concern.
+  # Cofiring presentation (AUDIT-19, Stream 5 closure 2026-05-01). PointCross
+  # has clear multi-organ toxicity: 16 single-organ-defined syndromes co-fire
+  # across 7 organs at HIGH dose -- hepatic XS01, hematologic XS04 + XC01a/c,
+  # renal XS03, ocular XC12c, endocrine XC04a, reproductive XC06a/b, general
+  # XS07. The original cross_organ_syndromes surface (definition-spanning gate)
+  # cannot capture this -- it only fires on syndromes whose DEFINITION spans
+  # >1 organ_system (only phospholipidosis qualifies in the corpus).
   #
-  # Engine emits []: cross_organ_syndromes (gate at generator/syndrome_rollup.py:488)
-  # only fires on syndromes whose DEFINITION spans >1 organ_system in
-  # shared/syndrome-definitions.json -- and zero of the 33 cross-domain
-  # syndromes (XS01-XS10, XC*) have multi-organ definitions; only the
-  # histopath rule `phospholipidosis` qualifies. So PointCross's actual
-  # multi-organ pattern is invisible to this surface.
+  # AUDIT-19 added the orthogonal `cofiring_presentations` surface in
+  # syndrome_rollup.py:_compute_cofiring_entries -- per (dose, phase) cell,
+  # group firing syndromes by primary organ_system and emit when the distinct
+  # primary-organ count >= COFIRING_MIN_DISTINCT_ORGANS (=3, calibrated against
+  # PC + PDS + 43066 dog corpus). PC HIGH (200 mg/kg, Main Study) fires with
+  # 5 distinct organ_systems and 19/20 subjects affected.
   #
-  # Stream 5 NEW root-cause family: cross-organ co-firing not captured by
-  # cross_organ_syndromes. SCIENCE-FLAG: encoding the toxicologist's call
-  # (>=1 cross-organ syndrome expected) per CLAUDE.md rule 21 (algorithm-as-
-  # advisor) -- the engine's design is missing the surface, not its detection.
-  - type: "cross_organ_syndrome"
-    description: "Multi-organ co-firing (7 organs, 16 syndromes); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG (Stream 5)"
+  # min_organ_systems=4 pins the rich-presentation form: PC HIGH should have
+  # >= 4 distinct organ_systems firing, not just any cofiring entry, because
+  # the toxicologist call is "broad multi-organ" rather than minimal.
+  - type: "cofiring_presentation"
+    description: "Multi-organ co-firing at HIGH (5 organs: general, hematologic, hepatic, ocular, renal; 19/20 subjects). AUDIT-19 (Stream 5) cleared 2026-05-01."
     min_count: 1
+    min_organ_systems: 4
 
   # Onset concordance (Phase 3 matcher #8 -- AUDIT-8). Engine surface:
   # generator/onset_recovery.py builds subject_onset_days.json with

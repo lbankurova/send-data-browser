@@ -63,21 +63,27 @@ assertions:
     description: "No tumors expected in 3-week subchronic study"
     expected_has_tumors: false
 
-  # Cross-organ syndrome (Phase 3 matcher #7 -- AUDIT-20 Stream 5 expansion).
-  # Engine emits []: cross_organ_syndromes definition-spanning gate
-  # (generator/syndrome_rollup.py:488 `if len(organs) > 1`) only fires on
-  # phospholipidosis. Nimble's target_organs list reaches 8 organ_systems
-  # (hematologic + general + reproductive + respiratory + electrolyte +
-  # hepatic + gastrointestinal + cardiovascular) at HIGH dose with substantial
-  # mortality (26 deaths, 24 in control per session memory) -- a clear
-  # multi-organ co-firing pattern that the engine's narrow gate cannot
-  # capture. Cross-study reproduction of PC's Stream 5 SCIENCE-FLAG (PC
-  # 7-organ co-firing invisible to same gate). >=1 cross_organ_syndromes
-  # expected; engine emits 0.
+  # Cofiring presentation (AUDIT-19, Stream 5 retracted 2026-05-01).
+  # The original AUDIT-20 SCIENCE-FLAG (>=1 cross_organ_syndrome at HIGH)
+  # was authored on a flawed reading: the "8 target_organs at HIGH" claim
+  # counted target_organ_summary.json *entries* (8) rather than entries
+  # with target_organ_flag=True (1, only `general`). The actual data shows
+  # focal lymphoid pathology, not multi-organ adversity:
+  #   - MI:VAGINA Lymphoma (M+F, tr_adverse) -- neoplastic, no current
+  #     histopath rule covers neoplasms
+  #   - MA:THYMUS Small (M+F, tr_adverse) -- gross thymic atrophy; would
+  #     map to lymphoid_depletion if "small" were in that rule's vocabulary
+  #     (filed as AUDIT-25 follow-up)
+  #   - DS:Mortality (M+F, tr_adverse)
+  # All three signals collapse to <=2 distinct primary organ_systems
+  # (hematologic + reproductive at most), below COFIRING_MIN_DISTINCT_ORGANS=3.
+  # Even if AUDIT-25 fixes the lymphoid_depletion vocabulary gap, Nimble's
+  # syndrome surface remains structurally focal -- it is NOT a Stream 5
+  # cofiring pattern. Pin retracted as data-grounded counter-evidence
+  # per CLAUDE.md rule 19.
   #
-  # SCIENCE-FLAG: Stream 5 reproducing across studies. Encoding the
-  # toxicologist's call (>=1 cross-organ syndrome expected at this multi-
-  # organ adversity profile) per CLAUDE.md rule 21.
-  - type: "cross_organ_syndrome"
-    description: "Multi-organ co-firing (8 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction of PC 7-organ pattern"
-    min_count: 1
+  # max_count: 0 -- regression guard locking the (correct) absence of
+  # cofiring entries on Nimble's focal-lymphoid signal.
+  - type: "cofiring_presentation"
+    description: "No cofiring expected -- Nimble's signal is focal lymphoid (lymphoma + thymic atrophy + mortality), not multi-organ. AUDIT-20 pin retracted per data-grounded counter-evidence (rule 19)."
+    max_count: 0

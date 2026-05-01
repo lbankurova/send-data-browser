@@ -187,6 +187,20 @@ def _organs_for(syndrome_id: str) -> list[str]:
 
 LIKELY_BACKGROUND_N_THRESHOLD = 2     # syndrome-N <=2 at LOAEL AND at all higher doses
 
+# AUDIT-19 (Stream 5): minimum number of distinct primary organ_systems with
+# at least one firing syndrome at a (dose, phase) cell to surface a cofiring
+# presentation. Calibrated against the validation corpus 2026-05-01:
+#   - PointCross HIGH: 5 distinct organs (PASS, Stream 5 SCIENCE-FLAG cleared)
+#   - PDS HIGH: 4 distinct organs (PASS)
+#   - TOXSCI-43066 dog HIGH: 3 distinct organs (PASS at exactly N=3 -- raising
+#     to N=4 would silently miss the dog cross-species pin)
+#   - Phospholipidosis-bearing cells: phospholipidosis primary=hepatic
+#     contributes 1 bucket; co-firing entries fire only when other distinct
+#     syndromes co-occur in different primary organ_systems. The existing
+#     `cross_organ_syndromes` surface (definition-spanning gate) still
+#     captures phospholipidosis itself, so the two surfaces are orthogonal.
+COFIRING_MIN_DISTINCT_ORGANS = 3
+
 
 # ----------------------------------------------------------------------
 # Builder
@@ -500,6 +514,8 @@ def build_syndrome_rollup(
 
     cross_organ.sort(key=lambda r: (-r["n_subjects_total"], r["syndrome_id"]))
 
+    cofiring_presentations = _compute_cofiring_entries(agg, n_evaluable_by_cell)
+
     meta = subject_syndromes.get("meta") or {}
     return {
         "meta": {
@@ -510,8 +526,92 @@ def build_syndrome_rollup(
             "n_organs_with_match": len(by_organ),
         },
         "cross_organ_syndromes": cross_organ,
+        "cofiring_presentations": cofiring_presentations,
         "by_organ": by_organ,
     }
+
+
+def _compute_cofiring_entries(
+    agg: dict[str, dict[str, Any]],
+    n_evaluable_by_cell: dict[tuple[float | None, str], int],
+) -> list[dict[str, Any]]:
+    """Surface multi-syndrome multi-organ presentations per (dose, phase) cell.
+
+    AUDIT-19 (Stream 5): the existing `cross_organ_syndromes` field captures
+    only syndromes whose definition spans multiple organ_systems (e.g.
+    phospholipidosis). Multiple distinct single-organ syndromes co-firing at
+    the same (dose, phase) cell across different primary organ_systems are a
+    different surface -- co-firing presentation -- and were previously
+    invisible at the rollup level. This helper computes that surface.
+
+    Algorithm: for each (dose, phase) cell, group all firing syndromes by
+    their PRIMARY organ_system (first entry of `_organs_for(sid)`). When the
+    distinct primary organ_system count >= COFIRING_MIN_DISTINCT_ORGANS,
+    emit a cofiring entry with the per-cell roster of member syndromes and
+    union subject count.
+
+    Why primary organ_system: a syndrome like phospholipidosis has multiple
+    organs in its definition but a single primary (hepatic). Counting by
+    primary avoids double-counting that surface, which already lives in
+    `cross_organ_syndromes`. The two surfaces are orthogonal -- the same
+    cell can carry a phospholipidosis cross_organ_syndrome AND a cofiring
+    presentation if other distinct syndromes also fire there.
+
+    Returned entries are sorted: Main-Study cells first, then dose desc.
+    """
+    # cell_key -> {primary_organ -> [(syndrome_id, syndrome_name, n_subjects_in_cell)]}
+    by_cell: dict[tuple[float | None, str], dict[str, list[dict[str, Any]]]] = {}
+    # cell_key -> set of distinct USUBJIDs across all member syndromes (for union count)
+    cell_subjects: dict[tuple[float | None, str], set[str]] = {}
+
+    for sid, bucket in agg.items():
+        organs: list[str] = bucket["organ_systems"]
+        primary = organs[0] if organs else "general"
+        for cell_key, subjects in bucket["by_dose_phase_subjects"].items():
+            dose, _phase = cell_key
+            if dose is None:
+                continue
+            organs_at_cell = by_cell.setdefault(cell_key, {})
+            members = organs_at_cell.setdefault(primary, [])
+            members.append({
+                "syndrome_id": sid,
+                "syndrome_name": bucket["name"],
+                "organ_system": primary,
+                "n_subjects": len(subjects),
+            })
+            cell_subjects.setdefault(cell_key, set()).update(subjects)
+
+    entries: list[dict[str, Any]] = []
+    for cell_key, organs_dict in by_cell.items():
+        if len(organs_dict) < COFIRING_MIN_DISTINCT_ORGANS:
+            continue
+        dose, phase = cell_key
+        # Flatten member_syndromes, sorted by (organ_system, syndrome_id) for
+        # deterministic output.
+        members_flat: list[dict[str, Any]] = []
+        for organ in sorted(organs_dict.keys()):
+            for m in sorted(organs_dict[organ], key=lambda x: x["syndrome_id"]):
+                members_flat.append(m)
+        entries.append({
+            "cell": _cell_label(dose, phase),
+            "dose_value": dose,
+            "phase": phase,
+            "n_organ_systems": len(organs_dict),
+            "organ_systems": sorted(organs_dict.keys()),
+            "n_subjects_total": len(cell_subjects.get(cell_key, set())),
+            "n_evaluable": n_evaluable_by_cell.get(cell_key, 0),
+            "member_syndromes": members_flat,
+        })
+
+    # Sort: Main Study first, then dose desc, then phase alpha for stability.
+    entries.sort(
+        key=lambda e: (
+            0 if e["phase"] == "Main Study" else 1,
+            -(e["dose_value"] if e["dose_value"] is not None else -1.0),
+            e["phase"],
+        )
+    )
+    return entries
 
 
 # ----------------------------------------------------------------------

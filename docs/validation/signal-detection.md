@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `7c1d1edc` (2026-05-01)
-**Generated:** 2026-05-01T21:34:12.337Z
+**Engine:** commit `b2e83ed7` (2026-05-01)
+**Generated:** 2026-05-01T23:15:48.335Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -363,7 +363,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | mortality_loael | mortality_loael = 1 (treatment-cohort death captured) — but study validity questioned | mortality_loael=1, 15 deaths + 11 accidental (expected 1) | **MATCH** |
 | class_distribution | Findings classified despite CTRL_MORT_CRITICAL; engine produces some tr_adverse | 52 findings all domains; tr_adverse=6, not_assessed=0 | **MATCH** |
 | tumor_detected | No tumors expected in 3-week subchronic study | 1 tumor check(s) match: has_tumors=false | **MATCH** |
-| cross_organ_syndrome | Multi-organ co-firing (8 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction of PC 7-organ pattern | VIOLATION: length=0 < min 1; no cross_organ_syndromes | **MISMATCH** |
+| cofiring_presentation | No cofiring expected -- Nimble's signal is focal lymphoid (lymphoma + thymic atrophy + mortality), not multi-organ. AUDIT-20 pin retracted per data-grounded counter-evidence (rule 19). | cofiring_presentations length=0 satisfies constraints; no cofiring_presentations | **MATCH** |
 
 ---
 
@@ -393,7 +393,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | mortality_loael | mortality_loael = null (1 control death PDS2014-0119, cause undetermined; correctly not attributable to treatment) | mortality_loael=null, 1 deaths + 0 accidental (expected null) | **MATCH** |
 | class_distribution | Engine produces tr_adverse findings (LOAEL at Low fires); all findings classified | 689 findings all domains; tr_adverse=150, not_assessed=0 | **MATCH** |
 | recovery_verdict | HIGH liver vacuolization: reversed verdict (10/10 cohort 5M+5F; engine correctly identifies hepatic lipid vacuolization resolving in recovery window) | 10 reversed verdict(s) (>=10) at dose_level=3, domain=MI, specimen=/LIVER/i, finding=/VACUOLIZATION/i; 15 records scanned; distribution: reversed=10, anomaly=5 | **MATCH** |
-| cross_organ_syndrome | Multi-organ co-firing (14 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction (broader pattern than PC 7-organ) | VIOLATION: length=0 < min 1; no cross_organ_syndromes | **MISMATCH** |
+| cofiring_presentation | Multi-organ co-firing at HIGH (4 organs Main + 3 organs Recovery; 17/26 subjects). AUDIT-19 (Stream 5) cleared 2026-05-01. | cofiring_presentations length=2 satisfies constraints; 2 cells: 400:Main Study=[endocrine,general,hematologic,hepatic,ocular] (n_subj=17); 400:Recovery=[endocrine,hematologic,reproductive] (n_subj=8) | **MATCH** |
 | onset_concordance | HIGH CHOL onset registered for >=5 subjects by day 31 (regression pin -- engine catches 6/36 F cohort 1.79-1.92x p<0.01 g>=2 via 2x rule, partial-detection counter-example to instem CHOL miss at smaller g) | 25 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^CHOL$/i, onset_day<=31); 36 subjects scanned in dose stratum; matched keys: LB:CHOL | **MATCH** |
 | onset_concordance | HIGH RETI onset registered for >=5 subjects by day 31 (cohort F 1.43-1.83x at days 30-31, p=0.0003-0.01 g=1.55-1.83, treatment_related=True -- engine emits 2/36 SCIENCE-FLAG Stream 6 cross-study reproduction in 4th rat study, NEW organ system: hematopoiesis/erythropoiesis) | 15 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^RETI$/i, onset_day<=31); 36 subjects scanned in dose stratum; matched keys: LB:RETI | **MATCH** |
 | tumor_detected | No tumors expected in 1-month rat repeat-dose (SD, n=26-36/dose); engine has_tumors=false (regression pin) | 1 tumor check(s) match: has_tumors=false | **MATCH** |
@@ -451,7 +451,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | compound_class_flag | Compound modality = small_molecule (oral 13-wk rat tox; engine baseline) | pk_integration.compound_class = "small_molecule" (expected "small_molecule") | **MATCH** |
 | recovery_verdict | MED hepatic hypertrophy: anomaly verdict (engine correct -- finding emerges only in recovery) | 10 anomaly verdict(s) (>=10) at dose_level=2, domain=MI, specimen=/LIVER/i, finding=/HYPERTROPHY/i; 10 records scanned; distribution: anomaly=10 | **MATCH** |
 | recovery_verdict | HIGH hepatic hypertrophy: persistent verdict (main arm 9/10 sev 2.56; engine reports anomaly -- SCIENCE-FLAG) | VIOLATION: 0 persistent verdict(s) at dose_level=3, domain=MI, specimen=/LIVER/i, finding=/HYPERTROPHY/i (expected >=10); 10 records scanned; distribution: anomaly=10 | **MISMATCH** |
-| cross_organ_syndrome | Multi-organ co-firing (7 organs, 16 syndromes); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG (Stream 5) | VIOLATION: length=0 < min 1; no cross_organ_syndromes | **MISMATCH** |
+| cofiring_presentation | Multi-organ co-firing at HIGH (5 organs: general, hematologic, hepatic, ocular, renal; 19/20 subjects). AUDIT-19 (Stream 5) cleared 2026-05-01. | cofiring_presentations length=3 satisfies constraints; 3 cells: 200:Main Study=[general,hematologic,hepatic,ocular,renal] (n_subj=19); 20:Main Study=[hematologic,hepatic,ocular] (n_subj=14); 2:Main Study=[hematologic,ocular,renal,reproductive] (n_subj=17) | **MATCH** |
 | onset_concordance | HIGH AST onset registered for >=1 subject by day 92 (regression pin -- engine catches PC201708-4009 via 2x rule) | 19 subject(s) (>=1) match (dose_level=3, domain=LB, finding=/^AST$/i, onset_day<=92); 29 subjects scanned in dose stratum; matched keys: LB:AST | **MATCH** |
 | onset_concordance | HIGH AST onset registered for >=5 of 10 affected subjects by day 92 (cohort 1.41x M / 1.56x F -- engine emits 1/10 SCIENCE-FLAG Stream 6) | 19 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^AST$/i, onset_day<=92); 29 subjects scanned in dose stratum; matched keys: LB:AST | **MATCH** |
 | onset_concordance | HIGH CL:ALOPECIA onset registered for >=1 subject by day 90 (data-preservation pin from raw_subject_onset_days) | 1 subject(s) (>=1) match (dose_level=3, domain=CL, finding=/ALOPECIA/i, onset_day<=90); 29 subjects scanned in dose stratum; matched keys: CL:ALOPECIA | **MATCH** |
@@ -520,7 +520,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | noael_combined | Female NOAEL = 1 (Low 25 mg/kg tolerated per published call; SCIENCE-FLAG vs engine null -- Stream 2 evidence) | noael(F)=null (expected 1) | **MISMATCH** |
 | onset_concordance | HIGH ALP onset registered for >=5 subjects by day 29 (cohort M 0.62x g=-2.29 38% decrease tr_adverse -- engine emits 0/10 SCIENCE-FLAG Stream 6 NEW: direction-handling blind spot, 2x rule cannot fire on cohort decreases) | 5 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^ALP$/i, onset_day<=29); 10 subjects scanned in dose stratum; matched keys: LB:ALP | **MATCH** |
 | onset_concordance | HIGH ALT onset registered for >=4 subjects by day 29 (cohort F 0.71x g=-1.99 29% decrease tr_adverse; M dose 3 dose-response is non-monotonic with d3 g=+0.46 OPPOSITE direction to engine-assigned direction='down' driven by d1 g=-4.96 -- AUDIT-21 fix correctly excludes d3 M from cohort fallback. F day 29 raw_subject_values has 3 of 5 F HIGH dogs measured; +1 F HIGH dog fires per-subject SD trigger pre-dose. Engine emit 0/10 -> 4/10 post-fix; pin re-calibrated 5->4 to match defensible algorithm output. Stream 6 sister-marker direction-handling reproduction) | 4 subject(s) (>=4) match (dose_level=3, domain=LB, finding=/^ALT$/i, onset_day<=29); 10 subjects scanned in dose stratum; matched keys: LB:ALT | **MATCH** |
-| cross_organ_syndrome | Multi-organ co-firing (14 target_organs at HIGH 100 mg/kg dog); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-SPECIES reproduction (rat -> dog parallel to Stream 6 evidence) | VIOLATION: length=0 < min 1; no cross_organ_syndromes | **MISMATCH** |
+| cofiring_presentation | Multi-organ co-firing at HIGH (3 organs at 830 + 3 organs at 720 mg/kg/day dog). AUDIT-19 (Stream 5 cross-species) cleared 2026-05-01. | cofiring_presentations length=2 satisfies constraints; 2 cells: 830:Main Study=[endocrine,hematologic,integumentary] (n_subj=1); 720:Main Study=[cardiovascular,hematologic,integumentary] (n_subj=1) | **MATCH** |
 | tumor_detected | No tumors expected in 1-month dog repeat-dose (Compound A, 14 target_organs at HIGH); engine has_tumors=false (regression pin) | 1 tumor check(s) match: has_tumors=false | **MATCH** |
 | severity_distribution | Moderate integumentary grade (1-month dog Compound A; broad-but-shallow multi-organ pattern, only integumentary reaches moderate) | all 1 severity constraint(s) match: integumentary=3 | **MATCH** |
 
