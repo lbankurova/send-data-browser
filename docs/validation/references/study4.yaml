@@ -217,3 +217,38 @@ assertions:
     finding_pattern: "INFILTRATE"
     expected_verdict: "persistent"
     min_count: 10
+
+  # Onset concordance (Phase 3 matcher #8 -- AUDIT-22 corpus-wide expansion to
+  # rabbit Study4 vaccine, 1st rabbit study + 1st coagulation-cascade Stream 6).
+  # Anchors: subject_onset_days.json + unified_findings.json LB cohort stats at
+  # SENDVACC99 HIGH (dose=2). The injected_signals block above documents
+  # fibrinogen elevation as expected vaccine biology (rabbivi.pdf p.10) --
+  # this assertion is NOT contesting the biology, it is testing whether the
+  # engine's per-subject 2x rule catches a clear cohort-level signal that any
+  # toxicologist scanning the data would see.
+  #
+  # FIBRINO (fibrinogen, coagulation cascade / acute-phase reactant) HIGH
+  # cohort: F day 3 ctrl=2.45 -> 4.25 (1.73x, p=0.0, g=4.04, treatment_related=
+  # True) + F day 31 ctrl=2.09 -> 3.26 (1.56x, p<0.0001, g=2.69) + M day 3
+  # ctrl=3.34 -> 5.12 (1.53x, p=2e-6, g=2.54) + M day 31 ctrl=2.81 -> 4.28
+  # (1.53x, p=0.0, g=3.01). Cohort signal is overwhelming in BOTH sexes and at
+  # BOTH timepoints (g=2.5 to 6.2, all p<<0.01). Engine emits 1/20 subjects
+  # (single F at day 3) by day 31. The per-subject 2x rule misses ~95% of the
+  # cohort because the cohort effect crests at 1.7x at the population mean,
+  # leaving most individual subjects below the absolute 2x threshold despite
+  # a population shift of g=4-6 SD.
+  #
+  # Stream 6 broadens to: cross-species (rabbit, beyond rat PC/96298/instem/
+  # PDS + dog 35449/43066) AND new organ system (coagulation cascade, beyond
+  # hepatic chemistry + erythropoiesis). The blast radius is now species-
+  # independent + organ-system-independent: any cohort-meaningful effect
+  # below the per-subject 2x cliff is structurally invisible to the matcher.
+  # AUDIT-21 fix scope confirmed broad: cohort-aware threshold semantics
+  # needed regardless of species or organ system.
+  - type: "onset_concordance"
+    description: "HIGH FIBRINO onset registered for >=5 subjects by day 31 (cohort F 1.73x p=0.0 g=4.04 + M 1.53x p=2e-6 g=2.54 day 3, sustained at day 31; treatment_related=True both sexes -- engine emits 1/20 SCIENCE-FLAG Stream 6 cross-species reproduction in 1st rabbit study + 1st coagulation-cascade organ system)"
+    dose_level: 2
+    domain: "LB"
+    finding_pattern: "^FIBRINO$"
+    max_onset_day: 31
+    min_count: 5

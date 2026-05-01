@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `08eda6a9` (2026-05-01)
-**Generated:** 2026-05-01T16:46:45.824Z
+**Engine:** commit `f86fdfe5` (2026-05-01)
+**Generated:** 2026-05-01T17:13:39.270Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -153,6 +153,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | recovery_verdict | Group 2 lymph node inguinal hyperplasia: persistent verdict (10/10 cohort; engine correctly catches sustained antigen-driven immune response -- counter-example to PC HIGH hepatic hypertrophy Stream 4 anomaly) | 10 persistent verdict(s) (>=10) at dose_level=1, domain=MI, specimen=/LYMPH NODE, INGUINAL/i, finding=/HYPERPLASIA/i; 10 records scanned; distribution: persistent=10 | **MATCH** |
 | recovery_verdict | Group 2 injection-site hemorrhage: reversed verdict (10/10 cohort; engine correctly identifies acute injection-site reaction resolving in 28-day recovery) | 10 reversed verdict(s) (>=10) at dose_level=1, domain=MI, specimen=/SITE, INJECTION/i, finding=/HEMORRHAGE/i; 10 records scanned; distribution: reversed=10 | **MATCH** |
 | recovery_verdict | Group 3 liver infiltrate: persistent verdict (10/10 cohort; engine correctly catches adjuvant-driven hepatic mononuclear infiltrate persisting at recovery) | 10 persistent verdict(s) (>=10) at dose_level=2, domain=MI, specimen=/LIVER/i, finding=/INFILTRATE/i; 10 records scanned; distribution: persistent=10 | **MATCH** |
+| onset_concordance | HIGH FIBRINO onset registered for >=5 subjects by day 31 (cohort F 1.73x p=0.0 g=4.04 + M 1.53x p=2e-6 g=2.54 day 3, sustained at day 31; treatment_related=True both sexes -- engine emits 1/20 SCIENCE-FLAG Stream 6 cross-species reproduction in 1st rabbit study + 1st coagulation-cascade organ system) | VIOLATION: 1 subject(s) match (dose_level=2, domain=LB, finding=/^FIBRINO$/i, onset_day<=31; expected >=5); 20 subjects scanned in dose stratum; matched keys: LB:FIBRINO | **MISMATCH** |
 
 ---
 
@@ -321,6 +322,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | cross_organ_syndrome | Phospholipidosis cross-organ entry (hepatic+respiratory+renal+hematologic; n>=7) | cross_organ entry "phospholipidosis": organs=[hepatic,respiratory,renal,hematologic], n=7 | **MATCH** |
 | recovery_verdict | HIGH liver infiltration: reversed verdict (10/10 cohort; engine correctly identifies hepatic inflammatory infiltrate resolving in recovery window) | 10 reversed verdict(s) (>=10) at dose_level=3, domain=MI, specimen=/LIVER/i, finding=/INFILTRATION/i; 10 records scanned; distribution: reversed=10 | **MATCH** |
 | recovery_verdict | HIGH kidney nephropathy: reversed verdict (5/10 cohort; engine catches reversal despite sex-asymmetric power on remaining 5 subjects) | 5 reversed verdict(s) (>=5) at dose_level=3, domain=MI, specimen=/KIDNEY/i, finding=/NEPHROPATHY/i; 10 records scanned; distribution: reversed=5, low_power=5 | **MATCH** |
+| onset_concordance | HIGH VOLUME onset registered for >=5 subjects by day 30 (regression pin -- engine catches 3.74x F cohort cleanly via 2x rule, 8/30 hits) | 8 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^VOLUME$/i, onset_day<=30); 30 subjects scanned in dose stratum; matched keys: LB:VOLUME | **MATCH** |
+| onset_concordance | HIGH CHOL onset registered for >=5 subjects by day 30 (cohort M 1.45x p=0.009 g=2.58 + F 1.36x p=0.001 g=2.19 both treatment_related=True -- engine emits 0/30 SCIENCE-FLAG Stream 6 cross-study reproduction in 3rd rat study) | VIOLATION: 0 subject(s) match (dose_level=3, domain=LB, finding=/^CHOL$/i, onset_day<=30; expected >=5); 30 subjects scanned in dose stratum; matched keys: none | **MISMATCH** |
 
 ---
 
@@ -379,6 +382,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | class_distribution | Engine produces tr_adverse findings (LOAEL at Low fires); all findings classified | 689 findings all domains; tr_adverse=150, not_assessed=0 | **MATCH** |
 | recovery_verdict | HIGH liver vacuolization: reversed verdict (10/10 cohort 5M+5F; engine correctly identifies hepatic lipid vacuolization resolving in recovery window) | 10 reversed verdict(s) (>=10) at dose_level=3, domain=MI, specimen=/LIVER/i, finding=/VACUOLIZATION/i; 15 records scanned; distribution: reversed=10, anomaly=5 | **MATCH** |
 | cross_organ_syndrome | Multi-organ co-firing (14 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction (broader pattern than PC 7-organ) | VIOLATION: length=0 < min 1; no cross_organ_syndromes | **MISMATCH** |
+| onset_concordance | HIGH CHOL onset registered for >=5 subjects by day 31 (regression pin -- engine catches 6/36 F cohort 1.79-1.92x p<0.01 g>=2 via 2x rule, partial-detection counter-example to instem CHOL miss at smaller g) | 6 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^CHOL$/i, onset_day<=31); 36 subjects scanned in dose stratum; matched keys: LB:CHOL | **MATCH** |
+| onset_concordance | HIGH RETI onset registered for >=5 subjects by day 31 (cohort F 1.43-1.83x at days 30-31, p=0.0003-0.01 g=1.55-1.83, treatment_related=True -- engine emits 2/36 SCIENCE-FLAG Stream 6 cross-study reproduction in 4th rat study, NEW organ system: hematopoiesis/erythropoiesis) | VIOLATION: 2 subject(s) match (dose_level=3, domain=LB, finding=/^RETI$/i, onset_day<=31; expected >=5); 36 subjects scanned in dose stratum; matched keys: LB:RETI | **MISMATCH** |
 
 ---
 

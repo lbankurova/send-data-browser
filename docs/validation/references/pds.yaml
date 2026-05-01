@@ -120,3 +120,46 @@ assertions:
   - type: "cross_organ_syndrome"
     description: "Multi-organ co-firing (14 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction (broader pattern than PC 7-organ)"
     min_count: 1
+
+  # Onset concordance (Phase 3 matcher #8 -- AUDIT-22 corpus-wide expansion to
+  # rat PDS, 4th rat study after PointCross + TOXSCI-96298 + instem). Anchors:
+  # subject_onset_days.json (per-subject LB:{TEST} -> first onset_day) joined
+  # with unified_findings.json LB cohort statistics at HIGH (dose=3, 400 mg/kg).
+  #
+  # 1. CHOL (cholesterol, hepatic chemistry) -- regression pin (engine catches
+  #    cohort signal partially). HIGH cohort: F ctrl=72.3 -> 130 (1.79x at
+  #    day 30, p=1e-6, g=2.85; 1.92x at day 31, p=0.002, g=1.88,
+  #    treatment_related=True). Engine emits 6/36 subjects (all F) by day 31
+  #    -- the 6 F subjects whose individual values cross the 2x threshold.
+  #    MATCH at min_count=5 pins the engine's correct partial detection on a
+  #    cohort F effect approaching but not crossing 2x at the population mean.
+  #    Counter-evidence to instem CHOL SCIENCE-FLAG (where engine emits 0):
+  #    PDS's larger F cohort effect (g=2.85 vs instem g=2.19) tips the per-
+  #    subject distribution above threshold for >=5 subjects.
+  #
+  # 2. RETI (reticulocyte count, hematopoiesis) -- SCIENCE-FLAG Stream 6 cross-
+  #    study reproduction in NEW organ system (erythropoiesis, not hepatic).
+  #    HIGH F cohort: ctrl=178 -> 255 at day 30 (1.43x, p=0.0003, g=1.83,
+  #    treatment_related=True) + ctrl=168 -> 307 at day 31 (1.83x, p=0.01,
+  #    g=1.55, treatment_related=True). Robust dose-response with regenerative
+  #    bone-marrow signal. Engine emits 2/36 subjects (both F) by day 31 --
+  #    the per-subject 2x rule misses the cohort because reticulocyte values
+  #    are intrinsically variable, individual subjects don't all cross 2x.
+  #    Stream 6 broadens beyond hepatic chemistry to hematopoiesis: same
+  #    "cohort g>=1.5 + p<0.01 missed by per-subject 2x" pattern, different
+  #    organ system. Confirms the per-subject 2x rule's blind spot is
+  #    structural to the threshold logic, not specific to liver biology.
+  - type: "onset_concordance"
+    description: "HIGH CHOL onset registered for >=5 subjects by day 31 (regression pin -- engine catches 6/36 F cohort 1.79-1.92x p<0.01 g>=2 via 2x rule, partial-detection counter-example to instem CHOL miss at smaller g)"
+    dose_level: 3
+    domain: "LB"
+    finding_pattern: "^CHOL$"
+    max_onset_day: 31
+    min_count: 5
+  - type: "onset_concordance"
+    description: "HIGH RETI onset registered for >=5 subjects by day 31 (cohort F 1.43-1.83x at days 30-31, p=0.0003-0.01 g=1.55-1.83, treatment_related=True -- engine emits 2/36 SCIENCE-FLAG Stream 6 cross-study reproduction in 4th rat study, NEW organ system: hematopoiesis/erythropoiesis)"
+    dose_level: 3
+    domain: "LB"
+    finding_pattern: "^RETI$"
+    max_onset_day: 31
+    min_count: 5

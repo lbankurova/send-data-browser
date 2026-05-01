@@ -1,28 +1,28 @@
 # Validation Summary
 
-**Engine:** commit `08eda6a9` (2026-05-01)
-**Generated:** 2026-05-01T16:46:46.324Z
+**Engine:** commit `f86fdfe5` (2026-05-01)
+**Generated:** 2026-05-01T17:13:39.753Z
 
 | Study | Origin | Signals | Design | Assertions | Notes |
 |-------|--------|---------|--------|------------|-------|
 | CBER-POC-Pilot-Study1-Vaccine_xpt_only | synthetic | -- | 6/6 | 8/9 |  |
 | CBER-POC-Pilot-Study2-Vaccine_xpt | synthetic | 10/10 | 5/5 | 1/6 |  |
 | CBER-POC-Pilot-Study3-Gene-Therapy | synthetic | -- | 5/5 | 8/9 |  |
-| CBER-POC-Pilot-Study4-Vaccine | synthetic | 11/11 | 5/5 | 4/9 |  |
+| CBER-POC-Pilot-Study4-Vaccine | synthetic | 11/11 | 5/5 | 4/10 |  |
 | CBER-POC-Pilot-Study5 | synthetic | 6/7 | 5/5 | 5/7 | 1 class note(s), MISSED |
 | CJ16050-xptonly | synthetic | 6/6 | 5/5 | 4/6 |  |
 | CJUGSEND00 | synthetic | 2/2 | 6/6 | 3/5 |  |
 | FFU-Contribution-to-FDA | real | -- | 5/5 | 4/4 |  |
-| instem | synthetic | -- | 5/5 | 7/10 |  |
+| instem | synthetic | -- | 5/5 | 8/12 |  |
 | Nimble | synthetic | -- | 5/5 | 6/7 |  |
-| PDS | synthetic | -- | 5/5 | 6/9 |  |
+| PDS | synthetic | -- | 5/5 | 7/11 |  |
 | PointCross | synthetic | 12/13 | 7/7 | 14/19 | MISSED |
 | TOXSCI-24-0062--35449 1 month dog- Compound B-xpt | real | -- | 5/5 | 7/8 |  |
 | TOXSCI-24-0062--43066 1 month dog- Compound A-xpt | real | -- | 5/5 | 6/11 |  |
 | TOXSCI-24-0062--87497 1 month rat- Compound B-xpt | real | -- | 4/5 | 4/8 | MISMATCH |
 | TOXSCI-24-0062--96298 1 month rat- Compound A xpt | real | -- | 5/5 | 7/9 |  |
 
-**Totals:** 47/49 signals detected, 83/84 design matched, 94/136 assertions passed
+**Totals:** 47/49 signals detected, 83/84 design matched, 96/141 assertions passed
 
 ## Missed Signals
 
