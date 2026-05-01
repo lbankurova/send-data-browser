@@ -14,6 +14,8 @@ import { useResizePanel } from "@/hooks/useResizePanel";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { cn } from "@/lib/utils";
 import { PanePillToggle } from "@/components/ui/PanePillToggle";
+import { SortableHeader } from "@/components/ui/SortableHeader";
+import { SortPopover, SortChips } from "@/components/ui/SortPopover";
 import {
   getSeverityDotColor,
   formatPValue,
@@ -1232,6 +1234,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           >
             <Filter className="h-3 w-3" />
           </button>
+          {layoutMode === "standard"
+            ? <SortPopover table={table} />
+            : <SortPopover table={pivotedTable} />}
           {((filterDay != null) || activeFilterCount > 0) && (
             <button
               type="button"
@@ -1294,6 +1299,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               </span>
             ) : null;
           })()}
+          {layoutMode === "standard"
+            ? <SortChips table={table} />
+            : <SortChips table={pivotedTable} />}
         </span>
         <span className="relative flex items-center">
           <Search className="absolute left-1 h-2.5 w-2.5 text-muted-foreground/50" />
@@ -1342,14 +1350,11 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           {table.getHeaderGroups().map((hg) => (
             <tr key={hg.id} className="border-b bg-muted/30">
               {hg.headers.map((header) => (
-                <th
+                <SortableHeader
                   key={header.id}
-                  className="relative cursor-pointer px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
+                  header={header}
                   style={colStyle(header.id)}
-                  onClick={(e) => {
-                    if (resizingRef.current) return;
-                    header.column.getToggleSortingHandler()?.(e);
-                  }}
+                  resizingRef={resizingRef}
                   onContextMenu={
                     header.id === "day" ? (e) => {
                       if (hasCl) {
@@ -1361,27 +1366,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                       setSparkMenu({ x: e.clientX, y: e.clientY });
                     } : undefined
                   }
-                >
-                  {flexRender(header.column.columnDef.header, header.getContext())}
-                  {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
-                  <div
-                    onMouseDown={(e) => {
-                      resizingRef.current = true;
-                      const clear = () => {
-                        setTimeout(() => { resizingRef.current = false; }, 0);
-                        document.removeEventListener("mouseup", clear);
-                      };
-                      document.addEventListener("mouseup", clear);
-                      header.getResizeHandler()(e);
-                    }}
-                    onTouchStart={header.getResizeHandler()}
-                    onClick={(e) => e.stopPropagation()}
-                    className={cn(
-                      "absolute -right-1 top-0 z-10 h-full w-3 cursor-col-resize select-none touch-none",
-                      header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
-                    )}
-                  />
-                </th>
+                />
               ))}
             </tr>
           ))}
@@ -1467,35 +1452,12 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           {pivotedTable.getHeaderGroups().map((hg) => (
             <tr key={hg.id} className="border-b bg-muted/30">
               {hg.headers.map((header) => (
-                <th
+                <SortableHeader
                   key={header.id}
-                  className="relative cursor-pointer px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
+                  header={header}
                   style={pivColStyle(header.id)}
-                  onClick={(e) => {
-                    if (resizingRef.current) return;
-                    header.column.getToggleSortingHandler()?.(e);
-                  }}
-                >
-                  {flexRender(header.column.columnDef.header, header.getContext())}
-                  {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
-                  <div
-                    onMouseDown={(e) => {
-                      resizingRef.current = true;
-                      const clear = () => {
-                        setTimeout(() => { resizingRef.current = false; }, 0);
-                        document.removeEventListener("mouseup", clear);
-                      };
-                      document.addEventListener("mouseup", clear);
-                      header.getResizeHandler()(e);
-                    }}
-                    onTouchStart={header.getResizeHandler()}
-                    onClick={(e) => e.stopPropagation()}
-                    className={cn(
-                      "absolute -right-1 top-0 z-10 h-full w-3 cursor-col-resize select-none touch-none",
-                      header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
-                    )}
-                  />
-                </th>
+                  resizingRef={resizingRef}
+                />
               ))}
             </tr>
           ))}
