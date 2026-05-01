@@ -1,0 +1,661 @@
+{
+  "captured_against_commit": "325f16a5",
+  "captured_at": "2026-05-01T00:45:31Z",
+  "captured_by": "scripts/capture-approval-baseline.py",
+  "captured_from": "backend/generated/Nimble/unified_findings.json",
+  "presentation": {
+    "bundle_artifacts": {},
+    "format_strings": {},
+    "labels": {}
+  },
+  "schema_version": 1,
+  "scientific": {
+    "adverse_classification": {
+      "BG.BWGAIN..F.1": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "BG.BWGAIN..M.1": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "BW.BW..F.1": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "concern"
+      },
+      "BW.BW..M.1": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "CL.Difficulty Walking..F.34": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "CL.Difficulty Walking..M.-11": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "CL.Pale..F.40": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "CL.Pale..M.50": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "CL.Salivation..F.15": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "CL.Salivation..M.57": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "CL.Squinting..F.-10": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "CL.Squinting..M.6": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "CL.Vomitting..F.-9": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "CL.Vomitting..M.41": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "DS.MORTALITY..F.": {
+        "severity": "warning",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "DS.MORTALITY..M.": {
+        "severity": "warning",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "FW.FC..F.1": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "FW.FC..M.1": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "FW.WC..F.1": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "FW.WC..M.1": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.ALB..F.1": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.ALB..M.1": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.CL..F.1": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.CL..M.1": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.K..F.1": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.K..M.1": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "MA.LARGE INTESTINE, CECUM_Discoloration dark, mucosa.LARGE INTESTINE, CECUM.F.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LARGE INTESTINE, CECUM_Discoloration dark, mucosa.LARGE INTESTINE, CECUM.M.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LARGE INTESTINE, COLON_Foci dark, mucosa.LARGE INTESTINE, COLON.F.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LARGE INTESTINE, COLON_Foci dark, mucosa.LARGE INTESTINE, COLON.M.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LUNG_Adhesion.LUNG.F.": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LUNG_Adhesion.LUNG.M.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LUNG_Bulla, right caudal lobe, 1 cm in diameter, one section.LUNG.F.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LUNG_Bulla, right caudal lobe, 1 cm in diameter, one section.LUNG.M.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LUNG_Congestion, left lobe moderate.LUNG.F.": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LUNG_Congestion, left lobe moderate.LUNG.M.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.THYMUS_Small.THYMUS.F.": {
+        "severity": "warning",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MA.THYMUS_Small.THYMUS.M.": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MI.MUSCLE, SKELETAL_Inflammation.MUSCLE, SKELETAL.F.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.MUSCLE, SKELETAL_Inflammation.MUSCLE, SKELETAL.M.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.TESTIS/EPIDIDYMIS_Amyloidosis.TESTIS/EPIDIDYMIS.F.": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.TESTIS/EPIDIDYMIS_Amyloidosis.TESTIS/EPIDIDYMIS.M.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.TESTIS/EPIDIDYMIS_Degeneration/regeneration epithelial.TESTIS/EPIDIDYMIS.F.": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.TESTIS/EPIDIDYMIS_Degeneration/regeneration epithelial.TESTIS/EPIDIDYMIS.M.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.TESTIS/EPIDIDYMIS_Inflammation, acute.TESTIS/EPIDIDYMIS.F.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.TESTIS/EPIDIDYMIS_Inflammation, acute.TESTIS/EPIDIDYMIS.M.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.VAGINA_Lymphoma.VAGINA.F.": {
+        "severity": "warning",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MI.VAGINA_Lymphoma.VAGINA.M.": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "OM.WEIGHT.HEART.F.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "OM.WEIGHT.HEART.M.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "OM.WEIGHT.LIVER.F.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "OM.WEIGHT.LIVER.M.": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      }
+    },
+    "eci_dimensions": {},
+    "effect_sizes": {
+      "BG.BWGAIN..F.1": 0.1798,
+      "BG.BWGAIN..M.1": -0.375,
+      "BW.BW..F.1": 0.5067,
+      "BW.BW..M.1": -0.2665,
+      "CL.Difficulty Walking..F.34": null,
+      "CL.Difficulty Walking..M.-11": null,
+      "CL.Pale..F.40": null,
+      "CL.Pale..M.50": null,
+      "CL.Salivation..F.15": null,
+      "CL.Salivation..M.57": null,
+      "CL.Squinting..F.-10": null,
+      "CL.Squinting..M.6": null,
+      "CL.Vomitting..F.-9": null,
+      "CL.Vomitting..M.41": null,
+      "DS.MORTALITY..F.": null,
+      "DS.MORTALITY..M.": null,
+      "FW.FC..F.1": null,
+      "FW.FC..M.1": null,
+      "FW.WC..F.1": null,
+      "FW.WC..M.1": null,
+      "LB.ALB..F.1": 0.0883,
+      "LB.ALB..M.1": -0.2814,
+      "LB.CL..F.1": -0.221,
+      "LB.CL..M.1": -0.1459,
+      "LB.K..F.1": -0.0017,
+      "LB.K..M.1": 0.171,
+      "MA.LARGE INTESTINE, CECUM_Discoloration dark, mucosa.LARGE INTESTINE, CECUM.F.": null,
+      "MA.LARGE INTESTINE, CECUM_Discoloration dark, mucosa.LARGE INTESTINE, CECUM.M.": null,
+      "MA.LARGE INTESTINE, COLON_Foci dark, mucosa.LARGE INTESTINE, COLON.F.": null,
+      "MA.LARGE INTESTINE, COLON_Foci dark, mucosa.LARGE INTESTINE, COLON.M.": null,
+      "MA.LUNG_Adhesion.LUNG.F.": null,
+      "MA.LUNG_Adhesion.LUNG.M.": null,
+      "MA.LUNG_Bulla, right caudal lobe, 1 cm in diameter, one section.LUNG.F.": null,
+      "MA.LUNG_Bulla, right caudal lobe, 1 cm in diameter, one section.LUNG.M.": null,
+      "MA.LUNG_Congestion, left lobe moderate.LUNG.F.": null,
+      "MA.LUNG_Congestion, left lobe moderate.LUNG.M.": null,
+      "MA.THYMUS_Small.THYMUS.F.": null,
+      "MA.THYMUS_Small.THYMUS.M.": null,
+      "MI.MUSCLE, SKELETAL_Inflammation.MUSCLE, SKELETAL.F.": null,
+      "MI.MUSCLE, SKELETAL_Inflammation.MUSCLE, SKELETAL.M.": null,
+      "MI.TESTIS/EPIDIDYMIS_Amyloidosis.TESTIS/EPIDIDYMIS.F.": null,
+      "MI.TESTIS/EPIDIDYMIS_Amyloidosis.TESTIS/EPIDIDYMIS.M.": null,
+      "MI.TESTIS/EPIDIDYMIS_Degeneration/regeneration epithelial.TESTIS/EPIDIDYMIS.F.": null,
+      "MI.TESTIS/EPIDIDYMIS_Degeneration/regeneration epithelial.TESTIS/EPIDIDYMIS.M.": null,
+      "MI.TESTIS/EPIDIDYMIS_Inflammation, acute.TESTIS/EPIDIDYMIS.F.": null,
+      "MI.TESTIS/EPIDIDYMIS_Inflammation, acute.TESTIS/EPIDIDYMIS.M.": null,
+      "MI.VAGINA_Lymphoma.VAGINA.F.": null,
+      "MI.VAGINA_Lymphoma.VAGINA.M.": null,
+      "OM.WEIGHT.HEART.F.": null,
+      "OM.WEIGHT.HEART.M.": null,
+      "OM.WEIGHT.LIVER.F.": null,
+      "OM.WEIGHT.LIVER.M.": null
+    },
+    "noael_per_endpoint_sex": {
+      "BG.BWGAIN..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "BG.BWGAIN..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "BW.BW..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "BW.BW..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "CL.Difficulty Walking..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "CL.Difficulty Walking..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "CL.Pale..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "CL.Pale..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "CL.Salivation..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "CL.Salivation..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "CL.Squinting..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "CL.Squinting..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "CL.Vomitting..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "CL.Vomitting..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "DS.MORTALITY..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "DS.MORTALITY..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "FW.FC..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "FW.FC..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "FW.WC..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "FW.WC..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "LB.ALB..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "LB.ALB..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "LB.CL..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "LB.CL..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "LB.K..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "LB.K..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MA.LARGE INTESTINE, CECUM_Discoloration dark, mucosa.LARGE INTESTINE, CECUM.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MA.LARGE INTESTINE, CECUM_Discoloration dark, mucosa.LARGE INTESTINE, CECUM.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MA.LARGE INTESTINE, COLON_Foci dark, mucosa.LARGE INTESTINE, COLON.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MA.LARGE INTESTINE, COLON_Foci dark, mucosa.LARGE INTESTINE, COLON.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MA.LUNG_Adhesion.LUNG.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MA.LUNG_Adhesion.LUNG.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MA.LUNG_Bulla, right caudal lobe, 1 cm in diameter, one section.LUNG.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MA.LUNG_Bulla, right caudal lobe, 1 cm in diameter, one section.LUNG.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MA.LUNG_Congestion, left lobe moderate.LUNG.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MA.LUNG_Congestion, left lobe moderate.LUNG.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MA.THYMUS_Small.THYMUS.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MA.THYMUS_Small.THYMUS.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MI.MUSCLE, SKELETAL_Inflammation.MUSCLE, SKELETAL.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MI.MUSCLE, SKELETAL_Inflammation.MUSCLE, SKELETAL.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MI.TESTIS/EPIDIDYMIS_Amyloidosis.TESTIS/EPIDIDYMIS.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MI.TESTIS/EPIDIDYMIS_Amyloidosis.TESTIS/EPIDIDYMIS.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MI.TESTIS/EPIDIDYMIS_Degeneration/regeneration epithelial.TESTIS/EPIDIDYMIS.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MI.TESTIS/EPIDIDYMIS_Degeneration/regeneration epithelial.TESTIS/EPIDIDYMIS.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MI.TESTIS/EPIDIDYMIS_Inflammation, acute.TESTIS/EPIDIDYMIS.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MI.TESTIS/EPIDIDYMIS_Inflammation, acute.TESTIS/EPIDIDYMIS.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MI.VAGINA_Lymphoma.VAGINA.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "MI.VAGINA_Lymphoma.VAGINA.M": {
+        "loael": "10",
+        "tier": "below_tested",
+        "value": null
+      },
+      "OM.WEIGHT.HEART.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "OM.WEIGHT.HEART.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "OM.WEIGHT.LIVER.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      },
+      "OM.WEIGHT.LIVER.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "10"
+      }
+    },
+    "p_value_adjustments": {
+      "BG.BWGAIN..F.1": 0.360489,
+      "BG.BWGAIN..M.1": 0.156802,
+      "BW.BW..F.1": 0.002687,
+      "BW.BW..M.1": 0.226896,
+      "CL.Difficulty Walking..F.34": 0.13534627628888002,
+      "CL.Difficulty Walking..M.-11": 0.6307459817902815,
+      "CL.Pale..F.40": 0.19170553583711605,
+      "CL.Pale..M.50": 0.43312340771889357,
+      "CL.Salivation..F.15": 0.6949281649303897,
+      "CL.Salivation..M.57": 0.8407645648065656,
+      "CL.Squinting..F.-10": 1.0,
+      "CL.Squinting..M.6": 0.29587855129149493,
+      "CL.Vomitting..F.-9": 1.0,
+      "CL.Vomitting..M.41": 0.6689448936821915,
+      "DS.MORTALITY..F.": 0.013506056683188168,
+      "DS.MORTALITY..M.": 0.005405581223929963,
+      "FW.FC..F.1": 1.0,
+      "FW.FC..M.1": 1.0,
+      "FW.WC..F.1": 1.0,
+      "FW.WC..M.1": 1.0,
+      "LB.ALB..F.1": 0.505111,
+      "LB.ALB..M.1": 0.102965,
+      "LB.CL..F.1": 0.096321,
+      "LB.CL..M.1": 0.396198,
+      "LB.K..F.1": 0.9899,
+      "LB.K..M.1": 0.320344,
+      "MA.LARGE INTESTINE, CECUM_Discoloration dark, mucosa.LARGE INTESTINE, CECUM.F.": 0.397947712205629,
+      "MA.LARGE INTESTINE, CECUM_Discoloration dark, mucosa.LARGE INTESTINE, CECUM.M.": 0.6307459817902815,
+      "MA.LARGE INTESTINE, COLON_Foci dark, mucosa.LARGE INTESTINE, COLON.F.": 0.9911713022149344,
+      "MA.LARGE INTESTINE, COLON_Foci dark, mucosa.LARGE INTESTINE, COLON.M.": 1.0,
+      "MA.LUNG_Adhesion.LUNG.F.": 0.09375704630676476,
+      "MA.LUNG_Adhesion.LUNG.M.": 0.6874436205212694,
+      "MA.LUNG_Bulla, right caudal lobe, 1 cm in diameter, one section.LUNG.F.": 0.08822624262012554,
+      "MA.LUNG_Bulla, right caudal lobe, 1 cm in diameter, one section.LUNG.M.": 0.5598462290199563,
+      "MA.LUNG_Congestion, left lobe moderate.LUNG.F.": 0.0976287728604048,
+      "MA.LUNG_Congestion, left lobe moderate.LUNG.M.": 0.21940094171916244,
+      "MA.THYMUS_Small.THYMUS.F.": 0.006374997399917849,
+      "MA.THYMUS_Small.THYMUS.M.": 0.004027847610866333,
+      "MI.MUSCLE, SKELETAL_Inflammation.MUSCLE, SKELETAL.F.": 0.9911713022149344,
+      "MI.MUSCLE, SKELETAL_Inflammation.MUSCLE, SKELETAL.M.": 1.0,
+      "MI.TESTIS/EPIDIDYMIS_Amyloidosis.TESTIS/EPIDIDYMIS.F.": 0.09375704630676476,
+      "MI.TESTIS/EPIDIDYMIS_Amyloidosis.TESTIS/EPIDIDYMIS.M.": 0.6874436205212694,
+      "MI.TESTIS/EPIDIDYMIS_Degeneration/regeneration epithelial.TESTIS/EPIDIDYMIS.F.": 0.0976287728604048,
+      "MI.TESTIS/EPIDIDYMIS_Degeneration/regeneration epithelial.TESTIS/EPIDIDYMIS.M.": 0.21940094171916244,
+      "MI.TESTIS/EPIDIDYMIS_Inflammation, acute.TESTIS/EPIDIDYMIS.F.": 0.08822624262012554,
+      "MI.TESTIS/EPIDIDYMIS_Inflammation, acute.TESTIS/EPIDIDYMIS.M.": 0.5598462290199563,
+      "MI.VAGINA_Lymphoma.VAGINA.F.": 0.006374997399917849,
+      "MI.VAGINA_Lymphoma.VAGINA.M.": 0.004027847610866333,
+      "OM.WEIGHT.HEART.F.": null,
+      "OM.WEIGHT.HEART.M.": null,
+      "OM.WEIGHT.LIVER.F.": null,
+      "OM.WEIGHT.LIVER.M.": null
+    },
+    "signal_scores": {},
+    "summary_counts": {
+      "total_adverse": 3,
+      "total_findings": 52,
+      "total_normal": 41,
+      "total_treatment_related": 7,
+      "total_warning": 8
+    },
+    "syndrome_detections": [],
+    "target_organs": [
+      "THYMUS",
+      "VAGINA"
+    ]
+  },
+  "study_id": "Nimble"
+}

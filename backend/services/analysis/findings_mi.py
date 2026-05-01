@@ -245,10 +245,23 @@ def compute_mi_findings(
 
             sev_grade_counts = None
             if severity_col and len(dose_grp) > 0:
-                sev_vals_int = dose_grp["sev_score"].dropna().values
-                if len(sev_vals_int) > 0:
+                # GAP-242: count UNIQUE subjects per worst-severity grade, not raw rows.
+                # `affected` upstream uses USUBJID.nunique(); rows-per-subject-based
+                # sgc would over-count (subject with bilateral lesions counted 2x) or
+                # under-count (subject with NaN severity dropped while still in
+                # affected). Per-subject worst-severity (max across rows) aligns with
+                # the existing tie-break-by-max convention at field-contracts.md:1388
+                # and the regulatory convention that subject-level severity == worst
+                # observation for that finding. New invariant: sum(sgc) <= affected,
+                # with equality iff every affected subject has at least one graded row.
+                worst_per_subject = (
+                    dose_grp.dropna(subset=["sev_score"])
+                    .groupby("USUBJID")["sev_score"]
+                    .max()
+                )
+                if len(worst_per_subject) > 0:
                     counts: dict[str, int] = {}
-                    for v in sev_vals_int:
+                    for v in worst_per_subject:
                         key = str(int(v))
                         counts[key] = counts.get(key, 0) + 1
                     sev_grade_counts = counts
