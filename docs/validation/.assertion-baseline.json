@@ -140,6 +140,21 @@
     "description": "HIGH hepatic hypertrophy: persistent verdict (main arm 9/10 sev 2.56; engine reports anomaly -- SCIENCE-FLAG)"
   },
   {
+    "study_id": "TOXSCI-24-0062--35449 1 month dog- Compound B-xpt",
+    "type": "onset_concordance",
+    "description": "HIGH AST onset registered for >=5 subjects by day 28 (cohort F 1.95x g=1.29 p=0.051 / M 1.30x g=1.15 -- engine emits 2/10 SCIENCE-FLAG Stream 6 cross-species reproduction of PC AST 1/29)"
+  },
+  {
+    "study_id": "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt",
+    "type": "onset_concordance",
+    "description": "HIGH ALP onset registered for >=5 subjects by day 29 (cohort M 0.62x g=-2.29 38% decrease tr_adverse -- engine emits 0/10 SCIENCE-FLAG Stream 6 NEW: direction-handling blind spot, 2x rule cannot fire on cohort decreases)"
+  },
+  {
+    "study_id": "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt",
+    "type": "onset_concordance",
+    "description": "HIGH ALT onset registered for >=5 subjects by day 29 (cohort F 0.71x g=-1.99 29% decrease tr_adverse -- engine emits 0/10 SCIENCE-FLAG Stream 6 sister-marker direction-handling reproduction)"
+  },
+  {
     "study_id": "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt",
     "type": "noael_combined",
     "description": "Female NOAEL = 1 (Low 25 mg/kg tolerated per published call; SCIENCE-FLAG vs engine null -- Stream 2 evidence)"

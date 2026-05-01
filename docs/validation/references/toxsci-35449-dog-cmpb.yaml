@@ -66,3 +66,49 @@ assertions:
     expected_classes:
       tr_adverse: { min: 1 }
       not_assessed: { exact: 0 }
+
+  # Onset concordance (AUDIT-22 cross-species expansion of AUDIT-8 PointCross
+  # anchor + AUDIT-22 TOXSCI-96298 cross-study). Closes the cross-species half:
+  # rat (PC + TOXSCI-96298) -> dog (this study + 43066). 1-month dog with
+  # terminal LB sampled M day 27 + F day 28; HIGH dose group_order=3
+  # (5M+5F = 10 HIGH subjects, all 10 present in subject_onset_days.json).
+  # Two assertions test orthogonal halves of Stream 6 reproducibility:
+  #
+  # 1. ALP regression pin (MATCH): hepatic alkaline phosphatase rises strongly
+  #    at HIGH M (cohort 2.12x, g=1.58, p=0.024) AND F (cohort 1.68x, g=0.93).
+  #    Engine catches 5/10 HIGH subjects via the 2x rule (3M at day 27 + 2F
+  #    at day 28). Locks correct emission on hepatic ALP cross-species --
+  #    rat anchor PC ALP HIGH cohort 1.29x M / 1.53x F gave 0/29 SCIENCE-FLAG;
+  #    dog HIGH cohort 2.12x M crosses the per-subject 2x threshold for 3 of 5
+  #    M subjects, giving the engine its design-intent emission. Sister
+  #    counter-example: same engine path that misses cohort-level adversity
+  #    at <2x cohort (PC ALP) catches it cleanly at >=2x cohort (35449 ALP M).
+  #
+  # 2. AST SCIENCE-FLAG: hepatic aspartate aminotransferase rises at HIGH F
+  #    (cohort 1.95x, g=1.29, p=0.051, severity=adverse) and weakly at HIGH M
+  #    (cohort 1.30x, g=1.15, p=0.079, severity=warning). Engine emits 2/10
+  #    (both F: 35449-4504 + 35449-4505) -- F cohort 1.95x is borderline-2x
+  #    and only 2 of 5 F subjects cross threshold; M cohort 1.30x doesn't
+  #    yield any per-subject 2x crossings. Toxicologist would call AST
+  #    elevation hepatic-adverse in both sexes given the cohort g, the
+  #    p_value approaching significance in F, and target-organ-flag=true on
+  #    hepatic. Cross-species reproduction of PC AST HIGH 1/29 Stream 6
+  #    pattern (rat: cohort 1.41x M / 1.56x F sub-2x cohort; engine 1/29)
+  #    transposed to dog (cohort 1.30x M / 1.95x F sub-2x cohort; engine
+  #    2/10). Same root cause: per-subject 2x rule misses cohort-level
+  #    adversity at <2x per-subject. min_count=5 paralleling PC AST template
+  #    (>=5 of N HIGH subjects expected); engine 2/10 fails.
+  - type: "onset_concordance"
+    description: "HIGH ALP onset registered for >=5 subjects by day 28 (regression pin -- engine catches dog cohort M 2.12x / F 1.68x, 5/10 HIGH; cross-species MATCH counter-example)"
+    dose_level: 3
+    domain: "LB"
+    finding_pattern: "^ALP$"
+    max_onset_day: 28
+    min_count: 5
+  - type: "onset_concordance"
+    description: "HIGH AST onset registered for >=5 subjects by day 28 (cohort F 1.95x g=1.29 p=0.051 / M 1.30x g=1.15 -- engine emits 2/10 SCIENCE-FLAG Stream 6 cross-species reproduction of PC AST 1/29)"
+    dose_level: 3
+    domain: "LB"
+    finding_pattern: "^AST$"
+    max_onset_day: 28
+    min_count: 5

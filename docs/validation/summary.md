@@ -1,7 +1,7 @@
 # Validation Summary
 
-**Engine:** commit `788beb10` (2026-05-01)
-**Generated:** 2026-05-01T02:31:04.521Z
+**Engine:** commit `2acdad76` (2026-05-01)
+**Generated:** 2026-05-01T03:09:49.583Z
 
 | Study | Origin | Signals | Design | Assertions | Notes |
 |-------|--------|---------|--------|------------|-------|
@@ -17,12 +17,12 @@
 | Nimble | synthetic | -- | 5/5 | 6/6 |  |
 | PDS | synthetic | -- | 5/5 | 5/7 |  |
 | PointCross | synthetic | 12/13 | 7/7 | 14/19 | MISSED |
-| TOXSCI-24-0062--35449 1 month dog- Compound B-xpt | real | -- | 5/5 | 5/5 |  |
-| TOXSCI-24-0062--43066 1 month dog- Compound A-xpt | real | -- | 5/5 | 6/8 |  |
+| TOXSCI-24-0062--35449 1 month dog- Compound B-xpt | real | -- | 5/5 | 6/7 |  |
+| TOXSCI-24-0062--43066 1 month dog- Compound A-xpt | real | -- | 5/5 | 6/10 |  |
 | TOXSCI-24-0062--87497 1 month rat- Compound B-xpt | real | -- | 4/5 | 3/7 | MISMATCH |
 | TOXSCI-24-0062--96298 1 month rat- Compound A xpt | real | -- | 5/5 | 7/9 |  |
 
-**Totals:** 47/49 signals detected, 83/84 design matched, 83/119 assertions passed
+**Totals:** 47/49 signals detected, 83/84 design matched, 84/123 assertions passed
 
 ## Missed Signals
 

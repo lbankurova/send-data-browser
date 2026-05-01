@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `788beb10` (2026-05-01)
-**Generated:** 2026-05-01T02:31:04.136Z
+**Engine:** commit `2acdad76` (2026-05-01)
+**Generated:** 2026-05-01T03:09:49.203Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -455,6 +455,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | loael_combined | Combined LOAEL = 1 (lowest active dose 3 mg/kg) | loael(Combined)=1 (expected 1) | **MATCH** |
 | mortality_loael | mortality_loael = null (zero deaths) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
 | class_distribution | Engine produces tr_adverse findings (LOAEL fires); all findings classified | 862 findings all domains; tr_adverse=102, not_assessed=0 | **MATCH** |
+| onset_concordance | HIGH ALP onset registered for >=5 subjects by day 28 (regression pin -- engine catches dog cohort M 2.12x / F 1.68x, 5/10 HIGH; cross-species MATCH counter-example) | 5 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^ALP$/i, onset_day<=28); 10 subjects scanned in dose stratum; matched keys: LB:ALP | **MATCH** |
+| onset_concordance | HIGH AST onset registered for >=5 subjects by day 28 (cohort F 1.95x g=1.29 p=0.051 / M 1.30x g=1.15 -- engine emits 2/10 SCIENCE-FLAG Stream 6 cross-species reproduction of PC AST 1/29) | VIOLATION: 2 subject(s) match (dose_level=3, domain=LB, finding=/^AST$/i, onset_day<=28; expected >=5); 10 subjects scanned in dose stratum; matched keys: LB:AST | **MISMATCH** |
 
 ---
 
@@ -484,6 +486,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | class_distribution | Engine produces tr_adverse findings (LOAEL fires); all findings classified | 436 findings all domains; tr_adverse=40, not_assessed=0 | **MATCH** |
 | noael_combined | Male NOAEL = null (M shows effects at lowest active dose per published analysis) | noael(M)=null (expected null) | **MATCH** |
 | noael_combined | Female NOAEL = 1 (Low 25 mg/kg tolerated per published call; SCIENCE-FLAG vs engine null -- Stream 2 evidence) | noael(F)=null (expected 1) | **MISMATCH** |
+| onset_concordance | HIGH ALP onset registered for >=5 subjects by day 29 (cohort M 0.62x g=-2.29 38% decrease tr_adverse -- engine emits 0/10 SCIENCE-FLAG Stream 6 NEW: direction-handling blind spot, 2x rule cannot fire on cohort decreases) | VIOLATION: 1 subject(s) match (dose_level=3, domain=LB, finding=/^ALP$/i, onset_day<=29; expected >=5); 10 subjects scanned in dose stratum; matched keys: LB:ALP | **MISMATCH** |
+| onset_concordance | HIGH ALT onset registered for >=5 subjects by day 29 (cohort F 0.71x g=-1.99 29% decrease tr_adverse -- engine emits 0/10 SCIENCE-FLAG Stream 6 sister-marker direction-handling reproduction) | VIOLATION: 0 subject(s) match (dose_level=3, domain=LB, finding=/^ALT$/i, onset_day<=29; expected >=5); 10 subjects scanned in dose stratum; matched keys: none | **MISMATCH** |
 
 ---
 

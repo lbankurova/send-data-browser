@@ -87,3 +87,62 @@ assertions:
     description: "Female NOAEL = 1 (Low 25 mg/kg tolerated per published call; SCIENCE-FLAG vs engine null -- Stream 2 evidence)"
     sex: "F"
     expected_value: 1
+
+  # Onset concordance (AUDIT-22 cross-species expansion -- 43066 paired with
+  # 35449 closes the cross-species half: rat -> dog Stream 6 reproduction).
+  # 1-month dog with terminal LB at day 29; HIGH dose group_order=3
+  # (5M+5F = 10 HIGH subjects). UNLIKE the rat anchors (PC + TOXSCI-96298)
+  # and the dog Compound B sister study (35449), 43066 dog Compound A's
+  # HIGH-dose adversity manifests primarily as cohort-level DECREASES on
+  # hepatic + renal markers, NOT increases:
+  #   - ALT M cohort 1.11x (small inc) / F cohort 0.71x g=-1.99 (29% decrease,
+  #     severity=adverse, tr=True)
+  #   - ALP M cohort 0.62x g=-2.29 (38% decrease, severity=warning, tr=True)
+  #     / F severity=normal (engine filter skips)
+  #   - UREAN M cohort 0.75x g=-6.47 (renal decrease, severity=adverse, tr=True)
+  # Engine emits ZERO post-treatment HIGH-dose LB onsets for any of these
+  # markers (only LB:VOLUME 1/10 + pre-tx baseline outliers in TRIG/CK/ALP).
+  #
+  # This surfaces a NEW Stream 6 dimension that the rat anchors did not test:
+  # the engine's per-subject threshold uses `abs(val) > 2.0 * abs(ctrl_mean)`
+  # at backend/generator/onset_recovery.py:140 -- a structural blind spot
+  # for cohort-level DECREASES. For a decrease where val < ctrl_mean, abs(val)
+  # is bounded above by ~ctrl_mean, never approaching 2x ctrl_mean. Cohort
+  # adversity that manifests as 25-40% decreases is invisible to the engine
+  # regardless of how dramatic the cohort-level signal is. AUDIT-21's
+  # resolution path explicitly names this ("Also fix direction-handling --
+  # `abs(val) > threshold` ignores decreases (RBC/HGB would never trigger)").
+  # 43066 is the first study to surface direction-handling cohort-level
+  # adversity that the matcher captures.
+  #
+  # Two assertions test sister-marker direction-handling reproduction:
+  #
+  # 1. ALP M decrease SCIENCE-FLAG: cohort M 0.62x (38% decrease), severity
+  #    warning, tr_adverse, target-organ-flag=true on hepatic. Engine 0/10
+  #    HIGH because (a) M cohort decrease cannot fire 2x rule on val <
+  #    ctrl_mean, and (b) F cohort 0.74x is severity=normal so engine filter
+  #    skips F. Worst-case Stream 6 direction-handling miss.
+  #
+  # 2. ALT F decrease SCIENCE-FLAG: cohort F 0.71x g=-1.99 (29% decrease),
+  #    severity=adverse, tr_adverse, target-organ-flag=true on hepatic.
+  #    Engine 0/10 HIGH for same reason. Sister-marker reproduction in
+  #    different sex -- demonstrates direction-handling is sex-agnostic.
+  #
+  # Both use min_count=5 paralleling PC AST template ("≥5 of N HIGH subjects
+  # expected"). Cross-species coverage now: rat increases (PC + TOXSCI-96298)
+  # + dog increases (35449) + dog decreases (43066). Spans both halves of
+  # Stream 6's blast radius captured in AUDIT-21.
+  - type: "onset_concordance"
+    description: "HIGH ALP onset registered for >=5 subjects by day 29 (cohort M 0.62x g=-2.29 38% decrease tr_adverse -- engine emits 0/10 SCIENCE-FLAG Stream 6 NEW: direction-handling blind spot, 2x rule cannot fire on cohort decreases)"
+    dose_level: 3
+    domain: "LB"
+    finding_pattern: "^ALP$"
+    max_onset_day: 29
+    min_count: 5
+  - type: "onset_concordance"
+    description: "HIGH ALT onset registered for >=5 subjects by day 29 (cohort F 0.71x g=-1.99 29% decrease tr_adverse -- engine emits 0/10 SCIENCE-FLAG Stream 6 sister-marker direction-handling reproduction)"
+    dose_level: 3
+    domain: "LB"
+    finding_pattern: "^ALT$"
+    max_onset_day: 29
+    min_count: 5
