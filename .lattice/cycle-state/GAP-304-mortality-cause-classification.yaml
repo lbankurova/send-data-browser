@@ -1,10 +1,23 @@
 topic: GAP-304-mortality-cause-classification
 started: 2026-04-29T00:50:00Z
-phase: blueprint
-current_step: blueprint.3
-revision: 12
+phase: blueprint-complete
+current_step: build.0
+revision: 17
+probe_outcome:
+  source: blueprint.3
+  timestamp: 2026-05-01T00:12:54Z
+  verdict: SAFE
+  breaks: []
+  science_flags:
+    - id: SF-F6a-cap-input
+      subsystem: S16
+      description: "Mortality LOAEL cap-input field architectural simplification: single mortality_loael cap-input field + provisional/confirmed pair at display layer only. Engine and user-assertion paths drive cap identically. PointCross cap=200 preserved, Nimble cap=null preserved."
+      status: resolved
+      raised_in: blueprint.2
+      resolved_in: blueprint.3
 architect_r1_disposition: "User accepted merit-based recommendation 2026-04-30: structural-elimination clearance for SCIENCE-FLAG (F6a backend loael_preview_lookup); all 4 REQUIRED + 2 RECOMMENDED applied."
 architect_r2_verdict: "PASS (1 minor RECOMMENDED on age_min_days->age_min_years field-name fixed in-synthesis; not gate-blocking)."
+probe_step3_verdict: "RESOLVED-SCIENCE-FLAG. Initial framing identified S16 cap behavior change at deploy (synthesis F2c original 'only confirmed in MIN' rule). Resolved 2026-04-30 by architectural simplification (user merit-driven decision, pre-prod context): two-layer schema with single mortality_loael cap-input field + provisional/confirmed pair at display layer only. Engine + user assertion paths drive cap identically. PointCross cap=200 preserved, Nimble cap=null preserved. MCC-RG-20 closed; DATA-GAP-MORTALITY-08 downgraded to informational; MANIFEST-STALE deferred to build."
 classification:
   path: full
   signals:
@@ -34,6 +47,10 @@ completed:
   blueprint.0: 2026-04-29T13:30:00Z  # impl-context loaded; .lattice/cycle-state/GAP-304-mortality-cause-classification-step0-impl-context.md
   blueprint.1: 2026-04-29T13:35:42Z  # synthesis written; docs/_internal/incoming/GAP-304-mortality-cause-classification-synthesis.md (9 features F1-F9, 6 sections, atomic F4+F1+F5)
   blueprint.2: 2026-04-30T19:46:42Z  # architect R1 SIMPLIFY+SCIENCE-FLAG -> R2 PASS after structural-elimination amendments
+  blueprint.3: 2026-05-01T00:12:54Z  # probe STOP-SCIENCE-FLAG -> RESOLVED by architectural simplification (single cap-input field; pair at display only)
+  blueprint.4: 2026-05-01T00:25:00Z  # plan review R1 (peer-review CONDITIONAL: 1F/3C/2S; E2 walk verified)
+  blueprint.5: 2026-05-01T00:32:26Z  # R1 incorporation: DAG restructure (WC-4 pipeline order); organ_evidence_detail reuse; WC-5 dose_groups + N>=5 gate; F7a narrative algorithmic spec
+  blueprint.6: 2026-05-01T01:33:07Z  # plan review R2 (CONDITIONAL: 1F/3C/2S) + focused peer-review on Hy's Law sub-tier; all 4 non-SOUND findings auto-incorporated; build plan VALIDATED
 key_decisions:
   - "Engine taxonomy: 6 buckets (treatment_related, treatment_related_possible, background_disease, intercurrent, accidental, undetermined)"
   - "Mortality LOAEL emitted as a pair: provisional (engine WoE-asserted) + confirmed (user-asserted)"
@@ -68,4 +85,18 @@ verdicts:
   user_retrospective_2026-04-29: "PEG architecture scientifically wrong on PointCross (under-attributing); lattice changes E1-E3 incorporated"
   r6: "CONDITIONAL (0 FLAWED / 6 CONDITIONAL / 1 SOUND) — real-study walk verified WoE framework produces correct toxicologist-aligned output for PointCross; 6 operational refinements all addressed"
 final_verdict: VALIDATED
-next: "blueprint phase. Run /clear, then /lattice:cycle GAP-304-mortality-cause-classification"
+next: "build phase. Run /clear to free context, then /lattice:cycle GAP-304-mortality-cause-classification to start build phase."
+blueprint_outputs:
+  step0_impl_context: .lattice/cycle-state/GAP-304-mortality-cause-classification-step0-impl-context.md
+  synthesis: docs/_internal/incoming/GAP-304-mortality-cause-classification-synthesis.md
+  architect_review: docs/_internal/research/peer-reviews/GAP-304-mortality-cause-classification-architect-review.md
+  probe: .lattice/cycle-state/GAP-304-mortality-cause-classification-step3-probe.md
+  plan_review_r1: docs/_internal/research/peer-reviews/GAP-304-mortality-cause-classification-synthesis-review.md
+  plan_review_r2: docs/_internal/research/peer-reviews/GAP-304-mortality-cause-classification-synthesis-review-r2.md
+  hys_law_focused_review: docs/_internal/research/peer-reviews/GAP-304-mortality-cause-classification-hys-law-subtier-review.md
+final_blueprint_verdict: VALIDATED
+auto_decisions_count: 7  # synthesize, architect-r2-PASS, probe-resolved, R1-incorporate, R2-incorporate, focused-peer-review-incorporate, gap-persistence
+user_decisions:
+  - "2026-04-30: structural-elimination clearance for architect SCIENCE-FLAG (F6a backend loael_preview_lookup vs frontend mirror)"
+  - "2026-04-30: architectural simplification clearance for probe SCIENCE-FLAG (single mortality_loael cap-input field; provisional/confirmed pair at display layer only; pre-prod context)"
+  - "2026-05-01: focused peer-review on Hy's Law sub-tier (option (c) preserve canonical spec + DATA-GAP-MORTALITY-09 + xfail synthetic fixture)"

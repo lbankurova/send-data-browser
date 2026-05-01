@@ -7,6 +7,13 @@ current_step: build.1
 spec: incoming/cohort-view-redesign-synthesis.md
 entry: path-based
 
+probe_outcome:
+  source: phase_1b
+  timestamp: 2026-04-16T10:30:00Z
+  verdict: SAFE
+  breaks: []
+  science_flags: []
+
 notes:
   - Phase 1 COMPLETE (noael_overlay.py + subject_correlations.py)
   - Phase 6 similarity scatter UNBLOCKED (subject_similarity.json shipped c0b2ee89)

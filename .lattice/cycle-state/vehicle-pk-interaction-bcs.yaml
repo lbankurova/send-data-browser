@@ -6,6 +6,17 @@ current_step: build.0
 revision: 1
 parent: cross-study-phase-1-aggregation-backend
 priority: P2
+probe_outcome:
+  source: blueprint.7.complete
+  timestamp: 2026-04-28
+  verdict: PROPAGATES
+  breaks: []
+  science_flags:
+    - id: SF-OV-BCS-annotation-cascade
+      subsystem: S26
+      description: "OV BCS annotation cascade (research.7 carry-over). Per blueprint.7.complete notes: not a blueprint-gating SF, just a propagation-watch item documented in synthesis."
+      status: deferred
+      raised_in: research.7
 checkpoints:
   research.1:
     completed: 2026-04-05T01:40:00Z

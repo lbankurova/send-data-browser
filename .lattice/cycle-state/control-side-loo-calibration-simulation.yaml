@@ -2,6 +2,12 @@ topic: control-side-loo-calibration-simulation
 started: 2026-04-03T21:00:00
 phase: research-complete
 current_step: build.0
+probe_outcome:
+  source: research.7
+  timestamp: 2026-04-03T23:45:00
+  verdict: PROPAGATES
+  breaks: []
+  science_flags: []
 completed:
   research.1:
     completed: 2026-04-03T21:30:00

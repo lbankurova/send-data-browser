@@ -2,6 +2,12 @@ topic: reference-change-values-rcv
 started: 2026-04-09T20:00:00Z
 phase: research-complete
 current_step: build.0
+probe_outcome:
+  source: research.7
+  timestamp: 2026-04-16T10:05:00Z
+  verdict: PROPAGATES
+  breaks: []
+  science_flags: []
 completed:
   research.1: 2026-04-09T20:15:00Z
   research.2: 2026-04-09T20:25:00Z

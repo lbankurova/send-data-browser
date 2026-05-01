@@ -5,6 +5,12 @@ phase: research-complete
 current_step: build.0
 parent: cross-study-phase-1-aggregation-backend
 priority: P1
+probe_outcome:
+  source: research.7
+  timestamp: 2026-04-05T01:15:00Z
+  verdict: PROPAGATES
+  breaks: []
+  science_flags: []
 checkpoints:
   research.1:
     completed: 2026-04-05T00:10:00Z

@@ -3,6 +3,29 @@ started: 2026-04-20T20:00:00Z
 phase: build-in-progress
 current_step: build.3
 revision: 16
+probe_outcome:
+  source: blueprint.3
+  timestamp: 2026-04-21T11:10:00Z
+  verdict: SAFE
+  breaks:
+    - subsystem: S08
+      description: "SMT alpha_applies/reason field naming + rule_modulation_design dropped as derivable; alpha_scaled_threshold numeric value retained; alpha_eligible kept in catalog rules JSON. Resolved via Option 4 merit-driven choice."
+      status: resolved
+      raised_in: blueprint.3
+      resolved_in: blueprint.3
+  science_flags:
+    - id: SF-1-alpha-feature-flag
+      subsystem: S08
+      description: "Phase-1/Phase-2 feature-flag split. Phase-1 ships alpha machinery feature-flagged OFF; Phase-2 activation per-study gated by regression + DATA-GAP-MIMA-16 corpus coverage + 'alpha-cell active' UI indicator."
+      status: resolved
+      raised_in: research.7
+      resolved_in: research.7
+    - id: SF-2-noael-floor-atomic
+      subsystem: S16
+      description: "Atomic landing. Schema field noael_floor_applied MUST ship with S16 enforcement in same PR. Static-analysis gate on blueprint blocks any reader outside confidence.py / endpoint-confidence.ts before atomic landing."
+      status: resolved
+      raised_in: research.7
+      resolved_in: research.7
 completed:
   research.1.landscape:
     completed: 2026-04-20T20:15:00Z

@@ -3,6 +3,11 @@ started: 2026-04-04
 phase: research-complete
 current_step: build.0
 parent: brain-weight-sex-concordance-calibration
+probe_outcome:
+  source: research.5
+  verdict: SAFE
+  breaks: []
+  science_flags: []
 completed:
   research.1:
     completed: 2026-04-04

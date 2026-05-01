@@ -3,6 +3,23 @@ started: 2026-04-27T00:00:00Z
 phase: build
 current_step: build.2-phase1-committed
 revision: 3
+probe_outcome:
+  source: review_phase1
+  verdict: SAFE
+  breaks: []
+  science_flags:
+    - id: SF-drives-loael-canonical-lookup
+      subsystem: S08
+      description: "drives-loael now uses canonical SYNDROME_TERM_LOOKUP (architect SCIENCE-FLAG + reqmt R9 FAIL)."
+      status: resolved
+      raised_in: review_phase1.architect
+      resolved_in: review_phase1.fix
+    - id: SF-XS07-routing
+      subsystem: S08
+      description: "XS07 routed to general with data-grounded counter-evidence (decision auditor SCIENCE-FLAG)."
+      status: resolved
+      raised_in: review_phase1.decision_auditor
+      resolved_in: review_phase1.fix
 phase1_commits:
   code: c3e54196
   spec_refresh: 9ed47ce1
