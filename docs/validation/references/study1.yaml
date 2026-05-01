@@ -82,3 +82,18 @@ assertions:
   - type: "compound_class_flag"
     description: "Compound modality = vaccine (HBV TDAR; SME-confirmed vaccine_non_adjuvanted)"
     expected_compound_class: "vaccine"
+
+  # Cross-organ syndrome (Phase 3 matcher #7 -- AUDIT-20 absence pin).
+  # Study1 is a non-adjuvanted HBV TDAR vaccine study with target_organs=0
+  # (engine flags zero target organs, consistent with the documented
+  # "all findings pharmacology, none adverse" call). With no real multi-
+  # organ adverse pattern to detect, engine correctly emits 0 cross_organ_
+  # syndromes entries. Absence pin via max_count=0 -- regression pin
+  # locking the engine's correct refusal to fabricate cross-organ co-firing
+  # under no-adversity conditions. Counter-example for AUDIT-19 Stream 5
+  # SCIENCE-FLAGs filed on multi-target-organ studies (PC, Nimble, PDS,
+  # 43066): the cross_organ_syndromes surface SHOULD be empty here because
+  # there's nothing for it to capture.
+  - type: "cross_organ_syndrome"
+    description: "Cross-organ syndromes empty (no adverse multi-organ pattern in non-adjuvanted vaccine; engine correct refusal -- absence pin)"
+    max_count: 0

@@ -62,3 +62,22 @@ assertions:
   - type: "tumor_detected"
     description: "No tumors expected in 3-week subchronic study"
     expected_has_tumors: false
+
+  # Cross-organ syndrome (Phase 3 matcher #7 -- AUDIT-20 Stream 5 expansion).
+  # Engine emits []: cross_organ_syndromes definition-spanning gate
+  # (generator/syndrome_rollup.py:488 `if len(organs) > 1`) only fires on
+  # phospholipidosis. Nimble's target_organs list reaches 8 organ_systems
+  # (hematologic + general + reproductive + respiratory + electrolyte +
+  # hepatic + gastrointestinal + cardiovascular) at HIGH dose with substantial
+  # mortality (26 deaths, 24 in control per session memory) -- a clear
+  # multi-organ co-firing pattern that the engine's narrow gate cannot
+  # capture. Cross-study reproduction of PC's Stream 5 SCIENCE-FLAG (PC
+  # 7-organ co-firing invisible to same gate). >=1 cross_organ_syndromes
+  # expected; engine emits 0.
+  #
+  # SCIENCE-FLAG: Stream 5 reproducing across studies. Encoding the
+  # toxicologist's call (>=1 cross-organ syndrome expected at this multi-
+  # organ adversity profile) per CLAUDE.md rule 21.
+  - type: "cross_organ_syndrome"
+    description: "Multi-organ co-firing (8 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction of PC 7-organ pattern"
+    min_count: 1

@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `e3fe04e5` (2026-05-01)
-**Generated:** 2026-05-01T16:24:15.301Z
+**Engine:** commit `08eda6a9` (2026-05-01)
+**Generated:** 2026-05-01T16:46:45.824Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -34,6 +34,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | target_organs_flagged | Zero target organs -- no statistical adversity calls possible without a control | 0 organs flagged (expect_only) | **MATCH** |
 | class_distribution | All findings not_assessed (no concurrent control; engine cannot fabricate adversity calls) | 135 findings all domains; tr_adverse=0, tr_non_adverse=0, tr_adaptive=0, equivocal=0, not_treatment_related=0 | **MATCH** |
 | compound_class_flag | Compound modality = vaccine (HBV TDAR; SME-confirmed vaccine_non_adjuvanted) | pk_integration.compound_class = null (no compound_class in pk_integration.json or file absent) (expected "vaccine") | **MISMATCH** |
+| cross_organ_syndrome | Cross-organ syndromes empty (no adverse multi-organ pattern in non-adjuvanted vaccine; engine correct refusal -- absence pin) | cross_organ_syndromes length=0 satisfies constraints; no cross_organ_syndromes | **MATCH** |
 
 ---
 
@@ -105,6 +106,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | target_organs_flagged | Zero target organs flagged -- report's 'no adverse findings' must surface as empty target_organ_summary | 0 organs flagged (expect_only) | **MATCH** |
 | class_distribution | All findings not_assessed (no concurrent control; engine must not fabricate adversity calls) | 593 findings all domains; tr_adverse=0, tr_non_adverse=0, tr_adaptive=0, equivocal=0, not_treatment_related=0 | **MATCH** |
 | compound_class_flag | Compound modality = gene_therapy (AAV vector IV cyno; no engine classifier) | pk_integration.compound_class = null (no compound_class in pk_integration.json or file absent) (expected "gene_therapy") | **MISMATCH** |
+| cross_organ_syndrome | Phospholipidosis cross-organ entry (hepatic+respiratory+renal+hematologic; n>=3 -- AAV gene therapy MATCH; no-concurrent-control study) | cross_organ entry "phospholipidosis": organs=[hepatic,respiratory,renal,hematologic], n=3 | **MATCH** |
 
 ---
 
@@ -346,6 +348,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | mortality_loael | mortality_loael = 1 (treatment-cohort death captured) — but study validity questioned | mortality_loael=1, 15 deaths + 11 accidental (expected 1) | **MATCH** |
 | class_distribution | Findings classified despite CTRL_MORT_CRITICAL; engine produces some tr_adverse | 52 findings all domains; tr_adverse=6, not_assessed=0 | **MATCH** |
 | tumor_detected | No tumors expected in 3-week subchronic study | 1 tumor check(s) match: has_tumors=false | **MATCH** |
+| cross_organ_syndrome | Multi-organ co-firing (8 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction of PC 7-organ pattern | VIOLATION: length=0 < min 1; no cross_organ_syndromes | **MISMATCH** |
 
 ---
 
@@ -375,6 +378,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | mortality_loael | mortality_loael = null (1 control death PDS2014-0119, cause undetermined; correctly not attributable to treatment) | mortality_loael=null, 1 deaths + 0 accidental (expected null) | **MATCH** |
 | class_distribution | Engine produces tr_adverse findings (LOAEL at Low fires); all findings classified | 689 findings all domains; tr_adverse=150, not_assessed=0 | **MATCH** |
 | recovery_verdict | HIGH liver vacuolization: reversed verdict (10/10 cohort 5M+5F; engine correctly identifies hepatic lipid vacuolization resolving in recovery window) | 10 reversed verdict(s) (>=10) at dose_level=3, domain=MI, specimen=/LIVER/i, finding=/VACUOLIZATION/i; 15 records scanned; distribution: reversed=10, anomaly=5 | **MATCH** |
+| cross_organ_syndrome | Multi-organ co-firing (14 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction (broader pattern than PC 7-organ) | VIOLATION: length=0 < min 1; no cross_organ_syndromes | **MISMATCH** |
 
 ---
 
@@ -495,6 +499,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | noael_combined | Female NOAEL = 1 (Low 25 mg/kg tolerated per published call; SCIENCE-FLAG vs engine null -- Stream 2 evidence) | noael(F)=null (expected 1) | **MISMATCH** |
 | onset_concordance | HIGH ALP onset registered for >=5 subjects by day 29 (cohort M 0.62x g=-2.29 38% decrease tr_adverse -- engine emits 0/10 SCIENCE-FLAG Stream 6 NEW: direction-handling blind spot, 2x rule cannot fire on cohort decreases) | VIOLATION: 1 subject(s) match (dose_level=3, domain=LB, finding=/^ALP$/i, onset_day<=29; expected >=5); 10 subjects scanned in dose stratum; matched keys: LB:ALP | **MISMATCH** |
 | onset_concordance | HIGH ALT onset registered for >=5 subjects by day 29 (cohort F 0.71x g=-1.99 29% decrease tr_adverse -- engine emits 0/10 SCIENCE-FLAG Stream 6 sister-marker direction-handling reproduction) | VIOLATION: 0 subject(s) match (dose_level=3, domain=LB, finding=/^ALT$/i, onset_day<=29; expected >=5); 10 subjects scanned in dose stratum; matched keys: none | **MISMATCH** |
+| cross_organ_syndrome | Multi-organ co-firing (14 target_organs at HIGH 100 mg/kg dog); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-SPECIES reproduction (rat -> dog parallel to Stream 6 evidence) | VIOLATION: length=0 < min 1; no cross_organ_syndromes | **MISMATCH** |
 
 ---
 
@@ -523,6 +528,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | loael_combined | Combined LOAEL = 2 (Mid 125 mg/kg per published call; SCIENCE-FLAG vs engine 1) | loael(Combined)=1 (expected 2) | **MISMATCH** |
 | mortality_loael | mortality_loael = null (zero deaths) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
 | class_distribution | Engine fires tr_adverse (aggregate level; per-dose placement is the SCIENCE-FLAG, not aggregate) | 343 findings all domains; tr_adverse=39, not_assessed=0 | **MATCH** |
+| cross_organ_syndrome | Phospholipidosis cross-organ entry (hepatic+respiratory+renal+hematologic; n>=1 -- low-prevalence MATCH counter-example to TOXSCI-96298 n=32) | cross_organ entry "phospholipidosis": organs=[hepatic,respiratory,renal,hematologic], n=1 | **MATCH** |
 
 ---
 

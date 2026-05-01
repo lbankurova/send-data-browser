@@ -103,3 +103,22 @@ assertions:
   - type: "compound_class_flag"
     description: "Compound modality = gene_therapy (AAV vector IV cyno; no engine classifier)"
     expected_compound_class: "gene_therapy"
+
+  # Cross-organ syndrome (Phase 3 matcher #7 -- AUDIT-20 per-study expansion
+  # of phospholipidosis MATCH coverage). Engine emits 1 cross_organ_syndromes
+  # entry: phospholipidosis n=3 spanning hepatic+respiratory+renal+
+  # hematologic. AAV gene therapy in cynomolgus monkey (n=3 vector treated +
+  # n=3 baseline + n=3 vehicle, no concurrent control matched to vector).
+  # The 3-subject phospholipidosis emit is consistent with AAV
+  # biodistribution depositing capsid + transgene-DNA throughout reticulo-
+  # endothelial system; engine correctly fires the multi-organ syndrome
+  # despite the no-concurrent-control study design. MATCH at min_count=3 --
+  # pins syndrome_id + four-organ span + engine's emit under no-control
+  # conditions (parallel to AUDIT-7 compound_class_flag SCIENCE-FLAG which
+  # captured the gene-therapy modality gap; this assertion captures the
+  # downstream syndrome-detection layer's correctness).
+  - type: "cross_organ_syndrome"
+    description: "Phospholipidosis cross-organ entry (hepatic+respiratory+renal+hematologic; n>=3 -- AAV gene therapy MATCH; no-concurrent-control study)"
+    expected_syndrome_id: "phospholipidosis"
+    expected_organs: ["hepatic", "respiratory", "renal", "hematologic"]
+    min_count: 3

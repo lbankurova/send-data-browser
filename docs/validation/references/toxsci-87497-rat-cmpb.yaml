@@ -81,3 +81,19 @@ assertions:
     expected_classes:
       tr_adverse: { min: 1 }
       not_assessed: { exact: 0 }
+
+  # Cross-organ syndrome (Phase 3 matcher #7 -- AUDIT-20 per-study expansion
+  # of phospholipidosis MATCH coverage beyond instem + TOXSCI-96298). Engine
+  # emits 1 cross_organ_syndromes entry: phospholipidosis n=1 spanning
+  # hepatic+respiratory+renal+hematologic. Single subject is a low-incidence
+  # detection (Compound B at the per-subject dose levels in this study
+  # produces minimal phospholipidosis vs Compound A's aggressive 32-subject
+  # signal in TOXSCI-96298), but the engine correctly fires the multi-organ-
+  # definition syndrome at the n=1 floor. MATCH at min_count=1 -- pins both
+  # the syndrome_id + the four-organ span + the engine's correct emission
+  # under low-prevalence conditions.
+  - type: "cross_organ_syndrome"
+    description: "Phospholipidosis cross-organ entry (hepatic+respiratory+renal+hematologic; n>=1 -- low-prevalence MATCH counter-example to TOXSCI-96298 n=32)"
+    expected_syndrome_id: "phospholipidosis"
+    expected_organs: ["hepatic", "respiratory", "renal", "hematologic"]
+    min_count: 1

@@ -193,5 +193,20 @@
     "study_id": "TOXSCI-24-0062--96298 1 month rat- Compound A xpt",
     "type": "onset_concordance",
     "description": "HIGH CHOL onset registered for >=5 subjects by day 29 (cohort M 1.68x g=2.70 p<0.001 -- engine emits 0/30 SCIENCE-FLAG Stream 6 cross-study reproduction)"
+  },
+  {
+    "study_id": "Nimble",
+    "type": "cross_organ_syndrome",
+    "description": "Multi-organ co-firing (8 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction of PC 7-organ pattern"
+  },
+  {
+    "study_id": "PDS",
+    "type": "cross_organ_syndrome",
+    "description": "Multi-organ co-firing (14 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction (broader pattern than PC 7-organ)"
+  },
+  {
+    "study_id": "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt",
+    "type": "cross_organ_syndrome",
+    "description": "Multi-organ co-firing (14 target_organs at HIGH 100 mg/kg dog); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-SPECIES reproduction (rat -> dog parallel to Stream 6 evidence)"
   }
 ]

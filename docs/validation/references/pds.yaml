@@ -105,3 +105,18 @@ assertions:
     finding_pattern: "VACUOLIZATION"
     expected_verdict: "reversed"
     min_count: 10
+
+  # Cross-organ syndrome (Phase 3 matcher #7 -- AUDIT-20 Stream 5 expansion).
+  # PDS target_organs reaches 14 organ_systems at HIGH dose
+  # (hepatic + electrolyte + hematologic + general + neurological + metabolic +
+  # renal + cardiovascular + ...), one of the broadest multi-organ profiles
+  # in the corpus. Engine emits 0 cross_organ_syndromes -- definition-
+  # spanning gate at generator/syndrome_rollup.py:488 fails to capture the
+  # 14-organ co-firing because no individual syndrome's `organ` field spans
+  # >1 organ_system in shared/syndrome-definitions.json. SCIENCE-FLAG:
+  # Stream 5 cross-study reproduction of PC 7-organ pattern, transposed to
+  # an even broader 14-organ pattern. >=1 cross_organ_syndromes expected;
+  # engine emits 0.
+  - type: "cross_organ_syndrome"
+    description: "Multi-organ co-firing (14 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction (broader pattern than PC 7-organ)"
+    min_count: 1
