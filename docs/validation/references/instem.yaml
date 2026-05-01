@@ -81,3 +81,46 @@ assertions:
     expected_syndrome_id: "phospholipidosis"
     expected_organs: ["hepatic", "respiratory", "renal", "hematologic"]
     min_count: 7
+
+  # Recovery verdict (Phase 3 matcher #6 -- AUDIT-17 per-study expansion of
+  # recovery_verdict beyond PointCross). Sources:
+  #   1. recovery_verdicts.json: instem has n=40 recovery subjects (10 per
+  #      dose group x 4 dose levels including control). LIVER INFILTRATION
+  #      and KIDNEY NEPHROPATHY emit HIGH-dose verdicts.
+  #   2. unified_findings.json: HIGH-dose main-arm cohort shows the lesions
+  #      present (LIVER INFILTRATION + KIDNEY NEPHROPATHY are documented
+  #      treatment-related findings in the instem study readme).
+  #
+  # 1. LIVER INFILTRATION HIGH (10/10 reversed): main-arm finding documented;
+  #    recovery cohort shows 10/10 verdicts of "reversed" -- engine correctly
+  #    identifies hepatic inflammatory infiltrate as resolving in the post-
+  #    dose recovery window. MATCH at min_count=10 (full cohort agreement).
+  #
+  # 2. KIDNEY NEPHROPATHY HIGH (5/10 reversed + 5/10 low_power): chronic
+  #    nephropathy finding present in main arm; recovery shows 5 subjects
+  #    with verdict="reversed" + 5 with "low_power" (sex-asymmetric recovery
+  #    or partial cohort detection). Engine correctly classifies the 5
+  #    reversed subjects despite mixed power on the others. MATCH at
+  #    min_count=5 (>=half cohort agreement).
+  #
+  # Stream 4 does NOT reproduce in instem: engine emits correct reversed/
+  # persistent verdicts when (a) recovery cohort n>=5, (b) main arm shows
+  # clear cohort presence. Counter-evidence to PC's HIGH hepatic hypertrophy
+  # SCIENCE-FLAG -- the PC false-anomaly path appears narrower than initial
+  # AUDIT-5 scoping suggested.
+  - type: "recovery_verdict"
+    description: "HIGH liver infiltration: reversed verdict (10/10 cohort; engine correctly identifies hepatic inflammatory infiltrate resolving in recovery window)"
+    dose_level: 3
+    domain: "MI"
+    specimen_pattern: "LIVER"
+    finding_pattern: "INFILTRATION"
+    expected_verdict: "reversed"
+    min_count: 10
+  - type: "recovery_verdict"
+    description: "HIGH kidney nephropathy: reversed verdict (5/10 cohort; engine catches reversal despite sex-asymmetric power on remaining 5 subjects)"
+    dose_level: 3
+    domain: "MI"
+    specimen_pattern: "KIDNEY"
+    finding_pattern: "NEPHROPATHY"
+    expected_verdict: "reversed"
+    min_count: 5

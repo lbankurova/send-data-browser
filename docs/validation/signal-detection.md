@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `2acdad76` (2026-05-01)
-**Generated:** 2026-05-01T03:09:49.203Z
+**Engine:** commit `e3fe04e5` (2026-05-01)
+**Generated:** 2026-05-01T16:24:15.301Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -148,6 +148,9 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | target_organs_flagged | Zero target organs (report: pharmacology; SCIENCE-FLAG vs engine 5-organ flagging) | UNEXPECTED: general, hepatic, hematologic, cardiovascular, renal; flagged: general, hepatic, hematologic, cardiovascular, renal | **MISMATCH** |
 | class_distribution | Zero tr_adverse per report (all pharmacology); SCIENCE-FLAG vs engine 63 tr_adverse | VIOLATIONS (all domains, 747 findings): tr_adverse=63 (expected <=0) | **MISMATCH** |
 | compound_class_flag | Compound modality = vaccine (SENDVACC10/99 IM rabbit; SME-confirmed vaccine_adjuvanted) | pk_integration.compound_class = null (no compound_class in pk_integration.json or file absent) (expected "vaccine") | **MISMATCH** |
+| recovery_verdict | Group 2 lymph node inguinal hyperplasia: persistent verdict (10/10 cohort; engine correctly catches sustained antigen-driven immune response -- counter-example to PC HIGH hepatic hypertrophy Stream 4 anomaly) | 10 persistent verdict(s) (>=10) at dose_level=1, domain=MI, specimen=/LYMPH NODE, INGUINAL/i, finding=/HYPERPLASIA/i; 10 records scanned; distribution: persistent=10 | **MATCH** |
+| recovery_verdict | Group 2 injection-site hemorrhage: reversed verdict (10/10 cohort; engine correctly identifies acute injection-site reaction resolving in 28-day recovery) | 10 reversed verdict(s) (>=10) at dose_level=1, domain=MI, specimen=/SITE, INJECTION/i, finding=/HEMORRHAGE/i; 10 records scanned; distribution: reversed=10 | **MATCH** |
+| recovery_verdict | Group 3 liver infiltrate: persistent verdict (10/10 cohort; engine correctly catches adjuvant-driven hepatic mononuclear infiltrate persisting at recovery) | 10 persistent verdict(s) (>=10) at dose_level=2, domain=MI, specimen=/LIVER/i, finding=/INFILTRATE/i; 10 records scanned; distribution: persistent=10 | **MATCH** |
 
 ---
 
@@ -314,6 +317,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | mortality_loael | mortality_loael = null (zero deaths) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
 | class_distribution | Engine produces tr_adverse findings (LOAEL fires at lowest treated dose); all findings classified | 317 findings all domains; tr_adverse=34, not_assessed=0 | **MATCH** |
 | cross_organ_syndrome | Phospholipidosis cross-organ entry (hepatic+respiratory+renal+hematologic; n>=7) | cross_organ entry "phospholipidosis": organs=[hepatic,respiratory,renal,hematologic], n=7 | **MATCH** |
+| recovery_verdict | HIGH liver infiltration: reversed verdict (10/10 cohort; engine correctly identifies hepatic inflammatory infiltrate resolving in recovery window) | 10 reversed verdict(s) (>=10) at dose_level=3, domain=MI, specimen=/LIVER/i, finding=/INFILTRATION/i; 10 records scanned; distribution: reversed=10 | **MATCH** |
+| recovery_verdict | HIGH kidney nephropathy: reversed verdict (5/10 cohort; engine catches reversal despite sex-asymmetric power on remaining 5 subjects) | 5 reversed verdict(s) (>=5) at dose_level=3, domain=MI, specimen=/KIDNEY/i, finding=/NEPHROPATHY/i; 10 records scanned; distribution: reversed=5, low_power=5 | **MATCH** |
 
 ---
 
@@ -369,6 +374,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | loael_combined | Combined LOAEL = 1 (20 mg/kg, lowest treated dose) | loael(Combined)=1 (expected 1) | **MATCH** |
 | mortality_loael | mortality_loael = null (1 control death PDS2014-0119, cause undetermined; correctly not attributable to treatment) | mortality_loael=null, 1 deaths + 0 accidental (expected null) | **MATCH** |
 | class_distribution | Engine produces tr_adverse findings (LOAEL at Low fires); all findings classified | 689 findings all domains; tr_adverse=150, not_assessed=0 | **MATCH** |
+| recovery_verdict | HIGH liver vacuolization: reversed verdict (10/10 cohort 5M+5F; engine correctly identifies hepatic lipid vacuolization resolving in recovery window) | 10 reversed verdict(s) (>=10) at dose_level=3, domain=MI, specimen=/LIVER/i, finding=/VACUOLIZATION/i; 15 records scanned; distribution: reversed=10, anomaly=5 | **MATCH** |
 
 ---
 
@@ -457,6 +463,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | class_distribution | Engine produces tr_adverse findings (LOAEL fires); all findings classified | 862 findings all domains; tr_adverse=102, not_assessed=0 | **MATCH** |
 | onset_concordance | HIGH ALP onset registered for >=5 subjects by day 28 (regression pin -- engine catches dog cohort M 2.12x / F 1.68x, 5/10 HIGH; cross-species MATCH counter-example) | 5 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^ALP$/i, onset_day<=28); 10 subjects scanned in dose stratum; matched keys: LB:ALP | **MATCH** |
 | onset_concordance | HIGH AST onset registered for >=5 subjects by day 28 (cohort F 1.95x g=1.29 p=0.051 / M 1.30x g=1.15 -- engine emits 2/10 SCIENCE-FLAG Stream 6 cross-species reproduction of PC AST 1/29) | VIOLATION: 2 subject(s) match (dose_level=3, domain=LB, finding=/^AST$/i, onset_day<=28; expected >=5); 10 subjects scanned in dose stratum; matched keys: LB:AST | **MISMATCH** |
+| recovery_verdict | HIGH MI records emit insufficient_n verdict (n=4 dog recovery cohort below engine's classification threshold; correct engine refusal -- absence pin for n-threshold guard) | 40 insufficient_n verdict(s) (>=10) at dose_level=3, domain=MI; 40 records scanned; distribution: insufficient_n=40 | **MATCH** |
 
 ---
 

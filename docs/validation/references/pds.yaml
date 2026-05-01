@@ -70,3 +70,38 @@ assertions:
     expected_classes:
       tr_adverse: { min: 1 }
       not_assessed: { exact: 0 }
+
+  # Recovery verdict (Phase 3 matcher #6 -- AUDIT-17 per-study expansion of
+  # recovery_verdict beyond PointCross). Sources:
+  #   1. recovery_verdicts.json: PDS has n=10 HIGH-recovery subjects (5M+5F
+  #      "M/F - High - with recovery" arms); LOW and MED have no recovery
+  #      animals. 175 of 375 records are "not_examined" (many MI sites only
+  #      assessed in main arm), but liver and adrenal hepatic findings have
+  #      complete recovery readings.
+  #   2. unified_findings.json: hepatic and adrenal vacuolization documented
+  #      as treatment-related in main arm.
+  #
+  # LIVER VACUOLIZATION HIGH (10/10 reversed): all 5M + 5F HIGH-recovery
+  # subjects show verdict="reversed" -- engine correctly identifies hepatic
+  # vacuolization (typically lipid accumulation) resolving in the post-dose
+  # recovery window. Sex-symmetric reversal pattern. MATCH at min_count=10
+  # (full cohort agreement).
+  #
+  # Adrenal vacuolization NOT authored as separate assertion: M shows 5/5
+  # reversed but F shows 5/5 partially_reversed -- the sex-asymmetric verdict
+  # split (different verdicts at same dose) doesn't fit the matcher's single-
+  # verdict-per-assertion shape. Captured in this comment as documentation;
+  # if the matcher gains a sex filter (parallel to AUDIT-9 noael_combined),
+  # author then.
+  #
+  # Stream 4 does NOT reproduce in PDS: engine emits correct reversed verdict
+  # for the cohort-presence finding. Adds another counter-evidence point to
+  # the narrow-PC-Stream-4 hypothesis.
+  - type: "recovery_verdict"
+    description: "HIGH liver vacuolization: reversed verdict (10/10 cohort 5M+5F; engine correctly identifies hepatic lipid vacuolization resolving in recovery window)"
+    dose_level: 3
+    domain: "MI"
+    specimen_pattern: "LIVER"
+    finding_pattern: "VACUOLIZATION"
+    expected_verdict: "reversed"
+    min_count: 10

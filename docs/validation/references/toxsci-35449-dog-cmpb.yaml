@@ -112,3 +112,37 @@ assertions:
     finding_pattern: "^AST$"
     max_onset_day: 28
     min_count: 5
+
+  # Recovery verdict (Phase 3 matcher #6 -- AUDIT-17 per-study expansion of
+  # recovery_verdict beyond PointCross). Sources:
+  #   1. recovery_verdicts.json: TOXSCI-35449 dog Compound B has n=4 HIGH-
+  #      recovery subjects (35449-4506..4509). Engine emits 100 records all
+  #      with verdict="insufficient_n" -- one per (specimen, finding) tuple
+  #      across MI/MA/CL where any HIGH-recovery dog had a finding.
+  #   2. subject_context.json: only HIGH (dose_level=3) has a recovery cohort;
+  #      LOW (3 mg/kg) and MED (18 mg/kg) have no recovery animals.
+  #
+  # The engine's verdict logic (compute_incidence_recovery via onset_recovery.py)
+  # gates on cohort N before emitting reversed/persistent/anomaly. With n=4
+  # HIGH-recovery dogs, all verdicts collapse to "insufficient_n" -- engine
+  # correctly refuses to classify under low statistical power. This is the
+  # CORRECT engine behavior: a 4-subject recovery cohort cannot defensibly
+  # support reversed/persistent/anomaly determinations for routine MI lesions
+  # (a single individual's finding is 25% of the cohort, dwarfing baseline
+  # noise). Authoring this as a structural absence-pin per CLAUDE.md rule 18
+  # (contract-triangle hygiene: declaration site = recovery_verdicts.py
+  # n-threshold guard; enforcement site = this assertion; consumption site =
+  # Cohort view recovery filter).
+  #
+  # Counter-example to PointCross HIGH hepatic hypertrophy SCIENCE-FLAG:
+  # PC's HIGH-recovery cohort had n=10 (sufficient), engine emitted "anomaly"
+  # against cohort main-arm 9/10 sev 2.56 (Stream 4). Here n=4 (insufficient),
+  # engine refuses to classify -- which is what the n-threshold guard SHOULD
+  # do. This pin documents that the Stream 4 false-anomaly path is gated by
+  # cohort N and does not fire under low-power conditions.
+  - type: "recovery_verdict"
+    description: "HIGH MI records emit insufficient_n verdict (n=4 dog recovery cohort below engine's classification threshold; correct engine refusal -- absence pin for n-threshold guard)"
+    dose_level: 3
+    domain: "MI"
+    expected_verdict: "insufficient_n"
+    min_count: 10

@@ -148,3 +148,72 @@ assertions:
   - type: "compound_class_flag"
     description: "Compound modality = vaccine (SENDVACC10/99 IM rabbit; SME-confirmed vaccine_adjuvanted)"
     expected_compound_class: "vaccine"
+
+  # Recovery verdict (Phase 3 matcher #6 -- AUDIT-17 per-study expansion of
+  # recovery_verdict beyond PointCross). Sources:
+  #   1. recovery_verdicts.json: Study4 has n=20 recovery subjects (10 per
+  #      group across "Group 2 SENDVACC10 Recovery" dose_level=1 and
+  #      "Group 3 SENDVACC99 Recovery" dose_level=2). 1065 records emitted
+  #      with rich verdict distribution (180 anomaly, 160 persistent, 110
+  #      partially_reversed, 100 reversed) -- vaccine + adjuvant produces
+  #      a multi-organ immune response with mixed temporal trajectories.
+  #   2. unified_findings.json: lymphoid hyperplasia + injection-site lesions
+  #      are documented expected vaccine effects (rabbivi.pdf pp.9-12).
+  #
+  # 1. LYMPH NODE INGUINAL HYPERPLASIA Group 2 (dose_level=1, 10/10 persistent):
+  #    immune-stimulating hyperplasia at draining lymph node persists 28 days
+  #    post-dose. Main arm 5/5 sev 1.3 (group_stats); recovery 10/10 sev
+  #    similar. Engine correctly emits "persistent" -- the antigen-driven
+  #    immune response is sustained. MATCH at min_count=10. This is a direct
+  #    counter-example to PC's HIGH hepatic hypertrophy SCIENCE-FLAG: same
+  #    structural shape (cohort main-arm finding present + cohort recovery
+  #    finding present) but engine here emits "persistent" correctly while
+  #    PC engine emits "anomaly" wrongly. Stream 4 false-anomaly does NOT
+  #    reproduce here.
+  #
+  # 2. SITE, INJECTION HEMORRHAGE Group 2 (dose_level=1, 10/10 reversed):
+  #    acute injection-site reaction (mechanical + adjuvant) resolves
+  #    completely in 28-day recovery window. MATCH at min_count=10. Pins
+  #    engine's correct identification of the canonical reversible injection-
+  #    site finding for vaccine studies.
+  #
+  # 3. LIVER INFILTRATE Group 3 (dose_level=2, 10/10 persistent): higher-dose
+  #    adjuvant produces hepatic mononuclear infiltrate that persists at
+  #    28-day recovery. Engine correctly emits "persistent". MATCH at
+  #    min_count=10. Adds a non-injection-site organ to the persistent-class
+  #    coverage.
+  #
+  # Stream 4 does NOT reproduce in Study4 across 3 finding-class shapes:
+  # immune hyperplasia (persistent), acute hemorrhage (reversed), and
+  # parenchymal infiltrate (persistent). Combined with instem and PDS
+  # negative-reproduction evidence, the PC HIGH hepatic hypertrophy SCIENCE-
+  # FLAG appears specific to PointCross's data shape -- possibly the dual-
+  # recovery cohort structure (3R + 4R) or the precise main-arm sev 2.56 ->
+  # recovery sev 2.0 transition triggering an edge case in
+  # compute_incidence_recovery's verdict assignment. AUDIT-18 (engine fix
+  # for Stream 4) remains scoped to PC repro until further evidence; the
+  # blast radius initially suspected after AUDIT-5 is NOT confirmed.
+  - type: "recovery_verdict"
+    description: "Group 2 lymph node inguinal hyperplasia: persistent verdict (10/10 cohort; engine correctly catches sustained antigen-driven immune response -- counter-example to PC HIGH hepatic hypertrophy Stream 4 anomaly)"
+    dose_level: 1
+    domain: "MI"
+    specimen_pattern: "LYMPH NODE, INGUINAL"
+    finding_pattern: "HYPERPLASIA"
+    expected_verdict: "persistent"
+    min_count: 10
+  - type: "recovery_verdict"
+    description: "Group 2 injection-site hemorrhage: reversed verdict (10/10 cohort; engine correctly identifies acute injection-site reaction resolving in 28-day recovery)"
+    dose_level: 1
+    domain: "MI"
+    specimen_pattern: "SITE, INJECTION"
+    finding_pattern: "HEMORRHAGE"
+    expected_verdict: "reversed"
+    min_count: 10
+  - type: "recovery_verdict"
+    description: "Group 3 liver infiltrate: persistent verdict (10/10 cohort; engine correctly catches adjuvant-driven hepatic mononuclear infiltrate persisting at recovery)"
+    dose_level: 2
+    domain: "MI"
+    specimen_pattern: "LIVER"
+    finding_pattern: "INFILTRATE"
+    expected_verdict: "persistent"
+    min_count: 10
