@@ -158,3 +158,17 @@ assertions:
   - type: "tumor_detected"
     description: "No tumors expected in 4-week dog repeat-dose (Compound B, n=10/dose); engine has_tumors=false (regression pin)"
     expected_has_tumors: false
+
+  # severity_distribution (Phase 3 matcher #2 -- AUDIT-15 per-study expansion).
+  # Authored from per-finding pathologist severity grades in SEND MA records:
+  # the toxicologic pathologist's grade IS the regulatory authority per STP
+  # severity grading conventions. Engine emits reproductive=4.0 (marked) --
+  # the only ≥3 organ in this Compound B 1-month dog study. Locks the marked
+  # reproductive floor; pairs with the study's existing Stream 6 cross-species
+  # SCIENCE-FLAG (AST cohort-level adversity below per-subject threshold) to
+  # characterize the dog Compound B effect. Organs below moderate (hepatic=
+  # 1.0, hematologic=2.33, general=2.33) omitted.
+  - type: "severity_distribution"
+    description: "Marked reproductive grade (1-month dog Compound B; pathologist-graded)"
+    expected_severity:
+      reproductive: { min: 4 }

@@ -136,3 +136,21 @@ assertions:
   - type: "tumor_detected"
     description: "No tumors expected in 1-month rat repeat-dose (Compound A, n=30/dose, phospholipidosis-active n=32); engine has_tumors=false (regression pin)"
     expected_has_tumors: false
+
+  # severity_distribution (Phase 3 matcher #2 -- AUDIT-15 per-study expansion).
+  # Authored from per-finding pathologist severity grades in SEND MA records:
+  # the toxicologic pathologist's grade IS the regulatory authority per STP
+  # severity grading conventions. 1-month rat Compound A with the corpus's
+  # largest phospholipidosis signal (cross_organ_syndrome n=32). Engine emits
+  # 3 organs at >=3: general=3.0, integumentary=3.0, reproductive=4.0. Locks
+  # moderate floor on general + integumentary and marked floor on reproductive.
+  # The reproductive=4.0 marked grade in a 1-month rat Compound A study likely
+  # reflects mammary or sex-organ pathology classified to reproductive --
+  # toxicologically significant and worth pinning. Organs below moderate
+  # (hepatic=1.11, cardiovascular=1.0, hematologic=2.0, etc.) omitted.
+  - type: "severity_distribution"
+    description: "Moderate general + integumentary + marked reproductive grades (1-month rat Compound A, phospholipidosis-active; pathologist-graded)"
+    expected_severity:
+      general: { min: 3 }
+      integumentary: { min: 3 }
+      reproductive: { min: 4 }

@@ -263,3 +263,19 @@ assertions:
   - type: "tumor_detected"
     description: "No tumors expected in 29-day adjuvanted vaccine subchronic (NZW rabbit, 3 doses q2w); engine has_tumors=false (regression pin)"
     expected_has_tumors: false
+
+  # severity_distribution (Phase 3 matcher #2 -- AUDIT-15 per-study expansion).
+  # Authored from per-finding pathologist severity grades in SEND MA records:
+  # the toxicologic pathologist's grade IS the regulatory authority per STP
+  # severity grading conventions (1=minimal, 2=mild, 3=moderate, 4=marked,
+  # 5=severe). Locking moderate-or-higher (>=3) on hematologic (vaccine
+  # inflammation cascade) + marked-or-higher (>=4) on reproductive (engine
+  # emits 4.0; 1-month adjuvanted-vaccine repeat-dose with strong immune
+  # cascade -- adjuvant effects propagating to lymphoid/spleen/thymus
+  # findings classified to reproductive organ_system). Organs below moderate
+  # omitted per "if ambiguous, omit".
+  - type: "severity_distribution"
+    description: "Moderate hematologic + marked reproductive grades (adjuvanted vaccine inflammation; pathologist-graded SEND MA records)"
+    expected_severity:
+      hematologic: { min: 3 }
+      reproductive: { min: 4 }

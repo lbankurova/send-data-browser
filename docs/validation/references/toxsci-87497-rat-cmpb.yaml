@@ -121,3 +121,18 @@ assertions:
       - organ: "KIDNEY"
         morphology_pattern: "ADENOMA"
         min_count: 1
+
+  # severity_distribution (Phase 3 matcher #2 -- AUDIT-15 per-study expansion).
+  # Authored from per-finding pathologist severity grades in SEND MA records:
+  # the toxicologic pathologist's grade IS the regulatory authority per STP
+  # severity grading conventions. Engine emits renal=3.0 (moderate) -- the
+  # only ≥3 organ in this 4-week rat Compound B study. The renal moderate-grade
+  # finding is consistent with the spontaneous KIDNEY ADENOMA in control plus
+  # treatment-related renal pathology (M control adenoma + treated-dose chronic
+  # progressive nephropathy or similar age-/treatment-related lesions averaging
+  # to grade 3 in some dose group). Locks moderate renal floor. Organs below
+  # moderate (reproductive=2.0, hepatic=2.0, respiratory=2.0, etc.) omitted.
+  - type: "severity_distribution"
+    description: "Moderate renal grade (4-week rat Compound B; pathologist-graded -- aligns with kidney adenoma finding + treated-dose renal pathology)"
+    expected_severity:
+      renal: { min: 3 }

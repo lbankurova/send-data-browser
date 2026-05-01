@@ -163,3 +163,20 @@ assertions:
   - type: "tumor_detected"
     description: "No tumors expected in 29-day vaccine subchronic (NZW rabbit, 3 doses q2w); engine has_tumors=false (regression pin)"
     expected_has_tumors: false
+
+  # severity_distribution (Phase 3 matcher #2 -- AUDIT-15 per-study expansion).
+  # Authored from per-finding pathologist severity grades in SEND MA records:
+  # the toxicologic pathologist's grade IS the regulatory authority per STP
+  # severity grading conventions (1=minimal, 2=mild, 3=moderate, 4=marked,
+  # 5=severe). Engine's max_severity at backend/generator/view_dataframes.py:486
+  # takes max-of-avg-severity-per-group across all findings per organ_system.
+  # Locking the FLOOR at moderate-or-higher (>=3) for vaccine-cascade-affected
+  # organs (hematologic + general + respiratory) surfaces engine deviations from
+  # pathologist-graded truth. Organs below moderate (reproductive=1.67, renal=
+  # 1.0, gastrointestinal=1.0) omitted per "if ambiguous, omit" directive.
+  - type: "severity_distribution"
+    description: "Moderate hematologic + general + respiratory grades (vaccine inflammation cascade; pathologist-graded SEND MA records)"
+    expected_severity:
+      hematologic: { min: 3 }
+      general: { min: 3 }
+      respiratory: { min: 3 }

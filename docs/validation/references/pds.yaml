@@ -175,3 +175,22 @@ assertions:
   - type: "tumor_detected"
     description: "No tumors expected in 1-month rat repeat-dose (SD, n=26-36/dose); engine has_tumors=false (regression pin)"
     expected_has_tumors: false
+
+  # severity_distribution (Phase 3 matcher #2 -- AUDIT-15 per-study expansion).
+  # Authored from per-finding pathologist severity grades in SEND MA records:
+  # the toxicologic pathologist's grade IS the regulatory authority per STP
+  # severity grading conventions. PDS is the broadest multi-organ severity
+  # study in the corpus -- 5 organ systems at moderate grade (hepatic, general,
+  # renal, endocrine, integumentary all at 3.0). Multi-system pathologist-
+  # graded subchronic effect; pairs with this study's existing Stream 5 + 6
+  # SCIENCE-FLAGs (14-organ co-firing + RETI onset miss) to characterize the
+  # broad blast radius. Organs below moderate (cardiovascular=2.0, respiratory
+  # =2.25, ocular=2.0, hematologic=2.5, gastrointestinal=2.0) omitted.
+  - type: "severity_distribution"
+    description: "5-organ moderate pathologist grades (hepatic + general + renal + endocrine + integumentary at >=3; broad multi-system subchronic effect)"
+    expected_severity:
+      hepatic: { min: 3 }
+      general: { min: 3 }
+      renal: { min: 3 }
+      endocrine: { min: 3 }
+      integumentary: { min: 3 }

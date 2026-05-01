@@ -179,3 +179,18 @@ assertions:
   - type: "tumor_detected"
     description: "No tumors expected in 1-month dog repeat-dose (Compound A, 14 target_organs at HIGH); engine has_tumors=false (regression pin)"
     expected_has_tumors: false
+
+  # severity_distribution (Phase 3 matcher #2 -- AUDIT-15 per-study expansion).
+  # Authored from per-finding pathologist severity grades in SEND MA records:
+  # the toxicologic pathologist's grade IS the regulatory authority per STP
+  # severity grading conventions. Despite 14 target_organs flagged at HIGH
+  # (Stream 5 SCIENCE-FLAG), only integumentary reaches moderate (3.0); other
+  # 13 organs hover at mild grade (1.0-2.0). Locks integumentary-moderate floor.
+  # The engine's max_severity-as-derived-aggregate is showing that broad target-
+  # organ flagging here reflects effect breadth (many organs) without depth
+  # (most at mild) -- a different signature from PDS (multi-organ at moderate).
+  # Organs below moderate omitted per "if ambiguous, omit".
+  - type: "severity_distribution"
+    description: "Moderate integumentary grade (1-month dog Compound A; broad-but-shallow multi-organ pattern, only integumentary reaches moderate)"
+    expected_severity:
+      integumentary: { min: 3 }

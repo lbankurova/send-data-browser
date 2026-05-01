@@ -177,3 +177,24 @@ assertions:
   - type: "tumor_detected"
     description: "No tumors expected in 1-month rat repeat-dose (SD, n=30/dose, dual control); engine has_tumors=false (regression pin)"
     expected_has_tumors: false
+
+  # severity_distribution (Phase 3 matcher #2 -- AUDIT-15 per-study expansion).
+  # Authored from per-finding pathologist severity grades in SEND MA records:
+  # the toxicologic pathologist's grade IS the regulatory authority per STP
+  # severity grading conventions. instem is a 1-month rat repeat-dose study
+  # with phospholipidosis activity (cross_organ_syndrome n=7). Engine emits
+  # general=5.0 -- SEVERE general findings (often associated with morbidity or
+  # moribund findings); plus moderate hematologic + renal at 3.0. The severe
+  # general grade is high-information: it differentiates instem from sister
+  # rat repeat-dose studies (PC, PDS, 96298) where general stays at 2.6-3.0.
+  # Conservative claim: general at marked-or-higher (>=4) so the assertion
+  # absorbs small floating-point drift while still encoding the SEVERE-
+  # adjacent observation. Organs below moderate (cardiovascular=1.0,
+  # respiratory=1.0, hepatic=2.0, reproductive=2.0, gastrointestinal=2.0)
+  # omitted per "if ambiguous, omit".
+  - type: "severity_distribution"
+    description: "Marked-or-severe general + moderate hematologic + renal (1-month rat phospholipidosis-active; pathologist-graded; engine emits general=5.0 SEVERE -- distinguishes instem from sister rat studies)"
+    expected_severity:
+      general: { min: 4 }
+      hematologic: { min: 3 }
+      renal: { min: 3 }

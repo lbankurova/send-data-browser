@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `a710df4a` (2026-05-01)
-**Generated:** 2026-05-01T17:46:14.549Z
+**Engine:** commit `571fdd6e` (2026-05-01)
+**Generated:** 2026-05-01T18:12:38.197Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -79,6 +79,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | class_distribution | Zero tr_adverse per report (all pharmacology); SCIENCE-FLAG vs engine 42 tr_adverse | VIOLATIONS (all domains, 490 findings): tr_adverse=42 (expected <=0) | **MISMATCH** |
 | compound_class_flag | Compound modality = vaccine (456a IM rabbit; SME-confirmed vaccine_non_adjuvanted) | pk_integration.compound_class = null (no compound_class in pk_integration.json or file absent) (expected "vaccine") | **MISMATCH** |
 | tumor_detected | No tumors expected in 29-day vaccine subchronic (NZW rabbit, 3 doses q2w); engine has_tumors=false (regression pin) | 1 tumor check(s) match: has_tumors=false | **MATCH** |
+| severity_distribution | Moderate hematologic + general + respiratory grades (vaccine inflammation cascade; pathologist-graded SEND MA records) | all 3 severity constraint(s) match: hematologic=3, general=3, respiratory=3.5 | **MATCH** |
 
 ---
 
@@ -158,6 +159,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | recovery_verdict | Group 3 liver infiltrate: persistent verdict (10/10 cohort; engine correctly catches adjuvant-driven hepatic mononuclear infiltrate persisting at recovery) | 10 persistent verdict(s) (>=10) at dose_level=2, domain=MI, specimen=/LIVER/i, finding=/INFILTRATE/i; 10 records scanned; distribution: persistent=10 | **MATCH** |
 | onset_concordance | HIGH FIBRINO onset registered for >=5 subjects by day 31 (cohort F 1.73x p=0.0 g=4.04 + M 1.53x p=2e-6 g=2.54 day 3, sustained at day 31; treatment_related=True both sexes -- engine emits 1/20 SCIENCE-FLAG Stream 6 cross-species reproduction in 1st rabbit study + 1st coagulation-cascade organ system) | VIOLATION: 1 subject(s) match (dose_level=2, domain=LB, finding=/^FIBRINO$/i, onset_day<=31; expected >=5); 20 subjects scanned in dose stratum; matched keys: LB:FIBRINO | **MISMATCH** |
 | tumor_detected | No tumors expected in 29-day adjuvanted vaccine subchronic (NZW rabbit, 3 doses q2w); engine has_tumors=false (regression pin) | 1 tumor check(s) match: has_tumors=false | **MATCH** |
+| severity_distribution | Moderate hematologic + marked reproductive grades (adjuvanted vaccine inflammation; pathologist-graded SEND MA records) | all 2 severity constraint(s) match: hematologic=3, reproductive=4 | **MATCH** |
 
 ---
 
@@ -333,6 +335,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | onset_concordance | HIGH VOLUME onset registered for >=5 subjects by day 30 (regression pin -- engine catches 3.74x F cohort cleanly via 2x rule, 8/30 hits) | 8 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^VOLUME$/i, onset_day<=30); 30 subjects scanned in dose stratum; matched keys: LB:VOLUME | **MATCH** |
 | onset_concordance | HIGH CHOL onset registered for >=5 subjects by day 30 (cohort M 1.45x p=0.009 g=2.58 + F 1.36x p=0.001 g=2.19 both treatment_related=True -- engine emits 0/30 SCIENCE-FLAG Stream 6 cross-study reproduction in 3rd rat study) | VIOLATION: 0 subject(s) match (dose_level=3, domain=LB, finding=/^CHOL$/i, onset_day<=30; expected >=5); 30 subjects scanned in dose stratum; matched keys: none | **MISMATCH** |
 | tumor_detected | No tumors expected in 1-month rat repeat-dose (SD, n=30/dose, dual control); engine has_tumors=false (regression pin) | 1 tumor check(s) match: has_tumors=false | **MATCH** |
+| severity_distribution | Marked-or-severe general + moderate hematologic + renal (1-month rat phospholipidosis-active; pathologist-graded; engine emits general=5.0 SEVERE -- distinguishes instem from sister rat studies) | all 3 severity constraint(s) match: general=5, hematologic=3, renal=3 | **MATCH** |
 
 ---
 
@@ -394,6 +397,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | onset_concordance | HIGH CHOL onset registered for >=5 subjects by day 31 (regression pin -- engine catches 6/36 F cohort 1.79-1.92x p<0.01 g>=2 via 2x rule, partial-detection counter-example to instem CHOL miss at smaller g) | 6 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^CHOL$/i, onset_day<=31); 36 subjects scanned in dose stratum; matched keys: LB:CHOL | **MATCH** |
 | onset_concordance | HIGH RETI onset registered for >=5 subjects by day 31 (cohort F 1.43-1.83x at days 30-31, p=0.0003-0.01 g=1.55-1.83, treatment_related=True -- engine emits 2/36 SCIENCE-FLAG Stream 6 cross-study reproduction in 4th rat study, NEW organ system: hematopoiesis/erythropoiesis) | VIOLATION: 2 subject(s) match (dose_level=3, domain=LB, finding=/^RETI$/i, onset_day<=31; expected >=5); 36 subjects scanned in dose stratum; matched keys: LB:RETI | **MISMATCH** |
 | tumor_detected | No tumors expected in 1-month rat repeat-dose (SD, n=26-36/dose); engine has_tumors=false (regression pin) | 1 tumor check(s) match: has_tumors=false | **MATCH** |
+| severity_distribution | 5-organ moderate pathologist grades (hepatic + general + renal + endocrine + integumentary at >=3; broad multi-system subchronic effect) | all 5 severity constraint(s) match: hepatic=3, general=3, renal=3, endocrine=3, integumentary=3 | **MATCH** |
 
 ---
 
@@ -484,6 +488,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | onset_concordance | HIGH AST onset registered for >=5 subjects by day 28 (cohort F 1.95x g=1.29 p=0.051 / M 1.30x g=1.15 -- engine emits 2/10 SCIENCE-FLAG Stream 6 cross-species reproduction of PC AST 1/29) | VIOLATION: 2 subject(s) match (dose_level=3, domain=LB, finding=/^AST$/i, onset_day<=28; expected >=5); 10 subjects scanned in dose stratum; matched keys: LB:AST | **MISMATCH** |
 | recovery_verdict | HIGH MI records emit insufficient_n verdict (n=4 dog recovery cohort below engine's classification threshold; correct engine refusal -- absence pin for n-threshold guard) | 40 insufficient_n verdict(s) (>=10) at dose_level=3, domain=MI; 40 records scanned; distribution: insufficient_n=40 | **MATCH** |
 | tumor_detected | No tumors expected in 4-week dog repeat-dose (Compound B, n=10/dose); engine has_tumors=false (regression pin) | 1 tumor check(s) match: has_tumors=false | **MATCH** |
+| severity_distribution | Marked reproductive grade (1-month dog Compound B; pathologist-graded) | all 1 severity constraint(s) match: reproductive=4 | **MATCH** |
 
 ---
 
@@ -517,6 +522,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | onset_concordance | HIGH ALT onset registered for >=5 subjects by day 29 (cohort F 0.71x g=-1.99 29% decrease tr_adverse -- engine emits 0/10 SCIENCE-FLAG Stream 6 sister-marker direction-handling reproduction) | VIOLATION: 0 subject(s) match (dose_level=3, domain=LB, finding=/^ALT$/i, onset_day<=29; expected >=5); 10 subjects scanned in dose stratum; matched keys: none | **MISMATCH** |
 | cross_organ_syndrome | Multi-organ co-firing (14 target_organs at HIGH 100 mg/kg dog); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-SPECIES reproduction (rat -> dog parallel to Stream 6 evidence) | VIOLATION: length=0 < min 1; no cross_organ_syndromes | **MISMATCH** |
 | tumor_detected | No tumors expected in 1-month dog repeat-dose (Compound A, 14 target_organs at HIGH); engine has_tumors=false (regression pin) | 1 tumor check(s) match: has_tumors=false | **MATCH** |
+| severity_distribution | Moderate integumentary grade (1-month dog Compound A; broad-but-shallow multi-organ pattern, only integumentary reaches moderate) | all 1 severity constraint(s) match: integumentary=3 | **MATCH** |
 
 ---
 
@@ -547,6 +553,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | class_distribution | Engine fires tr_adverse (aggregate level; per-dose placement is the SCIENCE-FLAG, not aggregate) | 343 findings all domains; tr_adverse=39, not_assessed=0 | **MATCH** |
 | cross_organ_syndrome | Phospholipidosis cross-organ entry (hepatic+respiratory+renal+hematologic; n>=1 -- low-prevalence MATCH counter-example to TOXSCI-96298 n=32) | cross_organ entry "phospholipidosis": organs=[hepatic,respiratory,renal,hematologic], n=1 | **MATCH** |
 | tumor_detected | Single spontaneous KIDNEY ADENOMA BENIGN in M control (1/13; 0/10 at all treated; trend_p=0.22 -- background incidence, not treatment-related); engine has_tumors=true correctly fires on isNeoplastic flag (regression pin -- downstream consumers must differentiate spontaneous vs treatment-related) | 2 tumor check(s) match: has_tumors=true, KIDNEY+/ADENOMA/i=1 | **MATCH** |
+| severity_distribution | Moderate renal grade (4-week rat Compound B; pathologist-graded -- aligns with kidney adenoma finding + treated-dose renal pathology) | all 1 severity constraint(s) match: renal=3 | **MATCH** |
 
 ---
 
@@ -578,5 +585,6 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | onset_concordance | HIGH NAG onset registered for >=6 subjects by day 29 (regression pin -- engine catches F-dominant 1.84x cohort signal, 6/30 HIGH subjects all F) | 6 subject(s) (>=6) match (dose_level=3, domain=LB, finding=/^NAG$/i, onset_day<=29); 30 subjects scanned in dose stratum; matched keys: LB:NAG | **MATCH** |
 | onset_concordance | HIGH CHOL onset registered for >=5 subjects by day 29 (cohort M 1.68x g=2.70 p<0.001 -- engine emits 0/30 SCIENCE-FLAG Stream 6 cross-study reproduction) | VIOLATION: 0 subject(s) match (dose_level=3, domain=LB, finding=/^CHOL$/i, onset_day<=29; expected >=5); 30 subjects scanned in dose stratum; matched keys: none | **MISMATCH** |
 | tumor_detected | No tumors expected in 1-month rat repeat-dose (Compound A, n=30/dose, phospholipidosis-active n=32); engine has_tumors=false (regression pin) | 1 tumor check(s) match: has_tumors=false | **MATCH** |
+| severity_distribution | Moderate general + integumentary + marked reproductive grades (1-month rat Compound A, phospholipidosis-active; pathologist-graded) | all 3 severity constraint(s) match: general=3, integumentary=3, reproductive=4 | **MATCH** |
 
 ---
