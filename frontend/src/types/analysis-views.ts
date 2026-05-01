@@ -528,6 +528,28 @@ export interface TKDesign {
   individual_correlation_possible: boolean;
 }
 
+export interface DoseNormalizedAucEntry {
+  dose_value: number;
+  auc_per_dose: number;
+  /** Identifier for the dose group (the dose_level integer; named per spec). */
+  group_id: number;
+}
+
+export type DoseNormalizedAucAssessment =
+  | "flat"
+  | "monotonic_increasing"
+  | "monotonic_decreasing"
+  | "inflection";
+
+export interface FitQuality {
+  n_dose_groups: number;
+  df: number;
+  beta_ci_90_half_width: number | null;
+  r_squared_unreliable_at_n: boolean;
+  recommend_dose_normalized_profile: boolean;
+  interpretation: string;
+}
+
 export interface DoseProportionality {
   parameter: string;
   slope: number | null;
@@ -540,6 +562,67 @@ export interface DoseProportionality {
    *  not determined by the backend; consumers should test with `== null`
    *  to handle both `undefined` and `null`. */
   threshold_dose?: number | null;
+  /** F1: Dose-normalized AUC profile. Null when no measured AUC. */
+  dose_normalized_auc?: DoseNormalizedAucEntry[] | null;
+  dose_normalized_auc_assessment?: DoseNormalizedAucAssessment | null;
+  /** F4: N-conditional fit quality (R-squared is inflated at small N). */
+  fit_quality?: FitQuality | null;
+  /** F2 input -- standard error on the log-log slope (beta). Used to
+   *  build the nonlinearity_caveat CI on hed_based. */
+  slope_stderr?: number | null;
+}
+
+export type AccumulationPredictionReliability =
+  | "approximate"
+  | "unreliable"
+  | "no_half_life"
+  | "no_dosing_interval"
+  | "unit_normalization_failed";
+
+export type AccumulationStudyAssessment =
+  | "linear_accumulation"
+  | "autoinhibition_likely"
+  | "autoinduction_likely"
+  | "insufficient_data";
+
+export interface AccumulationByDoseGroup {
+  dose_level: number;
+  dose_value: number | null;
+  r_ac_observed: number | null;
+  r_ac_predicted: number | null;
+  ratio_difference_factor: number | null;
+  prediction_reliability: AccumulationPredictionReliability;
+  interpretation: string | null;
+  reason?: string;
+}
+
+export interface AccumulationResult {
+  available: boolean;
+  by_dose_group: AccumulationByDoseGroup[];
+  study_assessment: AccumulationStudyAssessment;
+  interpretation_note: string;
+  reason?: string;
+}
+
+export type NonlinearityCaveatDirection =
+  | "potentially_overestimated"
+  | "potentially_underestimated";
+
+export type NonlinearityCaveatMagnitude = "mild" | "moderate" | "severe";
+export type NonlinearityCaveatRangeUncertainty = "narrow" | "wide";
+
+export interface NonlinearityCaveat {
+  applicable: boolean;
+  reason?: string;
+  direction?: NonlinearityCaveatDirection;
+  magnitude?: NonlinearityCaveatMagnitude;
+  range_uncertainty?: NonlinearityCaveatRangeUncertainty;
+  linear_assumption_margin?: number;
+  nonlinearity_corrected_margin_range?: [number, number];
+  beta_used?: number;
+  beta_ci_90?: [number, number];
+  n_dose_groups?: number;
+  rationale?: string;
 }
 
 export interface PkExposureSummary {
@@ -565,12 +648,7 @@ export interface PkIntegration {
   pp_parameters_available?: string[];
   by_dose_group?: PkDoseGroup[];
   dose_proportionality?: DoseProportionality;
-  accumulation?: {
-    available: boolean;
-    ratio: number | null;
-    assessment: "accumulation" | "autoinduction" | "stable" | "unknown";
-    reason?: string;
-  };
+  accumulation?: AccumulationResult;
   noael_exposure?: PkExposureSummary;
   loael_exposure?: PkExposureSummary;
   hed?: {

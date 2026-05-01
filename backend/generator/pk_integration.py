@@ -14,6 +14,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from scipy import stats as scipy_stats
 
 from generator.subject_syndromes import SEVERITY_MAP
 from services.study_discovery import StudyInfo
@@ -205,10 +206,6 @@ def build_pk_integration(
     tk_survivorship = _check_tk_survivorship(study, dm_df, tk_design)
     dose_prop = _compute_dose_proportionality(by_dose_group, tk_survivorship)
 
-    # Accumulation: not available for single-visit studies
-    accumulation = {"available": False, "ratio": None, "assessment": "unknown",
-                    "reason": f"Single visit day ({visit_days[0]})" if visit_days else "No visit days"}
-
     # Species + HED/MRSD
     species = _get_species(study)
     km_table = _load_km_table()
@@ -250,6 +247,21 @@ def build_pk_integration(
         margin_method=margin_method,
         compound_info=compound_info,
         by_dose_group=by_dose_group,
+        dose_prop=dose_prop,
+    )
+
+    # F3: Accumulation ratio (multi-visit). Replaces old single-visit stub.
+    accumulation = _compute_accumulation(
+        pp_merged=pp_merged,
+        by_dose_group=by_dose_group,
+        compound_info=compound_info,
+        tk_design=tk_design,
+        visit_days=visit_days,
+    )
+    accumulation = _finalize_accumulation_predictions(
+        accumulation=accumulation,
+        study=study,
+        pp_merged=pp_merged,
     )
 
     return {
@@ -315,6 +327,98 @@ _COMPOUND_CLASS_TO_MARGIN: dict[str, str] = {
 
 # Fc-fusion variants use prefix matching
 _FC_FUSION_PREFIX = "fc_fusion_"
+
+
+def _build_nonlinearity_caveat(
+    dose_prop: dict | None,
+    hed_based: dict,
+    clinical_dose_mg_kg: float | None,
+) -> dict:
+    """F2 -- non-linearity caveat with uncertainty-bounded margin range.
+
+    Output is a RANGE (R^beta_low, R^beta_high), never a single corrected
+    point estimate (anti-false-precision; research R1 F7 FLAWED).
+    Magnitude is bound to point-estimate fold-error from linearity (R1 F2),
+    NOT range width. Range uncertainty conveyed separately as narrow/wide.
+    CI uses the t-distribution with df = N-2 (R1 F1 -- z=1.645 is wrong at
+    small N: at N=3, df=1, t_crit ~= 6.31, ~4x wider than z-based CI).
+    Physical clamps on beta: 0.3 lower, 2.0 upper (research §2.2 documented
+    bounds 0.5-1.5 are evidence-supported; clamps are physical limits beyond
+    that evidence).
+    """
+    if dose_prop is None or dose_prop.get("assessment") in (None, "linear", "insufficient_data"):
+        return {"applicable": False, "reason": "linear_or_insufficient_dp"}
+
+    if not hed_based.get("available"):
+        return {"applicable": False, "reason": "no_clinical_dose_or_hed"}
+
+    if not clinical_dose_mg_kg or clinical_dose_mg_kg <= 0:
+        return {"applicable": False, "reason": "no_clinical_dose_or_hed"}
+
+    mrsd = hed_based.get("mrsd_mg_kg")
+    if mrsd is None or mrsd <= 0:
+        return {"applicable": False, "reason": "no_clinical_dose_or_hed"}
+
+    beta = dose_prop.get("slope")
+    se_beta = dose_prop.get("slope_stderr")
+    n_dose_groups = (dose_prop.get("fit_quality") or {}).get("n_dose_groups", 0)
+    if beta is None or se_beta is None or n_dose_groups < 3:
+        return {"applicable": False, "reason": "no_clinical_dose_or_hed"}
+
+    if 0.95 <= beta <= 1.05:
+        return {"applicable": False, "reason": "near_linear_beta"}
+
+    df = n_dose_groups - 2
+    t_crit = float(scipy_stats.t.ppf(0.95, df=df))
+    raw_low = beta - t_crit * se_beta
+    raw_high = beta + t_crit * se_beta
+    beta_low = max(0.3, raw_low)
+    beta_high = min(2.0, raw_high)
+
+    linear_assumption_margin = mrsd / clinical_dose_mg_kg
+    dose_ratio = mrsd / clinical_dose_mg_kg
+
+    range_low = round(dose_ratio ** beta_high, 4) if beta < 1 else round(dose_ratio ** beta_low, 4)
+    range_high = round(dose_ratio ** beta_low, 4) if beta < 1 else round(dose_ratio ** beta_high, 4)
+    if range_low > range_high:
+        range_low, range_high = range_high, range_low
+
+    if beta < 0.95:
+        direction = "potentially_overestimated"
+    else:
+        direction = "potentially_underestimated"
+
+    point_corrected = dose_ratio ** beta
+    point_linear = dose_ratio
+    point_fold_error = max(point_corrected / point_linear, point_linear / point_corrected)
+    if point_fold_error < 1.5:
+        magnitude = "mild"
+    elif point_fold_error < 3.0:
+        magnitude = "moderate"
+    else:
+        magnitude = "severe"
+
+    range_uncertainty = "wide" if (range_low > 0 and (range_high / range_low) > 3.0) else "narrow"
+
+    rationale = (
+        f"{'Sub' if beta < 1 else 'Supra'}-proportional PK (beta ~ {beta:.2f}) suggests "
+        f"animals had {'lower' if beta < 1 else 'higher'} exposure than dose-based "
+        f"extrapolation predicts; true safety margin is likely between "
+        f"{range_low:.1f}x and {range_high:.1f}x rather than {linear_assumption_margin:.1f}x."
+    )
+
+    return {
+        "applicable": True,
+        "direction": direction,
+        "magnitude": magnitude,
+        "range_uncertainty": range_uncertainty,
+        "linear_assumption_margin": round(linear_assumption_margin, 4),
+        "nonlinearity_corrected_margin_range": [range_low, range_high],
+        "beta_used": round(beta, 3),
+        "beta_ci_90": [round(beta_low, 3), round(beta_high, 3)],
+        "n_dose_groups": int(n_dose_groups),
+        "rationale": rationale,
+    }
 
 
 def _select_margin_method(compound_info: dict, pp_available: bool,
@@ -390,9 +494,10 @@ def _detect_oncology_flag(study: StudyInfo, compound_info: dict) -> bool:
 
 
 def _load_clinical_data(study: StudyInfo) -> dict:
-    """Load clinical Cmax/AUC from compound profile annotation."""
+    """Load clinical Cmax/AUC/dose from compound profile annotation."""
     result: dict = {"clinical_cmax": None, "clinical_cmax_unit": None,
-                    "clinical_auc": None, "clinical_auc_unit": None}
+                    "clinical_auc": None, "clinical_auc_unit": None,
+                    "clinical_dose_mg_kg": None}
     ann_path = ANNOTATIONS_DIR / study.study_id / "compound_profile.json"
     if ann_path.exists():
         try:
@@ -402,6 +507,7 @@ def _load_clinical_data(study: StudyInfo) -> dict:
             result["clinical_cmax_unit"] = profile.get("clinical_cmax_unit")
             result["clinical_auc"] = profile.get("clinical_auc")
             result["clinical_auc_unit"] = profile.get("clinical_auc_unit")
+            result["clinical_dose_mg_kg"] = profile.get("clinical_dose_mg_kg")
         except Exception as e:
             log.warning("Failed to read compound profile for %s: %s", study.study_id, e)
 
@@ -1440,6 +1546,7 @@ def _compute_safety_margin_v2(
     margin_method: str,
     compound_info: dict,
     by_dose_group: list[dict],
+    dose_prop: dict | None = None,
 ) -> dict:
     """Compute modality-aware safety margin with restructured schema (Features 1B + 1C).
 
@@ -1459,6 +1566,7 @@ def _compute_safety_margin_v2(
     clinical_cmax_unit = clinical["clinical_cmax_unit"]
     clinical_auc = clinical["clinical_auc"]
     clinical_auc_unit = clinical["clinical_auc_unit"]
+    clinical_dose_mg_kg = clinical.get("clinical_dose_mg_kg")
 
     # Default safety factor (can be overridden by program annotation)
     safety_factor = 10
@@ -1482,6 +1590,15 @@ def _compute_safety_margin_v2(
         }
     else:
         hed_based = {"available": False, "note": "HED unavailable (NOAEL not established or species not in Km table)"}
+
+    # F2: Non-linearity caveat with uncertainty-bounded margin range.
+    # Triggers when method is dose-based (bsa_hed/bsa_fallback) AND PK is non-linear.
+    if margin_method in ("bsa_hed", "bsa_fallback"):
+        hed_based["nonlinearity_caveat"] = _build_nonlinearity_caveat(
+            dose_prop=dose_prop,
+            hed_based=hed_based,
+            clinical_dose_mg_kg=clinical_dose_mg_kg,
+        )
 
     # Method-specific computations
     oncology = None
@@ -2005,15 +2122,11 @@ def _compute_dose_proportionality(
     log_doses = [math.log(d) for d in doses]
     log_aucs = [math.log(a) for a in aucs]
 
-    # Linear regression on log-log scale
-    coeffs = np.polyfit(log_doses, log_aucs, 1)
-    slope = float(coeffs[0])
-
-    # R-squared
-    y_pred = np.polyval(coeffs, log_doses)
-    ss_res = sum((y - yp) ** 2 for y, yp in zip(log_aucs, y_pred))
-    ss_tot = sum((y - np.mean(log_aucs)) ** 2 for y in log_aucs)
-    r_squared = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
+    # Linear regression on log-log scale (scipy gives SE on slope, polyfit doesn't)
+    lr = scipy_stats.linregress(log_doses, log_aucs)
+    slope = float(lr.slope)
+    se_slope = float(lr.stderr) if lr.stderr is not None else None
+    r_squared = float(lr.rvalue) ** 2
 
     # Non-monotonicity: AUC drops between consecutive dose groups
     non_monotonic = False
@@ -2038,6 +2151,31 @@ def _compute_dose_proportionality(
         tk_survivorship,
     )
 
+    # F1: dose-normalized AUC profile -- field name is `group_id` per spec.
+    dn_sorted = sorted(zip(doses, aucs, dose_levels_used), key=lambda t: t[0])
+    dose_normalized_auc = [
+        {
+            "dose_value": d,
+            "auc_per_dose": round(a / d, 6),
+            "group_id": int(lvl),
+        }
+        for d, a, lvl in dn_sorted
+    ]
+    dose_normalized_auc_assessment = _classify_dose_normalized_auc(
+        [item["auc_per_dose"] for item in dose_normalized_auc]
+    )
+
+    # F4: N-conditional fit quality (R1 F1: t-distribution, NOT z=1.645;
+    # R1 F8: r_squared_unreliable_at_n extends from N=3 to N<=4).
+    n = len(doses)
+    df = n - 2
+    if df >= 1 and se_slope is not None:
+        t_crit = float(scipy_stats.t.ppf(0.95, df=df))
+        ci_half_width = round(t_crit * se_slope, 4)
+    else:
+        ci_half_width = None
+    fit_quality = _build_fit_quality(n, df, ci_half_width)
+
     return {
         "parameter": param,
         "slope": round(slope, 3),
@@ -2048,7 +2186,434 @@ def _compute_dose_proportionality(
         "log_aucs": [round(a, 3) for a in log_aucs],
         "non_monotonic": non_monotonic,
         "interpretation": interpretation,
+        "dose_normalized_auc": dose_normalized_auc,
+        "dose_normalized_auc_assessment": dose_normalized_auc_assessment,
+        "fit_quality": fit_quality,
+        "slope_stderr": round(se_slope, 6) if se_slope is not None else None,
     }
+
+
+def _classify_dose_normalized_auc(auc_per_dose: list[float]) -> str:
+    """Classify dose-normalized AUC profile shape (F1).
+
+    flat                  : max/min ratio <= 1.3 (R1 F9 -- tighter than 1.5
+                            because typical TK CV is 20-40% and 1.3 is the
+                            threshold above which the trend is unlikely
+                            CV-driven).
+    monotonic_increasing  : every consecutive auc_per_dose strictly increases.
+    monotonic_decreasing  : every consecutive auc_per_dose strictly decreases.
+    inflection            : non-monotonic AND adjacent ratios cross both
+                            magnitude thresholds at a single internal point
+                            (R1 F4 -- prevents N=4 false-positives from a
+                            single noisy mid-dose point AND N>=5 false-
+                            positives from non-adjacent extrema).
+    """
+    if len(auc_per_dose) < 2:
+        return "flat"
+
+    vmin = min(auc_per_dose)
+    vmax = max(auc_per_dose)
+    if vmin <= 0:
+        return "flat"
+    if (vmax / vmin) <= 1.3:
+        return "flat"
+
+    ratios = [auc_per_dose[i + 1] / auc_per_dose[i] for i in range(len(auc_per_dose) - 1)]
+    if all(r > 1.0 for r in ratios):
+        return "monotonic_increasing"
+    if all(r < 1.0 for r in ratios):
+        return "monotonic_decreasing"
+
+    threshold_low = 1.0 / 1.3
+    threshold_high = 1.3
+    for i in range(len(ratios) - 1):
+        r_left, r_right = ratios[i], ratios[i + 1]
+        if (r_left >= threshold_high and r_right <= threshold_low) or (
+            r_left <= threshold_low and r_right >= threshold_high
+        ):
+            return "inflection"
+    return "flat"
+
+
+def _build_fit_quality(n: int, df: int, ci_half_width: float | None) -> dict:
+    """N-conditional power-model fit quality (F4, R1 F8).
+
+    Replaces fixed R-squared thresholds (R-squared is inflated at small N).
+    At N<=4, recommend the dose-normalized profile (F1) over the slope.
+    """
+    if n <= 3:
+        unreliable = True
+        recommend = True
+        interp = (
+            "minimal statistical power; CI on beta likely spans >0.4 units; "
+            "rely on dose_normalized_auc profile (F1) over the slope assessment."
+        )
+    elif n == 4:
+        unreliable = True
+        recommend = ci_half_width is None or ci_half_width > 0.3
+        interp = (
+            "moderate-low power; CI half-width often exceeds 0.3 units; "
+            "rely on dose_normalized_auc profile when CI half-width > 0.3."
+        )
+    else:
+        unreliable = False
+        recommend = False
+        interp = "adequate power; report CI on beta and adjusted R-squared."
+    return {
+        "n_dose_groups": n,
+        "df": df,
+        "beta_ci_90_half_width": ci_half_width,
+        "r_squared_unreliable_at_n": unreliable,
+        "recommend_dose_normalized_profile": recommend,
+        "interpretation": interp,
+    }
+
+
+# ── F3 helpers ────────────────────────────────────────────────
+
+# compound classes whose multi-compartment / target-mediated kinetics
+# break the one-compartment R_ac formula. For these, study_assessment is
+# forced to "insufficient_data" -- the formula's prediction is a formula
+# artifact, not a real time-dependent clearance signal (architect SCIENCE-FLAG).
+_BIOLOGIC_COMPOUND_CLASS_MARKERS = (
+    "antibody", "_mab", "fc_fusion", "bispecific", "checkpoint", "adc",
+    "recombinant_", "vaccine", "gene_therapy", "aav_", "lentiviral",
+    "lnp_mrna", "gene_editing", "oligonucleotide",
+)
+
+# PP half-life parameter codes (SENDIG v3.1).
+_HALF_LIFE_PARAM_CANDIDATES = ("LAMZHL", "HLT")
+
+
+def _is_multi_compartment_compound(compound_info: dict | None) -> bool:
+    """Return True when the compound's kinetics are typically multi-compartment.
+
+    For these compounds the one-compartment R_ac formula is not predictive,
+    so prediction_reliability defaults to 'unreliable' and study_assessment
+    is forced to 'insufficient_data'.
+    """
+    if not compound_info:
+        return False
+    cclass = (compound_info.get("compound_class") or "").lower()
+    return any(marker in cclass for marker in _BIOLOGIC_COMPOUND_CLASS_MARKERS)
+
+
+def _normalize_half_life_to_hours(value: float | None, unit_str: str | None) -> float | None:
+    """Convert PP half-life value+unit to hours (R2 N2)."""
+    if value is None or unit_str is None:
+        return None
+    u = (unit_str or "").lower().strip()
+    if u in ("h", "hr"):
+        return float(value)
+    if u in ("min",):
+        return float(value) / 60.0
+    if u in ("d", "day"):
+        return float(value) * 24.0
+    return None
+
+
+def _get_dosing_tau_h(study: StudyInfo) -> float | None:
+    """Read dosing interval (tau) in hours from EX domain EXFREQ.
+
+    Maps SEND CDISC EXFREQ controlled terminology to hours. Returns None
+    when EX is missing or EXFREQ is unrecognized; caller emits
+    prediction_reliability = 'no_dosing_interval'.
+    """
+    if "ex" not in study.xpt_files:
+        return None
+    try:
+        ex_df = _read_domain(study, "ex")
+    except Exception:
+        return None
+    if ex_df is None or ex_df.empty or "EXFREQ" not in ex_df.columns:
+        return None
+    freqs = (
+        ex_df["EXFREQ"].astype(str).str.upper().str.strip().replace("", pd.NA).dropna()
+    )
+    if freqs.empty:
+        return None
+    freq = str(freqs.mode().iloc[0]).strip()
+    if freq in ("QD", "ONCE PER DAY", "DAILY", "Q24H"):
+        return 24.0
+    if freq in ("BID", "Q12H", "TWICE PER DAY"):
+        return 12.0
+    if freq in ("TID", "Q8H", "THREE TIMES PER DAY"):
+        return 8.0
+    if freq in ("QID", "Q6H", "FOUR TIMES PER DAY"):
+        return 6.0
+    if freq in ("QW", "WEEKLY", "Q7D", "ONCE PER WEEK"):
+        return 24.0 * 7
+    if freq in ("Q2W", "EVERY 2 WEEKS", "BIWEEKLY"):
+        return 24.0 * 14
+    if freq in ("Q3W", "EVERY 3 WEEKS"):
+        return 24.0 * 21
+    if freq in ("Q4W", "MONTHLY", "EVERY 4 WEEKS"):
+        return 24.0 * 28
+    if freq in ("ONCE", "SINGLE", "ONCE TOTAL"):
+        return None  # single-dose study -- no accumulation
+    return None
+
+
+def _iter_visits_by_dose(pp_merged: pd.DataFrame) -> dict:
+    """Group AUC values by (dose_level, visit_day) -> mean AUC across subjects.
+
+    Picks AUCLST over AUCTAU over AUCALL (matches dose_proportionality preference).
+    """
+    if "PPTESTCD" not in pp_merged.columns or "PPSTRESN" not in pp_merged.columns:
+        return {}
+    if "dose_level" not in pp_merged.columns:
+        return {}
+    visit_col = "VISITDY" if "VISITDY" in pp_merged.columns else (
+        "PPDY" if "PPDY" in pp_merged.columns else None
+    )
+    if visit_col is None:
+        return {}
+
+    auc_param = None
+    for candidate in ("AUCLST", "AUCTAU", "AUCALL"):
+        rows = pp_merged[pp_merged["PPTESTCD"].astype(str).str.upper() == candidate]
+        if not rows.empty and rows["dose_level"].nunique() >= 1:
+            auc_param = candidate
+            break
+    if auc_param is None:
+        return {}
+
+    auc_rows = pp_merged[pp_merged["PPTESTCD"].astype(str).str.upper() == auc_param].copy()
+    auc_rows["_auc_val"] = pd.to_numeric(auc_rows["PPSTRESN"], errors="coerce")
+    auc_rows["_visit"] = pd.to_numeric(auc_rows[visit_col], errors="coerce")
+    auc_rows = auc_rows.dropna(subset=["_auc_val", "_visit"])
+    auc_rows = auc_rows[auc_rows["_auc_val"] > 0]
+    if auc_rows.empty:
+        return {}
+
+    out: dict = {}
+    for (dose_level, visit), grp in auc_rows.groupby(["dose_level", "_visit"]):
+        out.setdefault(int(dose_level), {})[int(visit)] = float(grp["_auc_val"].mean())
+    return out
+
+
+def _get_half_life_h_for_dose(pp_merged: pd.DataFrame, dose_level: int) -> float | None:
+    """Mean terminal half-life for a dose group, normalized to hours.
+
+    Tries LAMZHL first, then HLT (SENDIG v3.1).
+    """
+    if "PPTESTCD" not in pp_merged.columns or "PPSTRESN" not in pp_merged.columns:
+        return None
+    if "PPSTRESU" not in pp_merged.columns:
+        return None
+    sub = pp_merged[pp_merged["dose_level"] == dose_level]
+    if sub.empty:
+        return None
+    for param in _HALF_LIFE_PARAM_CANDIDATES:
+        rows = sub[sub["PPTESTCD"].astype(str).str.upper() == param]
+        if rows.empty:
+            continue
+        vals = pd.to_numeric(rows["PPSTRESN"], errors="coerce").dropna()
+        if vals.empty:
+            continue
+        unit = _get_unique_val(rows, "PPSTRESU", fallback="")
+        t_half_h = _normalize_half_life_to_hours(float(vals.mean()), unit)
+        if t_half_h is not None and t_half_h > 0:
+            return t_half_h
+    return None
+
+
+def _compute_accumulation(
+    pp_merged: pd.DataFrame,
+    by_dose_group: list,
+    compound_info: dict | None,
+    tk_design: dict,
+    visit_days: list,
+) -> dict:
+    """F3 -- multi-visit accumulation ratio observed vs predicted.
+
+    Single-visit studies retain the legacy stub shape (available=False with
+    reason=single_visit_only). Multi-visit studies emit per-dose-group
+    R_ac_observed = AUC_latest / AUC_day1 plus a one-compartment-formula
+    prediction. For biologics (multi-compartment), prediction_reliability
+    is forced to 'unreliable' and study_assessment to 'insufficient_data'.
+    """
+    if not visit_days or len(visit_days) < 2:
+        return {
+            "available": False,
+            "by_dose_group": [],
+            "study_assessment": "insufficient_data",
+            "interpretation_note": (
+                f"Single visit day ({visit_days[0]})" if visit_days
+                else "No visit days available"
+            ),
+            "reason": "single_visit_only",
+        }
+
+    visits_by_dose = _iter_visits_by_dose(pp_merged)
+    multi_compartment = _is_multi_compartment_compound(compound_info)
+
+    per_group_rows: list = []
+    for g in by_dose_group:
+        dose_level = int(g["dose_level"])
+        dose_value = g.get("dose_value")
+        visits = visits_by_dose.get(dose_level, {})
+        if len(visits) < 2:
+            per_group_rows.append({
+                "dose_level": dose_level,
+                "dose_value": dose_value,
+                "r_ac_observed": None,
+                "r_ac_predicted": None,
+                "ratio_difference_factor": None,
+                "prediction_reliability": "unreliable" if multi_compartment else "approximate",
+                "interpretation": None,
+                "reason": "single_visit_only",
+            })
+            continue
+
+        sorted_days = sorted(visits.keys())
+        first_day, last_day = sorted_days[0], sorted_days[-1]
+        auc_first = visits[first_day]
+        auc_last = visits[last_day]
+        if auc_first <= 0:
+            per_group_rows.append({
+                "dose_level": dose_level,
+                "dose_value": dose_value,
+                "r_ac_observed": None,
+                "r_ac_predicted": None,
+                "ratio_difference_factor": None,
+                "prediction_reliability": "unreliable" if multi_compartment else "approximate",
+                "interpretation": None,
+                "reason": "zero_auc_at_day1",
+            })
+            continue
+
+        r_ac_observed = auc_last / auc_first
+        per_group_rows.append({
+            "dose_level": dose_level,
+            "dose_value": dose_value,
+            "r_ac_observed": round(r_ac_observed, 3),
+            "r_ac_predicted": None,
+            "ratio_difference_factor": None,
+            "prediction_reliability": "approximate",
+            "interpretation": None,
+        })
+
+    has_observed = any(r.get("r_ac_observed") is not None for r in per_group_rows)
+    if has_observed:
+        return {
+            "available": True,
+            "by_dose_group": per_group_rows,
+            "study_assessment": "pending_prediction",  # finalized in wrapper
+            "interpretation_note": "",
+            "_multi_compartment": multi_compartment,
+        }
+
+    return {
+        "available": False,
+        "by_dose_group": per_group_rows,
+        "study_assessment": "insufficient_data",
+        "interpretation_note": "Multi-visit PP available but no dose group has AUC at >=2 visits.",
+        "reason": "no_paired_visits",
+    }
+
+
+def _finalize_accumulation_predictions(
+    accumulation: dict,
+    study: StudyInfo,
+    pp_merged: pd.DataFrame,
+) -> dict:
+    """Populate r_ac_predicted + study_assessment for multi-visit accumulation.
+
+    Separated from _compute_accumulation so the visit-grouping logic is
+    decoupled from the I/O step that reads EX and per-dose half-life.
+    """
+    if not accumulation.get("available"):
+        return accumulation
+    rows = accumulation.get("by_dose_group", [])
+    if not rows:
+        return accumulation
+
+    multi_compartment = bool(accumulation.pop("_multi_compartment", False))
+    tau_h = _get_dosing_tau_h(study)
+
+    for row in rows:
+        if multi_compartment:
+            row["r_ac_predicted"] = None
+            row["ratio_difference_factor"] = None
+            row["prediction_reliability"] = "unreliable"
+            row["interpretation"] = (
+                "one-compartment R_ac formula does not apply to multi-compartment "
+                "kinetics (typical of biologics); deviations reflect formula artifact, "
+                "not time-dependent clearance."
+            )
+            continue
+
+        if row.get("r_ac_observed") is None:
+            continue
+
+        if tau_h is None or tau_h <= 0:
+            row["r_ac_predicted"] = None
+            row["ratio_difference_factor"] = None
+            row["prediction_reliability"] = "no_dosing_interval"
+            continue
+
+        t_half_h = _get_half_life_h_for_dose(pp_merged, int(row["dose_level"]))
+        if t_half_h is None:
+            row["r_ac_predicted"] = None
+            row["ratio_difference_factor"] = None
+            row["prediction_reliability"] = "no_half_life"
+            row["interpretation"] = "Observed accumulation reported; predicted unavailable (no terminal half-life in PP)."
+            continue
+
+        try:
+            r_ac_pred = 1.0 / (1.0 - math.exp(-math.log(2) * tau_h / t_half_h))
+        except (ValueError, ZeroDivisionError, OverflowError):
+            row["r_ac_predicted"] = None
+            row["ratio_difference_factor"] = None
+            row["prediction_reliability"] = "unit_normalization_failed"
+            continue
+
+        row["r_ac_predicted"] = round(r_ac_pred, 3)
+        if r_ac_pred > 0:
+            ratio = row["r_ac_observed"] / r_ac_pred
+            row["ratio_difference_factor"] = round(ratio, 3)
+        if not row.get("prediction_reliability"):
+            row["prediction_reliability"] = "approximate"
+        if row.get("ratio_difference_factor") is not None:
+            rdf = row["ratio_difference_factor"]
+            if rdf >= 2.0:
+                row["interpretation"] = "observed_exceeds_predicted_autoinhibition_likely"
+            elif rdf <= 0.5:
+                row["interpretation"] = "observed_below_predicted_autoinduction_likely"
+            else:
+                row["interpretation"] = "consistent_with_half_life"
+
+    if multi_compartment:
+        accumulation["study_assessment"] = "insufficient_data"
+        accumulation["interpretation_note"] = (
+            "one-compartment R_ac formula does not apply to multi-compartment "
+            "kinetics (typical of biologics); deviations reflect formula artifact, "
+            "not time-dependent clearance."
+        )
+        # Internal sentinel must never escape (decision-audit 2026-05-01).
+        assert accumulation.get("study_assessment") != "pending_prediction"
+        return accumulation
+
+    interpretations = [r.get("interpretation") for r in rows if r.get("interpretation")]
+    if any(i == "observed_exceeds_predicted_autoinhibition_likely" for i in interpretations):
+        accumulation["study_assessment"] = "autoinhibition_likely"
+    elif any(i == "observed_below_predicted_autoinduction_likely" for i in interpretations):
+        accumulation["study_assessment"] = "autoinduction_likely"
+    elif interpretations:
+        accumulation["study_assessment"] = "linear_accumulation"
+    else:
+        accumulation["study_assessment"] = "insufficient_data"
+
+    if not accumulation.get("interpretation_note"):
+        accumulation["interpretation_note"] = (
+            "Predicted R_ac assumes complete absorption and no time-dependent "
+            "clearance; >2x deviation suggests autoinhibition, <0.5x suggests "
+            "autoinduction."
+        )
+    # Internal sentinel must never escape (decision-audit 2026-05-01).
+    assert accumulation.get("study_assessment") != "pending_prediction"
+    return accumulation
 
 
 def _build_dp_interpretation(

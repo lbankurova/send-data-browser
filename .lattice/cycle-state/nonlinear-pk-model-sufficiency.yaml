@@ -1,50 +1,81 @@
 topic: nonlinear-pk-model-sufficiency
 title: "Non-Linear PK Model Sufficiency"
 started: 2026-04-04T23:50:00Z
-phase: research-complete
-current_step: build.0
+phase: complete
+current_step: complete
+revision: 6
 parent: cross-study-phase-1-aggregation-backend
 priority: P1
 probe_outcome:
-  source: research.7
-  timestamp: 2026-04-05T01:15:00Z
+  source: blueprint.3.probe
+  timestamp: 2026-04-26T19:33:36Z
   verdict: PROPAGATES
   breaks: []
   science_flags: []
 checkpoints:
   research.1:
     completed: 2026-04-05T00:10:00Z
+    output: "docs/_internal/research/nonlinear-pk-model-sufficiency.md"
     key_decisions:
       - "TMDD infeasible from SEND PP data"
       - "Power model is max complexity for 3-4 dose groups"
-      - "Measured AUC (Feature 1C) solves most cases"
       - "Anti-proposal: do NOT implement TMDD/Emax/piecewise"
-    output: "docs/_internal/research/nonlinear-pk-model-sufficiency.md"
-  research.2:
-    completed: 2026-04-05T00:20:00Z
-    key_decisions:
-      - "R1: 1 FLAWED (corrected_margin contradiction), 9 CONDITIONAL"
-    output: "docs/_internal/research/peer-reviews/nonlinear-pk-model-sufficiency-review.md"
-  research.3:
-    completed: 2026-04-05T00:40:00Z
-    key_decisions:
-      - "F7 FLAWED: corrected_margin replaced with uncertainty-bounded range"
-      - "F3: R-squared thresholds replaced with N-conditional CI"
-      - "F5: residual problem range widened to 5-15%"
-  research.4:
-    completed: 2026-04-05T00:50:00Z
-    key_decisions:
-      - "R2: All 10 R1 RESOLVED, 2 new CONDITIONAL (non-blocking)"
-    output: "docs/_internal/research/peer-reviews/nonlinear-pk-model-sufficiency-review-r2.md"
-  research.5:
-    completed: 2026-04-05T01:00:00Z
-    key_decisions:
-      - "VALIDATED -- all SOUND/CONDITIONAL, no FLAWED"
-  research.6:
-    completed: 2026-04-05T01:10:00Z
-    key_decisions:
-      - "Corpus coherent -- consistent with Phase 1 synthesis"
   research.7:
     completed: 2026-04-05T01:15:00Z
     key_decisions:
-      - "Probe: 0 BREAKS, 0 SCIENCE-FLAGS, 3 PROPAGATES, 1 STALE (S22 dormant)"
+      - "Probe: 0 BREAKS, 0 SCIENCE-FLAGS, 3 PROPAGATES"
+  blueprint.1.synthesize:
+    completed: 2026-04-26T19:28:24Z
+    output: "docs/_internal/incoming/nonlinear-pk-model-sufficiency-synthesis.md"
+  blueprint.2.architect_gate:
+    completed: 2026-04-26T19:33:36Z
+    verdict: PASS
+    science_flag: "F3 prediction_reliability schema -- auto-applied schema fix + tests 13/14/15"
+  blueprint.6.peer_review_r2:
+    completed: 2026-04-26T19:47:09Z
+    verdict: BUILD-PLAN-VALIDATED
+  blueprint.7.complete:
+    completed: 2026-04-26T19:47:09Z
+    final_test_count: 25
+  build.1.implement:
+    completed: 2026-05-01T19:30:00Z
+    files_modified:
+      - "backend/generator/pk_integration.py (F1-F4 + helpers, ~390 LOC)"
+      - "backend/tests/check_pk_integration.py (merged unit + integration, 92 assertions)"
+      - "frontend/src/types/analysis-views.ts (TS type migration)"
+      - "docs/_internal/knowledge/api-field-contracts.md (BFIELD-69/70/74A)"
+      - "docs/_internal/knowledge/contract-triangles.md (3 new triangles -- already in HEAD)"
+      - "docs/_internal/MANIFEST.md (last-validated 2026-05-01)"
+    pointcross_actuals:
+      dose_normalized_auc_assessment: "monotonic_decreasing"
+      auc_per_dose: "[6636 (2 mg/kg), 1953 (20 mg/kg), 85 (200 mg/kg)] -- 78x drop"
+      slope: 0.054
+      slope_stderr: 0.2396
+      ci_half_width: 1.5128
+      r_squared_unreliable_at_n: true
+      accumulation_study_assessment: "insufficient_data"
+      accumulation_reason: "single_visit_only"
+      nonlinearity_caveat_applicable: false
+      nonlinearity_caveat_reason: "no_clinical_dose_or_hed (NOAEL at control -> mrsd=0)"
+    science_flag: cleared  # no analytical recompute -- characterization-only additions
+    deviations:
+      - "Spec referenced backend/services/analysis/pk_integration.py path; actual file is backend/generator/pk_integration.py."
+      - "F2 caveat: linear_assumption_margin source verified at hed_based.mrsd_mg_kg / clinical_dose_mg_kg (R1 F7 / R2 PARTIAL fix). Required extending _load_clinical_data to read clinical_dose_mg_kg from compound_profile.json."
+    review_findings_resolved:
+      - "F1 field name: spec group_id, not dose_level (FIXED)"
+      - "F1 inflection: same-internal-point adjacency check added (FIXED)"
+      - "Test 10: study_assessment assertion added + finalize call (FIXED)"
+      - "Test 24: documented as pre-commit hook gate enforcement"
+      - "pending_prediction sentinel: removed from public TS union + backend assertion (FIXED)"
+      - "reliable prediction_reliability: removed from TS union (no emit path; documented for future restoration)"
+      - "Decision 8 effort-bias: merged into single check_pk_integration.py with main-guard pattern (resolves spec mandate AND pre-existing Windows multiproc issue)"
+  build.2.review:
+    completed: 2026-05-01T19:30:00Z
+    verdict: PASS
+    test_count: 92  # 87 unit + 5 integration sections
+    npm_build: PASS
+    bfield_contracts: "8/8 PK-related PASS, 1130/1132 corpus-wide (2 unrelated noael_confidence failures from another in-flight cycle)"
+    notes: |
+      Re-application after intentional file revert mid-review (2026-05-01).
+      User confirmed re-apply path; full F1-F4 restored. contract-triangles.md
+      already in HEAD via AUDIT-3 conflation (commit a26095a) -- code now matches.
