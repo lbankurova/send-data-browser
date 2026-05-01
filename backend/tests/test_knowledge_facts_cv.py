@@ -31,7 +31,7 @@ BACKEND = ROOT / "backend"
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
-from services.analysis.classification import _CONCERN_THRESHOLDS  # noqa: E402
+from services.analysis.classification import _CONCERN_THRESHOLDS  # noqa: E402 -- must follow sys.path.insert for backend imports to resolve
 
 
 # (fact_id, list-of-test-codes the fact's endpoints scope covers)
