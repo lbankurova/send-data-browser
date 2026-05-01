@@ -187,16 +187,6 @@ const DIFFERENTIAL_PAIRS: Record<string, DifferentialPair> = {
 
 // ─── Severity accent helpers ───────────────────────────────
 
-const SEVERITY_LABELS: Record<OverallSeverity, string> = {
-  S0_Death: "S0 Death",
-  carcinogenic: "Carcinogenic",
-  proliferative: "Proliferative",
-  S4_Critical: "S4 Critical",
-  S3_Adverse: "S3 Adverse",
-  S2_Concern: "S2 Concern",
-  S1_Monitor: "S1 Monitor",
-};
-
 function getSeverityAccent(severity: OverallSeverity | undefined): {
   borderClass: string;
   borderColor: string | undefined;
@@ -497,48 +487,9 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
   // ── Severity accent for header ──
   const sevAccent = getSeverityAccent(syndromeInterp?.overallSeverity);
 
-  // ── Header text helpers ──
-  const mechanismText = syndromeInterp
-    ? syndromeInterp.mechanismCertainty === "mechanism_confirmed" ? "Confirmed mechanism"
-      : syndromeInterp.mechanismCertainty === "mechanism_uncertain" ? "Uncertain mechanism"
-      : syndromeInterp.mechanismCertainty === "insufficient_data" ? "Insufficient data"
-      : "Pattern only"
-    : null;
-  const mechanismClass = syndromeInterp
-    ? syndromeInterp.mechanismCertainty === "mechanism_confirmed" ? "text-muted-foreground" : "text-foreground"
-    : "text-muted-foreground";
-  const mechanismTooltip = syndromeInterp
-    ? syndromeInterp.mechanismCertainty === "mechanism_confirmed"
-      ? "Supporting findings confirm this specific mechanism over alternatives"
-      : syndromeInterp.mechanismCertainty === "mechanism_uncertain"
-        ? "Required findings present but some findings argue against, or key tests were not measured"
-        : syndromeInterp.mechanismCertainty === "insufficient_data"
-        ? "Required findings matched but key confirmatory domain data are absent from the study"
-        : "Statistical pattern detected but no mechanism-specific findings available"
-    : "";
-
-  const recoveryText = syndromeInterp
-    ? syndromeInterp.recovery.status === "recovered" ? "Recovered"
-      : syndromeInterp.recovery.status === "not_recovered" ? "Not recovered"
-      : syndromeInterp.recovery.status === "partial" ? "Partial recovery"
-      : syndromeInterp.recovery.status === "not_examined" ? "No recovery arm"
-      : "Recovery unknown"
-    : null;
-  const recoveryIsAttention = syndromeInterp
-    ? syndromeInterp.recovery.status === "not_recovered" || syndromeInterp.recovery.status === "partial"
-    : false;
-
-  const trLabel = syndromeInterp
-    ? syndromeInterp.treatmentRelatedness.overall === "treatment_related" ? "Treatment-related"
-      : syndromeInterp.treatmentRelatedness.overall === "possibly_related" ? "Possibly related"
-      : "Not related"
-    : null;
-  const advLabel = syndromeInterp
-    ? syndromeInterp.adversity.overall === "adverse" ? "Adverse"
-      : syndromeInterp.adversity.overall === "non_adverse" ? "Non-adverse"
-      : "Equivocal"
-    : null;
-  const mortalityCap = syndromeInterp?.mortalityContext.mortalityNoaelCap;
+  // Header chip line (severity / mechanism / recovery / TR / adversity / mortality cap)
+  // moved to ScopeBanner per radar-forest-cleanup F11. Severity accent border on the
+  // ContextPanelHeader is retained as the rail's per-syndrome severity cue.
 
   return (
     <div>
@@ -564,38 +515,12 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
         onBack={nav?.onBack}
         onForward={nav?.onForward}
       >
-        {syndromeInterp && (
-          <>
-            {/* Line 1: Severity label */}
-            <div className={`mt-1.5 ${sevAccent.labelClass}`}>
-              {SEVERITY_LABELS[syndromeInterp.overallSeverity]}
-            </div>
-            {/* Line 2: Mechanism certainty · Recovery */}
-            <div className="mt-0.5 text-[11px]">
-              <span className={mechanismClass} title={mechanismTooltip}>{mechanismText}</span>
-              {recoveryText && (
-                <>
-                  <span className="text-muted-foreground"> · </span>
-                  <span className={recoveryIsAttention ? "text-foreground" : "text-muted-foreground"}>{recoveryText}</span>
-                </>
-              )}
-            </div>
-            {/* Line 3: TR/ADV · optional NOAEL cap */}
-            {trLabel && advLabel && (
-              <div className="mt-0.5 text-[11px] text-muted-foreground">
-                {trLabel} · {advLabel}
-                {mortalityCap != null && (
-                  <span className="text-foreground"> · NOAEL capped by mortality</span>
-                )}
-              </div>
-            )}
-            {/* Line 4: Organ proportionality narrative (XS09 only) */}
-            {xs09Active && organProportionality?.narrative && (
-              <div className="mt-0.5 text-[11px] text-muted-foreground">
-                {organProportionality.narrative}
-              </div>
-            )}
-          </>
+        {/* Organ proportionality narrative (XS09 only) — kept here because it's
+            an interpretation paragraph, not a chip; chip line moved to ScopeBanner. */}
+        {xs09Active && organProportionality?.narrative && (
+          <div className="mt-1.5 text-[11px] text-muted-foreground">
+            {organProportionality.narrative}
+          </div>
         )}
       </ContextPanelHeader>
 
@@ -669,13 +594,12 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
         </CollapsiblePane>
       )}
 
-      {/* ══ DOSE-RESPONSE & RECOVERY PANE ══ */}
+      {/* ══ RECOVERY PANE (F10: dose-response numerical display moved to DomainDoseRollup) ══ */}
       {syndromeInterp && detected && (
-        <CollapsiblePane title="Dose-response & recovery" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-          <DoseResponseRecoveryPane
+        <CollapsiblePane title="Recovery" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <RecoveryAndFactorsPane
             syndromeInterp={syndromeInterp}
             domainsCovered={detected.domainsCovered}
-            allEndpoints={allEndpoints}
             organProportionality={organProportionality}
           />
         </CollapsiblePane>
@@ -905,35 +829,48 @@ function EvidencePane({
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const isHepatic = syndromeId === "XS01" || syndromeId === "XS02";
 
+  // F9: matched/trend rows are rendered per-dose in MemberRolesByDoseTable
+  // (center pane); EvidencePane keeps only the "gap" rows — opposite,
+  // not_significant, not_measured — plus the summary counts. Surfaces what
+  // the center pane can't show: contradictory or absent evidence.
+  const requiredGapEntries = report?.requiredEntries.filter(
+    (e) => e.status !== "matched" && e.status !== "trend",
+  ) ?? [];
+  const supportingGapEntries = report?.supportingEntries.filter(
+    (e) => e.status !== "matched" && e.status !== "trend",
+  ) ?? [];
+
   return (
     <div className="space-y-3">
-      {/* ── Required/Supporting findings ── */}
-      {report && (
+      {/* ── Required/Supporting findings — gap rows only (matched/trend in center pane) ── */}
+      {report && (requiredGapEntries.length > 0 || supportingGapEntries.length > 0) && (
         <>
-          <div className="mb-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Required findings:</span>
-              <span className="text-muted-foreground">
-                {report.requiredLogicType === "compound"
-                  ? report.requiredLogicText
-                  : `${report.requiredMetCount} of ${report.requiredTotal} met`}
-              </span>
-            </div>
-            <div className="mt-1 space-y-0.5">
-              {report.requiredEntries.map((entry, i) => (
-                <TermChecklistRow key={`req-${i}`} entry={entry} labMatches={labMatches} />
-              ))}
-            </div>
-          </div>
-
-          {report.supportingEntries.length > 0 && (
+          {requiredGapEntries.length > 0 && (
             <div className="mb-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Supporting findings:</span>
+                <span className="text-muted-foreground">Required findings — gaps:</span>
+                <span className="text-muted-foreground">
+                  {report.requiredLogicType === "compound"
+                    ? report.requiredLogicText
+                    : `${report.requiredMetCount} of ${report.requiredTotal} met`}
+                </span>
+              </div>
+              <div className="mt-1 space-y-0.5">
+                {requiredGapEntries.map((entry, i) => (
+                  <TermChecklistRow key={`req-${i}`} entry={entry} labMatches={labMatches} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {supportingGapEntries.length > 0 && (
+            <div className="mb-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Supporting findings — gaps:</span>
                 <span className="text-muted-foreground">{report.supportingMetCount} of {report.supportingTotal} checked</span>
               </div>
               <div className="mt-1 space-y-0.5">
-                {report.supportingEntries.map((entry, i) => (
+                {supportingGapEntries.map((entry, i) => (
                   <TermChecklistRow key={`sup-${i}`} entry={entry} labMatches={labMatches} />
                 ))}
               </div>
@@ -1401,15 +1338,21 @@ function UpgradeEvidenceContent({ evidence }: { evidence: UpgradeEvidenceResult 
 // ══ DOSE-RESPONSE & RECOVERY PANE ═════════════════════════
 // ═══════════════════════════════════════════════════════════
 
-function DoseResponseRecoveryPane({
+/**
+ * F10: was DoseResponseRecoveryPane. The top dose-response numerical-summary
+ * block (DR strength, lead endpoint, magnitude) was dropped because
+ * DomainDoseRollup in the center pane shows per-domain per-dose evidence with
+ * full statistics. The recovery section + ECETOC A/B-factors collapsible
+ * (qualitative interpretation, not numerical) stay — they're unique
+ * verdict-rationale content not surfaced in the center.
+ */
+function RecoveryAndFactorsPane({
   syndromeInterp,
   domainsCovered,
-  allEndpoints,
   organProportionality,
 }: {
   syndromeInterp: SyndromeInterpretation;
   domainsCovered: string[];
-  allEndpoints: EndpointSummary[];
   organProportionality: OrganProportionalityResult | null;
 }) {
   const [factorsOpen, setFactorsOpen] = useState(false);
@@ -1418,19 +1361,6 @@ function DoseResponseRecoveryPane({
   const adv = syndromeInterp.adversity;
   const recovery = syndromeInterp.recovery;
 
-  // Dose-response strength (A-1 factor)
-  const drTooltip = tr.doseResponse === "strong"
-    ? "At least one matched endpoint has a strong dose-response pattern (linear, monotonic, or threshold) with p < 0.1, or pairwise p < 0.01 with |d| ≥ 0.8"
-    : tr.doseResponse === "weak"
-      ? "At least one matched endpoint has a non-flat pattern, but none meet the strength criteria for strong"
-      : "No dose-response pattern detected in matched endpoints";
-
-  // Find lead endpoint (lowest p-value among syndrome matched endpoints)
-  const leadEp = useMemo(() => {
-    const sorted = [...allEndpoints].filter(e => e.minPValue != null).sort((a, b) => (a.minPValue ?? 1) - (b.minPValue ?? 1));
-    return sorted[0] ?? null;
-  }, [allEndpoints]);
-
   const trLabel = tr.overall === "treatment_related" ? "Yes"
     : tr.overall === "possibly_related" ? "Possibly" : "No";
   const advLabel = adv.overall === "adverse" ? "Yes"
@@ -1438,33 +1368,6 @@ function DoseResponseRecoveryPane({
 
   return (
     <div className="space-y-3">
-      {/* ── Dose-response summary ── */}
-      <div className="space-y-0.5">
-        <div className="flex items-baseline gap-1.5 text-[11px]">
-          <span className="text-muted-foreground">Dose-response:</span>
-          <span className="font-mono font-medium text-foreground underline decoration-dotted decoration-muted-foreground/40 underline-offset-2" title={drTooltip}>{tr.doseResponse}</span>
-        </div>
-        {leadEp && (
-          <div className="flex items-baseline gap-1.5 text-[11px]">
-            <span className="text-muted-foreground">Lead endpoint:</span>
-            <span className="font-medium text-foreground">{leadEp.endpoint_label}</span>
-            {leadEp.minPValue != null && (
-              <span className="font-mono text-muted-foreground">{formatPValueWithPrefix(leadEp.minPValue)}</span>
-            )}
-            {leadEp.maxEffectSize != null && (
-              <span className="font-mono text-muted-foreground">d={Math.abs(leadEp.maxEffectSize).toFixed(2)}</span>
-            )}
-          </div>
-        )}
-        <div className="flex items-baseline gap-1.5 text-[11px]">
-          <span className="text-muted-foreground">Magnitude:</span>
-          <span className="font-medium text-foreground">
-            {adv.magnitudeLevel}
-            {leadEp?.maxEffectSize != null && ` (d=${Math.abs(leadEp.maxEffectSize).toFixed(1)})`}
-          </span>
-        </div>
-      </div>
-
       {/* ── Recovery with border-left blocks ── */}
       <div>
         <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Recovery</div>

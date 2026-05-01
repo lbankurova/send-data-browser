@@ -17,6 +17,8 @@ import { MemberRolesByDoseTable } from "./MemberRolesByDoseTable";
 import { RelatedSyndromesTable } from "./RelatedSyndromesTable";
 import { buildDoseColumns } from "@/lib/dose-columns";
 import { deriveOrganScopeStats, deriveSyndromeScopeStats } from "@/lib/scope-stats";
+import { useSyndromeInterpretation } from "@/hooks/useSyndromeInterpretation";
+import { buildSyndromeClassificationChips } from "@/lib/syndrome-classification-chips";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import { useSyndromeRollup } from "@/hooks/useSyndromeRollup";
 import { ViewSection } from "@/components/ui/ViewSection";
@@ -101,6 +103,16 @@ export function FindingsView() {
   const [visibleLabels, setVisibleLabels] = useState<Set<string> | null>(null);
   const [scopeLabel, setScopeLabel] = useState<string | null>(null);
   const [scopeType, setScopeType] = useState<string | null>(null);
+
+  // F11: classification chip line for ScopeBanner syndrome variant. Hook
+  // returns null unless syndrome scope is active; React Query dedupes the
+  // underlying study-level fetches with SyndromeContextPanel.
+  const scopedSyndromeId = scopeType === "syndrome" ? scopeLabel : null;
+  const syndromeInterp = useSyndromeInterpretation(studyId, scopedSyndromeId);
+  const syndromeClassificationChips = useMemo(
+    () => buildSyndromeClassificationChips(syndromeInterp),
+    [syndromeInterp],
+  );
   const [filterLabels, setFilterLabels] = useState<string[]>([]);
   const [activeEndpoint, setActiveEndpoint] = useState<string | null>(null);
   const [activeDomain, setActiveDomain] = useState<string | undefined>(undefined);
@@ -661,8 +673,7 @@ export function FindingsView() {
                       backLabel={backState?.label}
                       stats={{
                         ...stats,
-                        // Classification chip line wired in Phase 5 when SyndromeContextPanel slim ships.
-                        classificationChips: [],
+                        classificationChips: syndromeClassificationChips,
                       }}
                     />
                   );
