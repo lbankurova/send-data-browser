@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections import defaultdict
 
 from services.analysis.analysis_settings import ScoringParams, DEFAULT_PATTERN_SCORES
+from services.analysis.classification import is_adverse_class
 from services.analysis.statistics import severity_trend
 
 
@@ -67,8 +68,16 @@ def _get_group_stats_at_dose(finding: dict, dose_level: int) -> dict | None:
 
 
 def _effect_matches_trend_direction(finding: dict, pw: dict) -> bool:
-    """True if the pairwise effect direction matches the overall trend direction."""
-    d = pw.get("effect_size", 0)
+    """True if the pairwise effect direction matches the overall trend direction.
+
+    Defensive null handling on effect_size: dict.get() with default returns the
+    default only when the key is missing, NOT when the value is None. Pairwise
+    rows in some studies (FFU, PDS) carry `effect_size: null` for incidence
+    findings or domain rows where the magnitude wasn't computed; without the
+    `or 0` coalesce, the next-line comparison `d > 0` raises TypeError and
+    silently aborts Phase 2 view-DataFrame assembly. AUDIT-3 collateral fix.
+    """
+    d = pw.get("effect_size") or 0
     direction = finding.get("direction")
     if direction == "up" and d > 0:
         return True
@@ -154,7 +163,7 @@ def _is_loael_driving_woe(
     # magnitude alone — defensible per Rule 19 only when sign is consistent.
     if (
         _dose_exceeds_effect_threshold(pw, effect_threshold, finding.get("data_type", "continuous"))
-        and fc == "tr_adverse"
+        and is_adverse_class(fc)
         and _effect_matches_trend_direction(finding, pw)
     ):
         return True
@@ -200,7 +209,7 @@ def _is_loael_driving_woe(
     # preserving the "regardless of statistics" principle for genuinely
     # observed pathology. C4 is no longer a strict subset of C1+C5 (it has a
     # non-empty zone where neither fires).
-    if fc == "tr_adverse":
+    if is_adverse_class(fc):
         finding_term = (finding.get("finding") or "").lower().strip()
         if finding_term in INTRINSICALLY_ADVERSE and finding.get("data_type") == "incidence":
             gs = _get_group_stats_at_dose(finding, dose_level)
@@ -263,13 +272,20 @@ def _is_loael_driving_woe(
 def _is_loael_driving(finding: dict) -> bool:
     """Return True when a finding should drive LOAEL determination.
 
-    Uses ``finding_class`` when available (ECETOC assessment), falling back
-    to ``severity == "adverse"`` for backward compatibility with data that
-    predates the finding_class field.
+    Uses ``finding_class`` when available (ECETOC or NOEL assessment), falling
+    back to ``severity == "adverse"`` for backward compatibility with data
+    that predates the finding_class field.
+
+    AUDIT-3 (CLAUDE.md rule 18): is_adverse_class folds ECETOC tr_adverse and
+    NOEL treatment_related_concerning. Note that NOEL safety-pharm studies
+    use a separate ``_build_noel_for_groups`` builder upstream
+    (build_noael_summary dispatches by classification_framework), so the
+    LOAEL-driving call rarely sees NOEL findings -- the helper still keeps
+    declaration/consumption aligned per rule 18.
     """
     fc = finding.get("finding_class")
     if fc is not None:
-        return fc == "tr_adverse"
+        return is_adverse_class(fc)
     return finding.get("severity") == "adverse"
 
 

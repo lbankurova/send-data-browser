@@ -887,6 +887,46 @@ def determine_treatment_related(
 #   tr_adaptive           — treatment-related, context-dependent term (hypertrophy etc.)
 #   tr_adverse            — treatment-related adverse (intrinsic adversity OR large magnitude)
 #   equivocal             — mixed evidence, needs human review
+#
+# Two classification frameworks coexist:
+# - ECETOC (default RDT)         : the 5 values above
+# - NOEL (safety pharmacology)   : not_treatment_related, equivocal, treatment_related,
+#                                  treatment_related_concerning
+# Plus the pipeline-level not_assessed value for has_concurrent_control=False suppression.
+# Total: 8 finding_class values declared in frontend/src/types/analysis.ts:149.
+#
+# Cross-framework semantic equivalences (CLAUDE.md rule 18 contract-triangle helpers):
+#   "adverse" tier         : ECETOC tr_adverse              <-> NOEL treatment_related_concerning
+#   "treatment-related"    : ECETOC tr_non_adverse + tr_adaptive + tr_adverse
+#                            <-> NOEL treatment_related + treatment_related_concerning
+# Use is_adverse_class()/is_treatment_related_class() at consumption sites that need
+# framework-aware branching. See docs/_internal/knowledge/contract-triangles.md
+# `finding_class` triangle for the registry of consumption sites.
+
+ADVERSE_CLASSES = frozenset({"tr_adverse", "treatment_related_concerning"})
+TR_NON_ADVERSE_CLASSES = frozenset({"tr_non_adverse", "tr_adaptive", "treatment_related"})
+ALL_TR_CLASSES = ADVERSE_CLASSES | TR_NON_ADVERSE_CLASSES
+
+
+def is_adverse_class(fc: str | None) -> bool:
+    """True iff finding_class is the framework-equivalent "adverse" tier.
+
+    Folds ECETOC `tr_adverse` and NOEL `treatment_related_concerning` into a
+    single predicate. Both frameworks reach this tier when raw stats AND a
+    domain-specific adversity criterion fire (ECETOC: intrinsic adversity OR
+    >=1.5 SD magnitude; NOEL: ICH S7B/E14 concern threshold exceeded).
+    """
+    return fc in ADVERSE_CLASSES
+
+
+def is_treatment_related_class(fc: str | None) -> bool:
+    """True iff finding_class indicates a treatment-related finding under
+    either framework (adverse OR non-adverse tier).
+
+    Excludes equivocal, not_treatment_related, not_assessed.
+    """
+    return fc in ALL_TR_CLASSES
+
 
 _HISTOPATH_DOMAINS = {"MI", "MA", "TF"}
 

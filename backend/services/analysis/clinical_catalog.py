@@ -401,11 +401,14 @@ def apply_clinical_layer(
             effective_min_n = int(hcd_evidence["alpha_scaled_threshold"])
 
         promote_ok = n_affected >= effective_min_n
-        # AC-F5-3: tr_adverse floor -- α cannot suppress promotion when
-        # finding_class == "tr_adverse" (noael_floor_applied is True for
-        # Sentinel/HighConcern; ModerateConcern with tr_adverse still promotes
-        # because catalog-firing preserves the scientific floor).
-        if params.get("finding_class") == "tr_adverse":
+        # AC-F5-3: adverse-class floor -- α cannot suppress promotion when
+        # finding_class is in the adverse tier (ECETOC tr_adverse OR NOEL
+        # treatment_related_concerning per CLAUDE.md rule 18 -- AUDIT-3).
+        # noael_floor_applied is True for Sentinel/HighConcern; ModerateConcern
+        # with adverse-class still promotes because catalog-firing preserves
+        # the scientific floor regardless of which framework labeled it.
+        from services.analysis.classification import is_adverse_class
+        if is_adverse_class(params.get("finding_class")):
             promote_ok = n_affected >= min_n  # ignore α scaling
 
         if elevate_to and promote_ok:
@@ -552,8 +555,11 @@ def _apply_alpha_cell_scaling(
         return
     if n_animals < RELIABILITY_N_THRESHOLD:
         return
-    # AC-F5-3: α cannot override tr_adverse -- floor holds.
-    if params.get("finding_class") == "tr_adverse":
+    # AC-F5-3: α cannot override adverse-class -- floor holds. AUDIT-3
+    # (CLAUDE.md rule 18): includes both ECETOC tr_adverse and NOEL
+    # treatment_related_concerning.
+    from services.analysis.classification import is_adverse_class
+    if is_adverse_class(params.get("finding_class")):
         return
 
     import math

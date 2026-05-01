@@ -812,11 +812,23 @@ def process_findings(
     # (corroboration, dose-response pattern, neoplastic flag) beyond raw
     # statistics.  When it says tr_adverse but severity is still normal
     # (e.g., rare tumors with n too small for Fisher's exact), promote.
+    #
+    # AUDIT-3 (CLAUDE.md rule 18): widen treatment_related promotion to all
+    # ECETOC + NOEL treatment-related classes via is_treatment_related_class.
+    # The original literal `("tr_adverse", "tr_nonadverse")` carried a typo
+    # (`tr_nonadverse` is not the canonical `tr_non_adverse` -- declaration
+    # vs consumption mismatch), and tr_adaptive was missing entirely. The
+    # helper folds all 5 treatment-related classes (3 ECETOC + 2 NOEL) into
+    # one predicate, eliminating the alignment-site drift class.
+    from services.analysis.classification import (
+        is_treatment_related_class,
+        is_adverse_class,
+    )
     for f in enriched:
         fc = f.get("finding_class", "")
-        if fc in ("tr_adverse", "tr_nonadverse") and not f.get("treatment_related"):
+        if is_treatment_related_class(fc) and not f.get("treatment_related"):
             f["treatment_related"] = True
-        if fc == "tr_adverse" and f.get("severity") == "normal":
+        if is_adverse_class(fc) and f.get("severity") == "normal":
             f["severity"] = "adverse"
     # GRADE-style confidence scoring (requires finding_class, _hcd_assessment, corroboration_status)
     enriched = compute_all_confidence(

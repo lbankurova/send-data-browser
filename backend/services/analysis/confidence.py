@@ -225,9 +225,15 @@ def _score_d5_cross_sex(f: dict, sibling: dict | None) -> dict:
     f_class = f.get("finding_class", "not_treatment_related")
     s_class = sibling.get("finding_class", "not_treatment_related")
 
+    # AUDIT-3 (CLAUDE.md rule 18): is_adverse_class folds ECETOC tr_adverse
+    # and NOEL treatment_related_concerning into the cross-sex concordance
+    # boost. Safety-pharm CV studies (Study5, CJUGSEND00) get the +1 D5 score
+    # when both sexes hit the NOEL "concerning" tier, which they previously
+    # forfeited.
+    from services.analysis.classification import is_adverse_class
     same_direction = f_dir == s_dir and f_dir != "none"
     both_tr = f_tr and s_tr
-    both_adverse_class = f_class == "tr_adverse" and s_class == "tr_adverse"
+    both_adverse_class = is_adverse_class(f_class) and is_adverse_class(s_class)
 
     if same_direction and both_tr and both_adverse_class:
         return _dim("D5", "Cross-sex consistency", +1,

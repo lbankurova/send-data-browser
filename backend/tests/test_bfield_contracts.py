@@ -1008,6 +1008,148 @@ class TestSourceInvariants:
     # Scan roots: runtime consumer code only. Tests and annotations excluded.
     _SCAN_ROOTS = ("generator", "services", "routers", "models")
 
+    def test_finding_class_helper_vocabulary_matches_emit_paths(self):
+        """is_adverse_class + is_treatment_related_class enums cover all 8 finding_class values.
+
+        Per CLAUDE.md rule 18 (contract-triangle hygiene), the helpers in
+        services/analysis/classification.py are the consumption-site source
+        of truth for framework-aware branching. They must enumerate every
+        value emitted by the assess functions. If a new finding_class value
+        is added (declaration site change) without updating the helpers
+        (consumption-site change), this test catches the drift.
+
+        The 8 declared values (frontend/src/types/analysis.ts:149):
+          ECETOC: not_treatment_related, tr_non_adverse, tr_adaptive,
+                  tr_adverse, equivocal
+          NOEL:   treatment_related, treatment_related_concerning
+                  (+ shared not_treatment_related, equivocal)
+          Pipeline-suppression: not_assessed
+        """
+        from services.analysis.classification import (
+            ADVERSE_CLASSES,
+            TR_NON_ADVERSE_CLASSES,
+            ALL_TR_CLASSES,
+            is_adverse_class,
+            is_treatment_related_class,
+        )
+
+        # Declared vocabulary (mirror of TS union, classification.py emit
+        # paths, and assess_finding_safety_pharm return values).
+        DECLARED = {
+            "not_treatment_related",
+            "tr_non_adverse",
+            "tr_adaptive",
+            "tr_adverse",
+            "equivocal",
+            "treatment_related",
+            "treatment_related_concerning",
+            "not_assessed",
+        }
+
+        # Adverse + non-adverse-but-tr partition (with complement) covers
+        # the declared vocabulary modulo the {equivocal, not_treatment_related,
+        # not_assessed} non-tr complement.
+        non_tr_complement = {"equivocal", "not_treatment_related", "not_assessed"}
+        partition = ALL_TR_CLASSES | non_tr_complement
+        assert partition == DECLARED, (
+            f"finding_class helpers do not partition the declared vocabulary. "
+            f"Missing: {DECLARED - partition}. Extra: {partition - DECLARED}."
+        )
+        assert ADVERSE_CLASSES.isdisjoint(TR_NON_ADVERSE_CLASSES), (
+            "ADVERSE_CLASSES and TR_NON_ADVERSE_CLASSES must be disjoint"
+        )
+
+        # Helper semantics
+        assert is_adverse_class("tr_adverse")
+        assert is_adverse_class("treatment_related_concerning")
+        assert not is_adverse_class("tr_non_adverse")
+        assert not is_adverse_class("treatment_related")
+        assert not is_adverse_class("equivocal")
+        assert not is_adverse_class("not_assessed")
+        assert not is_adverse_class(None)
+
+        assert is_treatment_related_class("tr_adverse")
+        assert is_treatment_related_class("tr_non_adverse")
+        assert is_treatment_related_class("tr_adaptive")
+        assert is_treatment_related_class("treatment_related")
+        assert is_treatment_related_class("treatment_related_concerning")
+        assert not is_treatment_related_class("equivocal")
+        assert not is_treatment_related_class("not_treatment_related")
+        assert not is_treatment_related_class("not_assessed")
+
+    def test_no_finding_class_eq_tr_adverse_in_consumers(self):
+        """Consumer code must use is_adverse_class() not bare `fc == "tr_adverse"`.
+
+        Per CLAUDE.md rule 18 (contract-triangle hygiene), the bare equality
+        check forfeits NOEL framework's `treatment_related_concerning` -- the
+        cross-framework adverse tier. Use is_adverse_class() at consumption
+        sites; emit paths and explicit setters retain the literal.
+
+        Allow-list covers legitimate sites: classification.py (the emit
+        paths themselves), adaptive_trees.py (setter dataclass), and
+        findings_pipeline.py (the severity-promotion comment is now in
+        sync with the helper). See docs/_internal/knowledge/contract-
+        triangles.md `finding_class` triangle for the registry.
+        """
+        import re
+        backend_root = Path(__file__).resolve().parent.parent
+        # Matches `== "tr_adverse"` and `in (..., "tr_adverse", ...)`-style
+        # consumption-site predicates. Conservative — won't catch every
+        # possible drift shape but covers the observed pattern.
+        bare_eq = re.compile(r"""\bfc\s*==\s*["']tr_adverse["']""")
+        finding_class_eq = re.compile(
+            r"""finding_class\s*==\s*["']tr_adverse["']"""
+        )
+        get_finding_class_eq = re.compile(
+            r"""\.get\(\s*["']finding_class["']\s*\)\s*==\s*["']tr_adverse["']"""
+        )
+
+        # Files where literal "tr_adverse" branching is legitimate (emit
+        # paths and setters). Note: consumption-site branches in these files
+        # are still counted -- the file isn't blanket-exempted.
+        ALLOWED_FILES = {
+            # Emit logic (assess functions return literals, plus comment
+            # narrative referencing the literal).
+            "services/analysis/classification.py",
+            # Adaptive-trees: setters that assign classification="tr_adverse"
+            # to dataclass instances. These are emission, not consumption.
+            "services/analysis/adaptive_trees.py",
+            # Override reader: writes finding_class="tr_non_adverse"; comments
+            # may reference tr_adverse for context.
+            "services/analysis/override_reader.py",
+        }
+
+        violations: list[str] = []
+        for root_name in self._SCAN_ROOTS:
+            root = backend_root / root_name
+            if not root.is_dir():
+                continue
+            for py_file in root.rglob("*.py"):
+                rel = py_file.relative_to(backend_root).as_posix()
+                if rel in ALLOWED_FILES:
+                    continue
+                text = py_file.read_text(encoding="utf-8")
+                for lineno, line in enumerate(text.splitlines(), start=1):
+                    stripped = line.lstrip()
+                    if stripped.startswith("#"):
+                        continue
+                    if (
+                        bare_eq.search(line)
+                        or finding_class_eq.search(line)
+                        or get_finding_class_eq.search(line)
+                    ):
+                        violations.append(f"  {rel}:{lineno}: {line.strip()}")
+
+        msg = (
+            "Consumer(s) branch on bare `finding_class == \"tr_adverse\"`. "
+            "Use `is_adverse_class()` from services.analysis.classification "
+            "to fold NOEL `treatment_related_concerning` into the same "
+            "predicate (CLAUDE.md rule 18 contract-triangle hygiene -- "
+            "AUDIT-3). Allow-list in this test covers emit-path files.\n"
+            + "\n".join(violations)
+        )
+        assert not violations, msg
+
     def test_no_bare_threshold_pattern_check_in_runtime_consumers(self):
         """Runtime consumers must not branch on pattern == "threshold".
 
