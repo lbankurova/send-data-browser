@@ -5,7 +5,17 @@ frontend filter engine to evaluate onset_day and recovery_verdict predicates.
 
 Onset days:
   - CL: extracted from raw_subject_onset_days in unified_findings
-  - LB: first day where subject value exceeds 2x control mean (same sex)
+  - LB: cohort-aware hybrid trigger (AUDIT-21):
+      (1) per-subject SD trigger -- direction-aware deviation from control mean
+          by >= LB_SD_MULTIPLIER (val > mean + k*sd for "up", val < mean - k*sd
+          for "down"); preserves per-subject onset granularity for dramatic
+          responders.
+      (2) cohort-significance fallback -- pairwise vs control reaches
+          p_value_adj <= LB_COHORT_P_THRESHOLD AND |effect_size| >=
+          LB_COHORT_EFFECT_THRESHOLD; assigns onset to all observed subjects
+          in that dose group at that day. Closes the per-subject 2x rule's
+          structural blind spot to cohort-level adversity.
+      Earliest day from either trigger wins.
   - MI/MA: sacrifice day as proxy for subjects at affected dose levels
 
 Recovery verdicts:
@@ -28,6 +38,18 @@ from services.xpt_processor import read_xpt
 
 # ── Onset days ────────────────────────────────────────────────
 
+# AUDIT-21 hybrid LB onset thresholds.
+# Per-subject SD trigger (direction-aware): 2 SD ~ 95% CI of control distribution.
+LB_SD_MULTIPLIER = 2.0
+# Cohort-significance gate uses Hedges' g lower CI bound (|g|_lower) rather
+# than p_value_adj. Dunnett's adjustment is conservatively underpowered for
+# small-n cohorts (e.g. dog n=5/group) where a |g|=2.3 effect can score
+# p_adj=0.26 despite the CI lower bound being 1.19. g_lower already
+# incorporates uncertainty, so 0.5 ("reliably at least medium effect" per
+# Cohen's convention) is the regulatory-toxicology interpretation a
+# Dunnett-significant p would also imply, without the n-penalty.
+LB_COHORT_G_LOWER_THRESHOLD = 0.5
+
 
 def build_onset_days(findings: list[dict], ctx_df: pd.DataFrame) -> dict:
     """Build per-subject onset days for CL, LB, and MI/MA domains.
@@ -45,8 +67,8 @@ def build_onset_days(findings: list[dict], ctx_df: pd.DataFrame) -> dict:
     # CL onset: extract from raw_subject_onset_days
     _extract_cl_onset(findings, subjects)
 
-    # LB onset: threshold crossing (2x control mean)
-    _extract_lb_onset(findings, subjects)
+    # LB onset: cohort-aware hybrid (per-subject SD + cohort-significance).
+    _extract_lb_onset(findings, ctx_df, subjects)
 
     # MI/MA onset: sacrifice day proxy
     _extract_mi_ma_onset(findings, ctx_df, subjects)
@@ -86,12 +108,58 @@ def _extract_cl_onset(findings: list[dict], subjects: dict[str, dict[str, int]])
                     subj[key] = day_int
 
 
-def _extract_lb_onset(findings: list[dict], subjects: dict[str, dict[str, int]]) -> None:
-    """Extract LB onset days via threshold crossing (value > 2x control mean)."""
+def _build_subject_dose_map(ctx_df: pd.DataFrame) -> dict[str, int]:
+    """Map USUBJID -> numeric DOSE_GROUP_ORDER from subject_context.
+
+    Excludes TK satellite subjects. Returns empty dict if ctx_df lacks the
+    required columns (legacy test fixtures fall back to per-subject SD trigger
+    only; cohort fallback degrades to no-op).
+    """
+    out: dict[str, int] = {}
+    if ctx_df is None or ctx_df.empty:
+        return out
+    if "USUBJID" not in ctx_df.columns or "DOSE_GROUP_ORDER" not in ctx_df.columns:
+        return out
+    is_tk_col = ctx_df.get("IS_TK") if "IS_TK" in ctx_df.columns else None
+    for idx, row in ctx_df.iterrows():
+        uid = str(row.get("USUBJID", ""))
+        dgo = row.get("DOSE_GROUP_ORDER")
+        if not uid or dgo is None:
+            continue
+        if is_tk_col is not None and bool(is_tk_col.iloc[idx]):
+            continue
+        try:
+            out[uid] = int(dgo)
+        except (ValueError, TypeError):
+            continue
+    return out
+
+
+def _extract_lb_onset(
+    findings: list[dict],
+    ctx_df: pd.DataFrame,
+    subjects: dict[str, dict[str, int]],
+) -> None:
+    """Extract LB onset days via cohort-aware hybrid trigger (AUDIT-21).
+
+    Two triggers, earliest day wins:
+      1. Per-subject SD threshold (direction-aware): val > ctrl_mean +
+         k*ctrl_sd for "up" findings, val < ctrl_mean - k*ctrl_sd for "down".
+      2. Cohort-significance fallback: when a dose level's Hedges' g lower
+         CI bound (|g|_lower) >= 0.5 AND effect-size sign aligns with the
+         finding's cohort direction, assign onset to all observed subjects
+         in that dose group at that day. CI-bound gate (vs Dunnett's
+         p_value_adj) avoids the small-n power penalty that masks dog/rabbit
+         large-effect cohorts.
+
+    Replaces the prior `abs(val) > 2*abs(ctrl_mean)` rule (Stream 6: cohort-
+    blind + direction-blind, 9 SCIENCE-FLAGs across 7 studies / 3 species).
+    """
+    subject_dose = _build_subject_dose_map(ctx_df)
+
     for f in findings:
         if f.get("domain") != "LB":
             continue
-        # Only process adverse or warning findings
         severity = f.get("severity", "")
         if severity not in ("adverse", "warning"):
             continue
@@ -106,25 +174,68 @@ def _extract_lb_onset(findings: list[dict], subjects: dict[str, dict[str, int]])
         except (ValueError, TypeError):
             continue
 
-        # Get control mean from group_stats
-        group_stats = f.get("group_stats", [])
+        direction = f.get("direction") if f.get("direction") in ("up", "down") else "up"
+
+        group_stats = f.get("group_stats") or []
         if not isinstance(group_stats, list):
             continue
 
-        control_mean = None
+        control_mean: float | None = None
+        control_sd: float | None = None
         for gs in group_stats:
-            if gs.get("dose_level") == 0:
-                control_mean = gs.get("mean")
+            if isinstance(gs, dict) and gs.get("dose_level") == 0:
+                m = gs.get("mean")
+                s = gs.get("sd")
+                try:
+                    control_mean = float(m) if m is not None else None
+                except (ValueError, TypeError):
+                    control_mean = None
+                try:
+                    control_sd = float(s) if s is not None else None
+                except (ValueError, TypeError):
+                    control_sd = None
                 break
 
-        if control_mean is None or control_mean == 0:
+        if control_mean is None:
             continue
 
-        threshold = 2.0 * abs(control_mean)
+        # Per-subject SD threshold (direction-aware). Skipped if no control SD.
+        sd_threshold: float | None = None
+        if control_sd is not None and control_sd > 0:
+            if direction == "up":
+                sd_threshold = control_mean + LB_SD_MULTIPLIER * control_sd
+            else:
+                sd_threshold = control_mean - LB_SD_MULTIPLIER * control_sd
 
-        # Check each subject's value
-        raw_subject_values = f.get("raw_subject_values", [])
-        if not raw_subject_values:
+        # Cohort-significance fallback: dose level shows reliably-non-null
+        # effect (|g|_lower CI bound >= threshold) AND effect-size sign aligns
+        # with the cohort direction set by the engine on this finding.
+        cohort_significant_doses: set[int] = set()
+        for pw in f.get("pairwise") or []:
+            if not isinstance(pw, dict):
+                continue
+            dl = pw.get("dose_level")
+            if not isinstance(dl, int) or dl == 0:
+                continue
+            es = pw.get("effect_size")
+            g_lower = pw.get("g_lower")
+            try:
+                es_f = float(es) if es is not None else None
+                gl_f = float(g_lower) if g_lower is not None else None
+            except (ValueError, TypeError):
+                continue
+            if es_f is None or gl_f is None:
+                continue
+            if gl_f < LB_COHORT_G_LOWER_THRESHOLD:
+                continue
+            # Sign agreement with cohort direction (drop opposite-sign doses).
+            if direction == "up" and es_f > 0:
+                cohort_significant_doses.add(dl)
+            elif direction == "down" and es_f < 0:
+                cohort_significant_doses.add(dl)
+
+        raw_subject_values = f.get("raw_subject_values") or []
+        if not isinstance(raw_subject_values, list):
             continue
 
         key = f"LB:{test_code}"
@@ -133,13 +244,28 @@ def _extract_lb_onset(findings: list[dict], subjects: dict[str, dict[str, int]])
             if not isinstance(entry, dict):
                 continue
             for usubjid, value in entry.items():
-                try:
-                    val = float(value)
-                except (ValueError, TypeError):
-                    continue
-                if abs(val) > threshold:
+                trigger = False
+
+                # Trigger 1: per-subject SD threshold (direction-aware)
+                if sd_threshold is not None and value is not None:
+                    try:
+                        val = float(value)
+                    except (ValueError, TypeError):
+                        val = None
+                    if val is not None:
+                        if direction == "up" and val > sd_threshold:
+                            trigger = True
+                        elif direction == "down" and val < sd_threshold:
+                            trigger = True
+
+                # Trigger 2: cohort-significance fallback
+                if not trigger and cohort_significant_doses:
+                    dl = subject_dose.get(usubjid)
+                    if dl is not None and dl in cohort_significant_doses:
+                        trigger = True
+
+                if trigger:
                     subj = subjects.setdefault(usubjid, {})
-                    # Keep earliest onset day
                     if key not in subj or day_int < subj[key]:
                         subj[key] = day_int
 

@@ -1,28 +1,28 @@
 # Validation Summary
 
-**Engine:** commit `8f393302` (2026-05-01)
-**Generated:** 2026-05-01T19:42:21.353Z
+**Engine:** commit `b49913b9` (2026-05-01)
+**Generated:** 2026-05-01T21:00:20.886Z
 
 | Study | Origin | Signals | Design | Assertions | Notes |
 |-------|--------|---------|--------|------------|-------|
 | CBER-POC-Pilot-Study1-Vaccine_xpt_only | synthetic | -- | 6/6 | 9/10 |  |
 | CBER-POC-Pilot-Study2-Vaccine_xpt | synthetic | 10/10 | 5/5 | 3/8 |  |
 | CBER-POC-Pilot-Study3-Gene-Therapy | synthetic | -- | 5/5 | 9/10 |  |
-| CBER-POC-Pilot-Study4-Vaccine | synthetic | 11/11 | 5/5 | 6/12 |  |
+| CBER-POC-Pilot-Study4-Vaccine | synthetic | 11/11 | 5/5 | 7/12 |  |
 | CBER-POC-Pilot-Study5 | synthetic | 6/7 | 5/5 | 6/8 | 1 class note(s), MISSED |
 | CJ16050-xptonly | synthetic | 6/6 | 5/5 | 5/7 |  |
 | CJUGSEND00 | synthetic | 2/2 | 6/6 | 4/6 |  |
 | FFU-Contribution-to-FDA | real | -- | 5/5 | 5/5 |  |
-| instem | synthetic | -- | 5/5 | 10/14 |  |
+| instem | synthetic | -- | 4/5 | 9/14 | MISMATCH |
 | Nimble | synthetic | -- | 5/5 | 6/7 |  |
-| PDS | synthetic | -- | 5/5 | 9/13 |  |
-| PointCross | synthetic | 12/13 | 7/7 | 14/19 | MISSED |
-| TOXSCI-24-0062--35449 1 month dog- Compound B-xpt | real | -- | 5/5 | 9/10 |  |
-| TOXSCI-24-0062--43066 1 month dog- Compound A-xpt | real | -- | 5/5 | 8/13 |  |
+| PDS | synthetic | -- | 5/5 | 10/13 |  |
+| PointCross | synthetic | 12/13 | 6/7 | 15/19 | MISMATCH, MISSED |
+| TOXSCI-24-0062--35449 1 month dog- Compound B-xpt | real | -- | 5/5 | 10/10 |  |
+| TOXSCI-24-0062--43066 1 month dog- Compound A-xpt | real | -- | 5/5 | 10/13 |  |
 | TOXSCI-24-0062--87497 1 month rat- Compound B-xpt | real | -- | 4/5 | 6/10 | MISMATCH |
-| TOXSCI-24-0062--96298 1 month rat- Compound A xpt | real | -- | 5/5 | 9/11 |  |
+| TOXSCI-24-0062--96298 1 month rat- Compound A xpt | real | -- | 5/5 | 10/11 |  |
 
-**Totals:** 47/49 signals detected, 83/84 design matched, 118/163 assertions passed
+**Totals:** 47/49 signals detected, 81/84 design matched, 124/163 assertions passed
 
 ## Missed Signals
 
@@ -35,6 +35,8 @@
 
 | Study | Dimension | Expected | Actual |
 |-------|-----------|----------|--------|
+| instem | NOAEL (Combined) | Not established | dose_level 1 |
+| PointCross | NOAEL (Combined) | Not established | dose_level 1 |
 | TOXSCI-24-0062--87497 1 month rat- Compound B-xpt | NOAEL (Combined) | dose_level 1 | Not established |
 
 ## Classification Notes

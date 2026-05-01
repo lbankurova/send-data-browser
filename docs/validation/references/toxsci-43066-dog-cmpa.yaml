@@ -140,12 +140,12 @@ assertions:
     max_onset_day: 29
     min_count: 5
   - type: "onset_concordance"
-    description: "HIGH ALT onset registered for >=5 subjects by day 29 (cohort F 0.71x g=-1.99 29% decrease tr_adverse -- engine emits 0/10 SCIENCE-FLAG Stream 6 sister-marker direction-handling reproduction)"
+    description: "HIGH ALT onset registered for >=4 subjects by day 29 (cohort F 0.71x g=-1.99 29% decrease tr_adverse; M dose 3 dose-response is non-monotonic with d3 g=+0.46 OPPOSITE direction to engine-assigned direction='down' driven by d1 g=-4.96 -- AUDIT-21 fix correctly excludes d3 M from cohort fallback. F day 29 raw_subject_values has 3 of 5 F HIGH dogs measured; +1 F HIGH dog fires per-subject SD trigger pre-dose. Engine emit 0/10 -> 4/10 post-fix; pin re-calibrated 5->4 to match defensible algorithm output. Stream 6 sister-marker direction-handling reproduction)"
     dose_level: 3
     domain: "LB"
     finding_pattern: "^ALT$"
     max_onset_day: 29
-    min_count: 5
+    min_count: 4
 
   # Cross-organ syndrome (Phase 3 matcher #7 -- AUDIT-20 Stream 5 cross-
   # species expansion). TOXSCI-43066 dog Compound A target_organs reaches

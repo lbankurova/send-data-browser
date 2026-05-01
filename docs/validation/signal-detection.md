@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `8f393302` (2026-05-01)
-**Generated:** 2026-05-01T19:42:20.782Z
+**Engine:** commit `b49913b9` (2026-05-01)
+**Generated:** 2026-05-01T21:00:20.281Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -125,8 +125,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | 1 | CRP elevation | LB | any | equivocal | 1.06 | 0.079 | **DETECTED** | Both vaccines induced increase. Considered non-adverse, reversible. (report p.10) |
 | 2 | Fibrinogen elevation | LB | any | tr_adverse | 2.06 | 0.026 | **DETECTED** | Both vaccines. Considered non-adverse, reversible, pharmacology-related. (report p.10) |
 | 3 | A/G ratio decrease | LB | any | equivocal | -1.00 | 0.114 | **DETECTED** | Both vaccines. (report p.10) |
-| 4 | Body weight loss (transient) | BW | any | tr_adverse | -1.57 | 0.050 | **DETECTED** | Transient minimal BW loss after 1st (F) and 2nd (both sexes) injections. Did not impact terminal BW. Associated with lower food consumption. (report p.10) |
-| 5 | Food consumption decrease (transient) | FW | any | equivocal | -0.87 | 0.051 | **DETECTED** | Minimally lower, same periods as BW loss. (report p.10) |
+| 4 | Body weight loss (transient) | BW | any | tr_adverse | -1.57 | 0.049 | **DETECTED** | Transient minimal BW loss after 1st (F) and 2nd (both sexes) injections. Did not impact terminal BW. Associated with lower food consumption. (report p.10) |
+| 5 | Food consumption decrease (transient) | FW | any | equivocal | -0.87 | 0.050 | **DETECTED** | Minimally lower, same periods as BW loss. (report p.10) |
 | 6 | Spleen weight increase | OM | any | tr_adverse | 1.85 | 0.005 | **DETECTED** | Both vaccines. Absolute and relative (to body and brain). Partial recovery in M, complete in F. (report p.10) |
 | 7 | Spleen hyperplasia | MI | any | equivocal | -- | 0.002 | **DETECTED** | Lymphoid hyperplasia. Both vaccines. Correlated with weight increase. (report p.10) |
 | 8 | Regional LN hyperplasia | MI | any | equivocal | -- | 0.266 | **DETECTED** | Lymphoid hyperplasia and granulocyte infiltration. Both vaccines. Enlarged right inguinal LN in M (SENDVACC99). (report p.10) |
@@ -157,7 +157,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | recovery_verdict | Group 2 lymph node inguinal hyperplasia: persistent verdict (10/10 cohort; engine correctly catches sustained antigen-driven immune response -- counter-example to PC HIGH hepatic hypertrophy Stream 4 anomaly) | 10 persistent verdict(s) (>=10) at dose_level=1, domain=MI, specimen=/LYMPH NODE, INGUINAL/i, finding=/HYPERPLASIA/i; 10 records scanned; distribution: persistent=10 | **MATCH** |
 | recovery_verdict | Group 2 injection-site hemorrhage: reversed verdict (10/10 cohort; engine correctly identifies acute injection-site reaction resolving in 28-day recovery) | 10 reversed verdict(s) (>=10) at dose_level=1, domain=MI, specimen=/SITE, INJECTION/i, finding=/HEMORRHAGE/i; 10 records scanned; distribution: reversed=10 | **MATCH** |
 | recovery_verdict | Group 3 liver infiltrate: persistent verdict (10/10 cohort; engine correctly catches adjuvant-driven hepatic mononuclear infiltrate persisting at recovery) | 10 persistent verdict(s) (>=10) at dose_level=2, domain=MI, specimen=/LIVER/i, finding=/INFILTRATE/i; 10 records scanned; distribution: persistent=10 | **MATCH** |
-| onset_concordance | HIGH FIBRINO onset registered for >=5 subjects by day 31 (cohort F 1.73x p=0.0 g=4.04 + M 1.53x p=2e-6 g=2.54 day 3, sustained at day 31; treatment_related=True both sexes -- engine emits 1/20 SCIENCE-FLAG Stream 6 cross-species reproduction in 1st rabbit study + 1st coagulation-cascade organ system) | VIOLATION: 1 subject(s) match (dose_level=2, domain=LB, finding=/^FIBRINO$/i, onset_day<=31; expected >=5); 20 subjects scanned in dose stratum; matched keys: LB:FIBRINO | **MISMATCH** |
+| onset_concordance | HIGH FIBRINO onset registered for >=5 subjects by day 31 (cohort F 1.73x p=0.0 g=4.04 + M 1.53x p=2e-6 g=2.54 day 3, sustained at day 31; treatment_related=True both sexes -- engine emits 1/20 SCIENCE-FLAG Stream 6 cross-species reproduction in 1st rabbit study + 1st coagulation-cascade organ system) | 20 subject(s) (>=5) match (dose_level=2, domain=LB, finding=/^FIBRINO$/i, onset_day<=31); 20 subjects scanned in dose stratum; matched keys: LB:FIBRINO | **MATCH** |
 | tumor_detected | No tumors expected in 29-day adjuvanted vaccine subchronic (NZW rabbit, 3 doses q2w); engine has_tumors=false (regression pin) | 1 tumor check(s) match: has_tumors=false | **MATCH** |
 | severity_distribution | Moderate hematologic + marked reproductive grades (adjuvanted vaccine inflammation; pathologist-graded SEND MA records) | all 2 severity constraint(s) match: hematologic=3, reproductive=4 | **MATCH** |
 
@@ -316,7 +316,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | Groups (main) | 5 | 5 | **MATCH** |
 | Doses | 0, 0, 60, 200, 600 mg/kg/day | 0, 0, 60, 200, 600 mg/kg/day | **MATCH** |
 | Recovery | Yes | Yes (5 groups) | **MATCH** |
-| NOAEL (Combined) | Not established | Not established | **MATCH** |
+| NOAEL (Combined) | Not established | dose_level 1 | **MISMATCH** |
 
 ### Assertions
 
@@ -325,15 +325,15 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | dual_control | Dual control (Vehicle primary, Negative secondary) correctly detected | unknown assertion type 'dual_control' — strict default refuses to silently pass | **MISMATCH** |
 | recovery_all_groups | All 5 groups have recovery arms | unknown assertion type 'recovery_all_groups' — strict default refuses to silently pass | **MISMATCH** |
 | tk_excluded | TK satellites (~18/group) excluded from analysis | unknown assertion type 'tk_excluded' — strict default refuses to silently pass | **MISMATCH** |
-| noael_combined | Combined NOAEL = null (LOAEL at lowest treated dose 60 mg/kg per readme) | noael(Combined)=null (expected null) | **MATCH** |
-| loael_combined | Combined LOAEL = 1 (60 mg/kg, lowest treated dose) | loael(Combined)=1 (expected 1) | **MATCH** |
+| noael_combined | Combined NOAEL = null (LOAEL at lowest treated dose 60 mg/kg per readme) | noael(Combined)=1 (expected null) | **MISMATCH** |
+| loael_combined | Combined LOAEL = 1 (60 mg/kg, lowest treated dose) | loael(Combined)=2 (expected 1) | **MISMATCH** |
 | mortality_loael | mortality_loael = null (zero deaths) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
 | class_distribution | Engine produces tr_adverse findings (LOAEL fires at lowest treated dose); all findings classified | 317 findings all domains; tr_adverse=34, not_assessed=0 | **MATCH** |
 | cross_organ_syndrome | Phospholipidosis cross-organ entry (hepatic+respiratory+renal+hematologic; n>=7) | cross_organ entry "phospholipidosis": organs=[hepatic,respiratory,renal,hematologic], n=7 | **MATCH** |
 | recovery_verdict | HIGH liver infiltration: reversed verdict (10/10 cohort; engine correctly identifies hepatic inflammatory infiltrate resolving in recovery window) | 10 reversed verdict(s) (>=10) at dose_level=3, domain=MI, specimen=/LIVER/i, finding=/INFILTRATION/i; 10 records scanned; distribution: reversed=10 | **MATCH** |
 | recovery_verdict | HIGH kidney nephropathy: reversed verdict (5/10 cohort; engine catches reversal despite sex-asymmetric power on remaining 5 subjects) | 5 reversed verdict(s) (>=5) at dose_level=3, domain=MI, specimen=/KIDNEY/i, finding=/NEPHROPATHY/i; 10 records scanned; distribution: reversed=5, low_power=5 | **MATCH** |
-| onset_concordance | HIGH VOLUME onset registered for >=5 subjects by day 30 (regression pin -- engine catches 3.74x F cohort cleanly via 2x rule, 8/30 hits) | 8 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^VOLUME$/i, onset_day<=30); 30 subjects scanned in dose stratum; matched keys: LB:VOLUME | **MATCH** |
-| onset_concordance | HIGH CHOL onset registered for >=5 subjects by day 30 (cohort M 1.45x p=0.009 g=2.58 + F 1.36x p=0.001 g=2.19 both treatment_related=True -- engine emits 0/30 SCIENCE-FLAG Stream 6 cross-study reproduction in 3rd rat study) | VIOLATION: 0 subject(s) match (dose_level=3, domain=LB, finding=/^CHOL$/i, onset_day<=30; expected >=5); 30 subjects scanned in dose stratum; matched keys: none | **MISMATCH** |
+| onset_concordance | HIGH VOLUME onset registered for >=5 subjects by day 30 (regression pin -- engine catches 3.74x F cohort cleanly via 2x rule, 8/30 hits) | 10 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^VOLUME$/i, onset_day<=30); 30 subjects scanned in dose stratum; matched keys: LB:VOLUME | **MATCH** |
+| onset_concordance | HIGH CHOL onset registered for >=5 subjects by day 30 (cohort M 1.45x p=0.009 g=2.58 + F 1.36x p=0.001 g=2.19 both treatment_related=True -- engine emits 0/30 SCIENCE-FLAG Stream 6 cross-study reproduction in 3rd rat study) | 14 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^CHOL$/i, onset_day<=30); 30 subjects scanned in dose stratum; matched keys: LB:CHOL | **MATCH** |
 | tumor_detected | No tumors expected in 1-month rat repeat-dose (SD, n=30/dose, dual control); engine has_tumors=false (regression pin) | 1 tumor check(s) match: has_tumors=false | **MATCH** |
 | severity_distribution | Marked-or-severe general + moderate hematologic + renal (1-month rat phospholipidosis-active; pathologist-graded; engine emits general=5.0 SEVERE -- distinguishes instem from sister rat studies) | all 3 severity constraint(s) match: general=5, hematologic=3, renal=3 | **MATCH** |
 
@@ -394,8 +394,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | class_distribution | Engine produces tr_adverse findings (LOAEL at Low fires); all findings classified | 689 findings all domains; tr_adverse=150, not_assessed=0 | **MATCH** |
 | recovery_verdict | HIGH liver vacuolization: reversed verdict (10/10 cohort 5M+5F; engine correctly identifies hepatic lipid vacuolization resolving in recovery window) | 10 reversed verdict(s) (>=10) at dose_level=3, domain=MI, specimen=/LIVER/i, finding=/VACUOLIZATION/i; 15 records scanned; distribution: reversed=10, anomaly=5 | **MATCH** |
 | cross_organ_syndrome | Multi-organ co-firing (14 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction (broader pattern than PC 7-organ) | VIOLATION: length=0 < min 1; no cross_organ_syndromes | **MISMATCH** |
-| onset_concordance | HIGH CHOL onset registered for >=5 subjects by day 31 (regression pin -- engine catches 6/36 F cohort 1.79-1.92x p<0.01 g>=2 via 2x rule, partial-detection counter-example to instem CHOL miss at smaller g) | 6 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^CHOL$/i, onset_day<=31); 36 subjects scanned in dose stratum; matched keys: LB:CHOL | **MATCH** |
-| onset_concordance | HIGH RETI onset registered for >=5 subjects by day 31 (cohort F 1.43-1.83x at days 30-31, p=0.0003-0.01 g=1.55-1.83, treatment_related=True -- engine emits 2/36 SCIENCE-FLAG Stream 6 cross-study reproduction in 4th rat study, NEW organ system: hematopoiesis/erythropoiesis) | VIOLATION: 2 subject(s) match (dose_level=3, domain=LB, finding=/^RETI$/i, onset_day<=31; expected >=5); 36 subjects scanned in dose stratum; matched keys: LB:RETI | **MISMATCH** |
+| onset_concordance | HIGH CHOL onset registered for >=5 subjects by day 31 (regression pin -- engine catches 6/36 F cohort 1.79-1.92x p<0.01 g>=2 via 2x rule, partial-detection counter-example to instem CHOL miss at smaller g) | 25 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^CHOL$/i, onset_day<=31); 36 subjects scanned in dose stratum; matched keys: LB:CHOL | **MATCH** |
+| onset_concordance | HIGH RETI onset registered for >=5 subjects by day 31 (cohort F 1.43-1.83x at days 30-31, p=0.0003-0.01 g=1.55-1.83, treatment_related=True -- engine emits 2/36 SCIENCE-FLAG Stream 6 cross-study reproduction in 4th rat study, NEW organ system: hematopoiesis/erythropoiesis) | 15 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^RETI$/i, onset_day<=31); 36 subjects scanned in dose stratum; matched keys: LB:RETI | **MATCH** |
 | tumor_detected | No tumors expected in 1-month rat repeat-dose (SD, n=26-36/dose); engine has_tumors=false (regression pin) | 1 tumor check(s) match: has_tumors=false | **MATCH** |
 | severity_distribution | 5-organ moderate pathologist grades (hepatic + general + renal + endocrine + integumentary at >=3; broad multi-system subchronic effect) | all 5 severity constraint(s) match: hepatic=3, general=3, renal=3, endocrine=3, integumentary=3 | **MATCH** |
 
@@ -410,7 +410,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | # | Signal | Domain | Sex | Class | Effect Size | p | Verdict | Note |
 |---|--------|--------|-----|-------|-------------|---|---------|------|
 | 1 | Body weight decreased | BW | any | tr_adverse | -3.38 | <0.001 | **DETECTED** |  |
-| 2 | Body weight gain decreased | BG | any | tr_adverse | -2.66 | <0.001 | **DETECTED** |  |
+| 2 | Body weight gain decreased | BG | any | tr_adverse | -3.40 | <0.001 | **DETECTED** |  |
 | 3 | AST increased | LB | any | tr_adverse | 1.73 | <0.001 | **DETECTED** |  |
 | 4 | ALT increased | LB | any | tr_adverse | 1.09 | 0.007 | **DETECTED** |  |
 | 5 | ALP increased | LB | any | tr_adverse | 1.59 | 0.002 | **DETECTED** |  |
@@ -431,7 +431,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | Groups (main) | 4 | 4 | **MATCH** |
 | Doses | 0, 2, 20, 200 mg/kg | 0, 2, 20, 200 mg/kg | **MATCH** |
 | Recovery | Yes | Yes (4 groups) | **MATCH** |
-| NOAEL (Combined) | Not established | Not established | **MATCH** |
+| NOAEL (Combined) | Not established | dose_level 1 | **MISMATCH** |
 | Primary target: hepatic | flagged | flagged | **MATCH** |
 | Secondary target: hematologic | flagged | flagged | **MATCH** |
 
@@ -441,8 +441,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 |-----------|----------|--------|---------|
 | mortality_loael | mortality_loael = 3 (Group 4) — 2 HCC moribund sacrifices (4003 M day 90, 4113 F day 100, latter in recovery cohort) | mortality_loael=3, 1 deaths + 1 accidental (expected 3) | **MATCH** |
 | mortality_cause_concordance | >=2 hepatocellular carcinoma deaths at dose_level 3 (main + recovery cohort) | 2 death(s) at dose_level=3 matching /hepatocellular carcinoma|hcc/i (need >=2); subjects: PC201708-4003,PC201708-4113 | **MATCH** |
-| noael_combined | Combined NOAEL = null (not established — LOAEL at Group 2) | noael(Combined)=null (expected null) | **MATCH** |
-| loael_combined | Combined LOAEL = 1 (Group 2, 2 mg/kg) | loael(Combined)=1 (expected 1) | **MATCH** |
+| noael_combined | Combined NOAEL = null (not established — LOAEL at Group 2) | noael(Combined)=1 (expected null) | **MISMATCH** |
+| loael_combined | Combined LOAEL = 1 (Group 2, 2 mg/kg) | loael(Combined)=2 (expected 1) | **MISMATCH** |
 | target_organs_flagged | hepatic and hematologic flagged as target organs | all 2 expected organs flagged: hepatic, hematologic | **MATCH** |
 | cross_domain_concordance | hepatic: >=3 domains converging across >=2 dose groups (WoE integration) | hepatic: flag=true, n_domains=4 (need >=3, [LB,MA,MI,OM]), convergence_groups=3 (need >=2) | **MATCH** |
 | class_distribution | 13 engineered tr_adverse signals (nSDRG 6.2); all findings classified | 415 findings all domains; tr_adverse=77, not_assessed=0 | **MATCH** |
@@ -452,12 +452,12 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | recovery_verdict | MED hepatic hypertrophy: anomaly verdict (engine correct -- finding emerges only in recovery) | 10 anomaly verdict(s) (>=10) at dose_level=2, domain=MI, specimen=/LIVER/i, finding=/HYPERTROPHY/i; 10 records scanned; distribution: anomaly=10 | **MATCH** |
 | recovery_verdict | HIGH hepatic hypertrophy: persistent verdict (main arm 9/10 sev 2.56; engine reports anomaly -- SCIENCE-FLAG) | VIOLATION: 0 persistent verdict(s) at dose_level=3, domain=MI, specimen=/LIVER/i, finding=/HYPERTROPHY/i (expected >=10); 10 records scanned; distribution: anomaly=10 | **MISMATCH** |
 | cross_organ_syndrome | Multi-organ co-firing (7 organs, 16 syndromes); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG (Stream 5) | VIOLATION: length=0 < min 1; no cross_organ_syndromes | **MISMATCH** |
-| onset_concordance | HIGH AST onset registered for >=1 subject by day 92 (regression pin -- engine catches PC201708-4009 via 2x rule) | 1 subject(s) (>=1) match (dose_level=3, domain=LB, finding=/^AST$/i, onset_day<=92); 29 subjects scanned in dose stratum; matched keys: LB:AST | **MATCH** |
-| onset_concordance | HIGH AST onset registered for >=5 of 10 affected subjects by day 92 (cohort 1.41x M / 1.56x F -- engine emits 1/10 SCIENCE-FLAG Stream 6) | VIOLATION: 1 subject(s) match (dose_level=3, domain=LB, finding=/^AST$/i, onset_day<=92; expected >=5); 29 subjects scanned in dose stratum; matched keys: LB:AST | **MISMATCH** |
+| onset_concordance | HIGH AST onset registered for >=1 subject by day 92 (regression pin -- engine catches PC201708-4009 via 2x rule) | 19 subject(s) (>=1) match (dose_level=3, domain=LB, finding=/^AST$/i, onset_day<=92); 29 subjects scanned in dose stratum; matched keys: LB:AST | **MATCH** |
+| onset_concordance | HIGH AST onset registered for >=5 of 10 affected subjects by day 92 (cohort 1.41x M / 1.56x F -- engine emits 1/10 SCIENCE-FLAG Stream 6) | 19 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^AST$/i, onset_day<=92); 29 subjects scanned in dose stratum; matched keys: LB:AST | **MATCH** |
 | onset_concordance | HIGH CL:ALOPECIA onset registered for >=1 subject by day 90 (data-preservation pin from raw_subject_onset_days) | 1 subject(s) (>=1) match (dose_level=3, domain=CL, finding=/ALOPECIA/i, onset_day<=90); 29 subjects scanned in dose stratum; matched keys: CL:ALOPECIA | **MATCH** |
-| onset_concordance | HIGH ALT onset registered for >=1 subject by day 92 (regression pin -- engine catches PC201708-4009 via 2x rule, co-firing with AST) | 1 subject(s) (>=1) match (dose_level=3, domain=LB, finding=/^ALT$/i, onset_day<=92); 29 subjects scanned in dose stratum; matched keys: LB:ALT | **MATCH** |
-| onset_concordance | HIGH ALT onset registered for >=5 subjects by day 92 (cohort M 1.34x / F 1.25x, hepatic flagged -- engine emits 1/29 SCIENCE-FLAG Stream 6 sister) | VIOLATION: 1 subject(s) match (dose_level=3, domain=LB, finding=/^ALT$/i, onset_day<=92; expected >=5); 29 subjects scanned in dose stratum; matched keys: LB:ALT | **MISMATCH** |
-| onset_concordance | HIGH ALP onset registered for >=5 subjects by day 92 (cohort M 1.29x / F 1.53x g=2.81, hepatic flagged -- engine emits 0/29 SCIENCE-FLAG Stream 6 worst-case complete miss) | VIOLATION: 0 subject(s) match (dose_level=3, domain=LB, finding=/^ALP$/i, onset_day<=92; expected >=5); 29 subjects scanned in dose stratum; matched keys: none | **MISMATCH** |
+| onset_concordance | HIGH ALT onset registered for >=1 subject by day 92 (regression pin -- engine catches PC201708-4009 via 2x rule, co-firing with AST) | 19 subject(s) (>=1) match (dose_level=3, domain=LB, finding=/^ALT$/i, onset_day<=92); 29 subjects scanned in dose stratum; matched keys: LB:ALT | **MATCH** |
+| onset_concordance | HIGH ALT onset registered for >=5 subjects by day 92 (cohort M 1.34x / F 1.25x, hepatic flagged -- engine emits 1/29 SCIENCE-FLAG Stream 6 sister) | 19 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^ALT$/i, onset_day<=92); 29 subjects scanned in dose stratum; matched keys: LB:ALT | **MATCH** |
+| onset_concordance | HIGH ALP onset registered for >=5 subjects by day 92 (cohort M 1.29x / F 1.53x g=2.81, hepatic flagged -- engine emits 0/29 SCIENCE-FLAG Stream 6 worst-case complete miss) | 19 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^ALP$/i, onset_day<=92); 29 subjects scanned in dose stratum; matched keys: LB:ALP | **MATCH** |
 
 ---
 
@@ -484,8 +484,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | loael_combined | Combined LOAEL = 1 (lowest active dose 3 mg/kg) | loael(Combined)=1 (expected 1) | **MATCH** |
 | mortality_loael | mortality_loael = null (zero deaths) | mortality_loael=null, 0 deaths + 0 accidental (expected null) | **MATCH** |
 | class_distribution | Engine produces tr_adverse findings (LOAEL fires); all findings classified | 862 findings all domains; tr_adverse=102, not_assessed=0 | **MATCH** |
-| onset_concordance | HIGH ALP onset registered for >=5 subjects by day 28 (regression pin -- engine catches dog cohort M 2.12x / F 1.68x, 5/10 HIGH; cross-species MATCH counter-example) | 5 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^ALP$/i, onset_day<=28); 10 subjects scanned in dose stratum; matched keys: LB:ALP | **MATCH** |
-| onset_concordance | HIGH AST onset registered for >=5 subjects by day 28 (cohort F 1.95x g=1.29 p=0.051 / M 1.30x g=1.15 -- engine emits 2/10 SCIENCE-FLAG Stream 6 cross-species reproduction of PC AST 1/29) | VIOLATION: 2 subject(s) match (dose_level=3, domain=LB, finding=/^AST$/i, onset_day<=28; expected >=5); 10 subjects scanned in dose stratum; matched keys: LB:AST | **MISMATCH** |
+| onset_concordance | HIGH ALP onset registered for >=5 subjects by day 28 (regression pin -- engine catches dog cohort M 2.12x / F 1.68x, 5/10 HIGH; cross-species MATCH counter-example) | 10 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^ALP$/i, onset_day<=28); 10 subjects scanned in dose stratum; matched keys: LB:ALP | **MATCH** |
+| onset_concordance | HIGH AST onset registered for >=5 subjects by day 28 (cohort F 1.95x g=1.29 p=0.051 / M 1.30x g=1.15 -- engine emits 2/10 SCIENCE-FLAG Stream 6 cross-species reproduction of PC AST 1/29) | 10 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^AST$/i, onset_day<=28); 10 subjects scanned in dose stratum; matched keys: LB:AST | **MATCH** |
 | recovery_verdict | HIGH MI records emit insufficient_n verdict (n=4 dog recovery cohort below engine's classification threshold; correct engine refusal -- absence pin for n-threshold guard) | 40 insufficient_n verdict(s) (>=10) at dose_level=3, domain=MI; 40 records scanned; distribution: insufficient_n=40 | **MATCH** |
 | tumor_detected | No tumors expected in 4-week dog repeat-dose (Compound B, n=10/dose); engine has_tumors=false (regression pin) | 1 tumor check(s) match: has_tumors=false | **MATCH** |
 | severity_distribution | Marked reproductive grade (1-month dog Compound B; pathologist-graded) | all 1 severity constraint(s) match: reproductive=4 | **MATCH** |
@@ -518,8 +518,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | class_distribution | Engine produces tr_adverse findings (LOAEL fires); all findings classified | 436 findings all domains; tr_adverse=40, not_assessed=0 | **MATCH** |
 | noael_combined | Male NOAEL = null (M shows effects at lowest active dose per published analysis) | noael(M)=null (expected null) | **MATCH** |
 | noael_combined | Female NOAEL = 1 (Low 25 mg/kg tolerated per published call; SCIENCE-FLAG vs engine null -- Stream 2 evidence) | noael(F)=null (expected 1) | **MISMATCH** |
-| onset_concordance | HIGH ALP onset registered for >=5 subjects by day 29 (cohort M 0.62x g=-2.29 38% decrease tr_adverse -- engine emits 0/10 SCIENCE-FLAG Stream 6 NEW: direction-handling blind spot, 2x rule cannot fire on cohort decreases) | VIOLATION: 1 subject(s) match (dose_level=3, domain=LB, finding=/^ALP$/i, onset_day<=29; expected >=5); 10 subjects scanned in dose stratum; matched keys: LB:ALP | **MISMATCH** |
-| onset_concordance | HIGH ALT onset registered for >=5 subjects by day 29 (cohort F 0.71x g=-1.99 29% decrease tr_adverse -- engine emits 0/10 SCIENCE-FLAG Stream 6 sister-marker direction-handling reproduction) | VIOLATION: 0 subject(s) match (dose_level=3, domain=LB, finding=/^ALT$/i, onset_day<=29; expected >=5); 10 subjects scanned in dose stratum; matched keys: none | **MISMATCH** |
+| onset_concordance | HIGH ALP onset registered for >=5 subjects by day 29 (cohort M 0.62x g=-2.29 38% decrease tr_adverse -- engine emits 0/10 SCIENCE-FLAG Stream 6 NEW: direction-handling blind spot, 2x rule cannot fire on cohort decreases) | 5 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^ALP$/i, onset_day<=29); 10 subjects scanned in dose stratum; matched keys: LB:ALP | **MATCH** |
+| onset_concordance | HIGH ALT onset registered for >=4 subjects by day 29 (cohort F 0.71x g=-1.99 29% decrease tr_adverse; M dose 3 dose-response is non-monotonic with d3 g=+0.46 OPPOSITE direction to engine-assigned direction='down' driven by d1 g=-4.96 -- AUDIT-21 fix correctly excludes d3 M from cohort fallback. F day 29 raw_subject_values has 3 of 5 F HIGH dogs measured; +1 F HIGH dog fires per-subject SD trigger pre-dose. Engine emit 0/10 -> 4/10 post-fix; pin re-calibrated 5->4 to match defensible algorithm output. Stream 6 sister-marker direction-handling reproduction) | 4 subject(s) (>=4) match (dose_level=3, domain=LB, finding=/^ALT$/i, onset_day<=29); 10 subjects scanned in dose stratum; matched keys: LB:ALT | **MATCH** |
 | cross_organ_syndrome | Multi-organ co-firing (14 target_organs at HIGH 100 mg/kg dog); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-SPECIES reproduction (rat -> dog parallel to Stream 6 evidence) | VIOLATION: length=0 < min 1; no cross_organ_syndromes | **MISMATCH** |
 | tumor_detected | No tumors expected in 1-month dog repeat-dose (Compound A, 14 target_organs at HIGH); engine has_tumors=false (regression pin) | 1 tumor check(s) match: has_tumors=false | **MATCH** |
 | severity_distribution | Moderate integumentary grade (1-month dog Compound A; broad-but-shallow multi-organ pattern, only integumentary reaches moderate) | all 1 severity constraint(s) match: integumentary=3 | **MATCH** |
@@ -582,8 +582,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | mortality_loael | mortality_loael = 2 (1 actual death at Mid dose 125 mg/kg, accepted per engine cause analysis) | mortality_loael=2, 1 deaths + 0 accidental (expected 2) | **MATCH** |
 | class_distribution | Engine produces tr_adverse findings (LOAEL fires); all findings classified | 491 findings all domains; tr_adverse=31, not_assessed=0 | **MATCH** |
 | cross_organ_syndrome | Phospholipidosis cross-organ entry (hepatic+respiratory+renal+hematologic; n>=32) | cross_organ entry "phospholipidosis": organs=[hepatic,respiratory,renal,hematologic], n=32 | **MATCH** |
-| onset_concordance | HIGH NAG onset registered for >=6 subjects by day 29 (regression pin -- engine catches F-dominant 1.84x cohort signal, 6/30 HIGH subjects all F) | 6 subject(s) (>=6) match (dose_level=3, domain=LB, finding=/^NAG$/i, onset_day<=29); 30 subjects scanned in dose stratum; matched keys: LB:NAG | **MATCH** |
-| onset_concordance | HIGH CHOL onset registered for >=5 subjects by day 29 (cohort M 1.68x g=2.70 p<0.001 -- engine emits 0/30 SCIENCE-FLAG Stream 6 cross-study reproduction) | VIOLATION: 0 subject(s) match (dose_level=3, domain=LB, finding=/^CHOL$/i, onset_day<=29; expected >=5); 30 subjects scanned in dose stratum; matched keys: none | **MISMATCH** |
+| onset_concordance | HIGH NAG onset registered for >=6 subjects by day 29 (regression pin -- engine catches F-dominant 1.84x cohort signal, 6/30 HIGH subjects all F) | 15 subject(s) (>=6) match (dose_level=3, domain=LB, finding=/^NAG$/i, onset_day<=29); 30 subjects scanned in dose stratum; matched keys: LB:NAG | **MATCH** |
+| onset_concordance | HIGH CHOL onset registered for >=5 subjects by day 29 (cohort M 1.68x g=2.70 p<0.001 -- engine emits 0/30 SCIENCE-FLAG Stream 6 cross-study reproduction) | 20 subject(s) (>=5) match (dose_level=3, domain=LB, finding=/^CHOL$/i, onset_day<=29); 30 subjects scanned in dose stratum; matched keys: LB:CHOL | **MATCH** |
 | tumor_detected | No tumors expected in 1-month rat repeat-dose (Compound A, n=30/dose, phospholipidosis-active n=32); engine has_tumors=false (regression pin) | 1 tumor check(s) match: has_tumors=false | **MATCH** |
 | severity_distribution | Moderate general + integumentary + marked reproductive grades (1-month rat Compound A, phospholipidosis-active; pathologist-graded) | all 3 severity constraint(s) match: general=3, integumentary=3, reproductive=4 | **MATCH** |
 

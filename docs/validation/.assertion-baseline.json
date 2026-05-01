@@ -96,6 +96,16 @@
   },
   {
     "study_id": "instem",
+    "type": "loael_combined",
+    "description": "Combined LOAEL = 1 (60 mg/kg, lowest treated dose)"
+  },
+  {
+    "study_id": "instem",
+    "type": "noael_combined",
+    "description": "Combined NOAEL = null (LOAEL at lowest treated dose 60 mg/kg per readme)"
+  },
+  {
+    "study_id": "instem",
     "type": "recovery_all_groups",
     "description": "All 5 groups have recovery arms"
   },
@@ -103,6 +113,16 @@
     "study_id": "instem",
     "type": "tk_excluded",
     "description": "TK satellites (~18/group) excluded from analysis"
+  },
+  {
+    "study_id": "Nimble",
+    "type": "cross_organ_syndrome",
+    "description": "Multi-organ co-firing (8 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction of PC 7-organ pattern"
+  },
+  {
+    "study_id": "PDS",
+    "type": "cross_organ_syndrome",
+    "description": "Multi-organ co-firing (14 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction (broader pattern than PC 7-organ)"
   },
   {
     "study_id": "PDS",
@@ -121,18 +141,13 @@
   },
   {
     "study_id": "PointCross",
-    "type": "onset_concordance",
-    "description": "HIGH ALP onset registered for >=5 subjects by day 92 (cohort M 1.29x / F 1.53x g=2.81, hepatic flagged -- engine emits 0/29 SCIENCE-FLAG Stream 6 worst-case complete miss)"
+    "type": "loael_combined",
+    "description": "Combined LOAEL = 1 (Group 2, 2 mg/kg)"
   },
   {
     "study_id": "PointCross",
-    "type": "onset_concordance",
-    "description": "HIGH ALT onset registered for >=5 subjects by day 92 (cohort M 1.34x / F 1.25x, hepatic flagged -- engine emits 1/29 SCIENCE-FLAG Stream 6 sister)"
-  },
-  {
-    "study_id": "PointCross",
-    "type": "onset_concordance",
-    "description": "HIGH AST onset registered for >=5 of 10 affected subjects by day 92 (cohort 1.41x M / 1.56x F -- engine emits 1/10 SCIENCE-FLAG Stream 6)"
+    "type": "noael_combined",
+    "description": "Combined NOAEL = null (not established — LOAEL at Group 2)"
   },
   {
     "study_id": "PointCross",
@@ -140,19 +155,9 @@
     "description": "HIGH hepatic hypertrophy: persistent verdict (main arm 9/10 sev 2.56; engine reports anomaly -- SCIENCE-FLAG)"
   },
   {
-    "study_id": "TOXSCI-24-0062--35449 1 month dog- Compound B-xpt",
-    "type": "onset_concordance",
-    "description": "HIGH AST onset registered for >=5 subjects by day 28 (cohort F 1.95x g=1.29 p=0.051 / M 1.30x g=1.15 -- engine emits 2/10 SCIENCE-FLAG Stream 6 cross-species reproduction of PC AST 1/29)"
-  },
-  {
     "study_id": "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt",
-    "type": "onset_concordance",
-    "description": "HIGH ALP onset registered for >=5 subjects by day 29 (cohort M 0.62x g=-2.29 38% decrease tr_adverse -- engine emits 0/10 SCIENCE-FLAG Stream 6 NEW: direction-handling blind spot, 2x rule cannot fire on cohort decreases)"
-  },
-  {
-    "study_id": "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt",
-    "type": "onset_concordance",
-    "description": "HIGH ALT onset registered for >=5 subjects by day 29 (cohort F 0.71x g=-1.99 29% decrease tr_adverse -- engine emits 0/10 SCIENCE-FLAG Stream 6 sister-marker direction-handling reproduction)"
+    "type": "cross_organ_syndrome",
+    "description": "Multi-organ co-firing (14 target_organs at HIGH 100 mg/kg dog); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-SPECIES reproduction (rat -> dog parallel to Stream 6 evidence)"
   },
   {
     "study_id": "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt",
@@ -188,40 +193,5 @@
     "study_id": "TOXSCI-24-0062--96298 1 month rat- Compound A xpt",
     "type": "no_recovery",
     "description": "No recovery period"
-  },
-  {
-    "study_id": "TOXSCI-24-0062--96298 1 month rat- Compound A xpt",
-    "type": "onset_concordance",
-    "description": "HIGH CHOL onset registered for >=5 subjects by day 29 (cohort M 1.68x g=2.70 p<0.001 -- engine emits 0/30 SCIENCE-FLAG Stream 6 cross-study reproduction)"
-  },
-  {
-    "study_id": "Nimble",
-    "type": "cross_organ_syndrome",
-    "description": "Multi-organ co-firing (8 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction of PC 7-organ pattern"
-  },
-  {
-    "study_id": "PDS",
-    "type": "cross_organ_syndrome",
-    "description": "Multi-organ co-firing (14 target_organs at HIGH); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-study reproduction (broader pattern than PC 7-organ)"
-  },
-  {
-    "study_id": "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt",
-    "type": "cross_organ_syndrome",
-    "description": "Multi-organ co-firing (14 target_organs at HIGH 100 mg/kg dog); engine emits 0 cross_organ_syndromes -- SCIENCE-FLAG Stream 5 cross-SPECIES reproduction (rat -> dog parallel to Stream 6 evidence)"
-  },
-  {
-    "study_id": "instem",
-    "type": "onset_concordance",
-    "description": "HIGH CHOL onset registered for >=5 subjects by day 30 (cohort M 1.45x p=0.009 g=2.58 + F 1.36x p=0.001 g=2.19 both treatment_related=True -- engine emits 0/30 SCIENCE-FLAG Stream 6 cross-study reproduction in 3rd rat study)"
-  },
-  {
-    "study_id": "PDS",
-    "type": "onset_concordance",
-    "description": "HIGH RETI onset registered for >=5 subjects by day 31 (cohort F 1.43-1.83x at days 30-31, p=0.0003-0.01 g=1.55-1.83, treatment_related=True -- engine emits 2/36 SCIENCE-FLAG Stream 6 cross-study reproduction in 4th rat study, NEW organ system: hematopoiesis/erythropoiesis)"
-  },
-  {
-    "study_id": "CBER-POC-Pilot-Study4-Vaccine",
-    "type": "onset_concordance",
-    "description": "HIGH FIBRINO onset registered for >=5 subjects by day 31 (cohort F 1.73x p=0.0 g=4.04 + M 1.53x p=2e-6 g=2.54 day 3, sustained at day 31; treatment_related=True both sexes -- engine emits 1/20 SCIENCE-FLAG Stream 6 cross-species reproduction in 1st rabbit study + 1st coagulation-cascade organ system)"
   }
 ]

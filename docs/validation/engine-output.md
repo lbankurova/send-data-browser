@@ -1,7 +1,7 @@
 # Engine Output
 
-**Engine:** commit `8f393302` (2026-05-01)
-**Generated:** 2026-05-01T19:42:19.194Z
+**Engine:** commit `b49913b9` (2026-05-01)
+**Generated:** 2026-05-01T21:00:19.734Z
 
 Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regenerate with `/regen-validation`.
 
@@ -231,9 +231,9 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
 |-----|-------|-------|-----------|---------|------------|--------|
-| M | Not established | Group 2, SENDVACC10 | 47 | BG, BW, FW, IS, LB, MI, OM | 0.80 | below_tested_range |
-| F | Not established | Group 2, SENDVACC10 | 29 | BG, IS, LB, MA, MI, OM | 0.80 | below_tested_range |
-| Combined | Not established | Group 2, SENDVACC10 | 76 | BG, BW, FW, IS, LB, MA, MI, OM | 0.80 | below_tested_range |
+| M | Not established | Group 2, SENDVACC10 | 46 | BG, BW, FW, IS, LB, MI, OM | 0.80 | below_tested_range |
+| F | Not established | Group 2, SENDVACC10 | 28 | BG, IS, LB, MA, MI, OM | 0.80 | below_tested_range |
+| Combined | Not established | Group 2, SENDVACC10 | 74 | BG, BW, FW, IS, LB, MA, MI, OM | 0.80 | below_tested_range |
 
 ### Target Organs
 
@@ -737,9 +737,9 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
 |-----|-------|-------|-----------|---------|------------|--------|
-| M | Not established | Group 2,2 mg/kg PCDRUG | 10 | BW, LB, OM | 0.80 | below_tested_range |
+| M | Group 2,2 mg/kg PCDRUG | Group 3,20 mg/kg PCDRUG | 14 | BW, LB, MI | 0.60 | highest_dose_no_adverse |
 | F | Not established | Group 2,2 mg/kg PCDRUG | 3 | BW, LB | 0.80 | below_tested_range |
-| Combined | Not established | Group 2,2 mg/kg PCDRUG | 13 | BW, LB, OM | 0.80 | below_tested_range |
+| Combined | Group 2,2 mg/kg PCDRUG | Group 3,20 mg/kg PCDRUG | 33 | BW, LB, MI, OM | 0.80 | highest_dose_no_adverse |
 
 ### Target Organs
 
@@ -819,9 +819,9 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
 |-----|-------|-------|-----------|---------|------------|--------|
-| M | Not established | Group 2 - 6576 3 mg/kg/day | 18 | BG, EG, FW, LB, VS | 0.80 | below_tested_range |
-| F | Not established | Group 2 - 6576 3 mg/kg/day | 17 | CL, EG, FW, LB, VS | 0.80 | below_tested_range |
-| Combined | Not established | Group 2 - 6576 3 mg/kg/day | 36 | BG, BW, CL, EG, FW, LB, VS | 0.80 | below_tested_range |
+| M | Not established | Group 2 - 6576 3 mg/kg/day | 17 | BG, EG, FW, LB, VS | 0.80 | below_tested_range |
+| F | Not established | Group 2 - 6576 3 mg/kg/day | 16 | CL, EG, LB, VS | 0.80 | below_tested_range |
+| Combined | Not established | Group 2 - 6576 3 mg/kg/day | 34 | BG, BW, CL, EG, FW, LB, VS | 0.80 | below_tested_range |
 
 ### Target Organs
 
@@ -900,9 +900,9 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
 |-----|-------|-------|-----------|---------|------------|--------|
-| M | Not established | Group 2 25 mg/kg/day | 17 | CL, LB, OM, VS | 0.80 | below_tested_range |
+| M | Not established | Group 2 25 mg/kg/day | 16 | CL, LB, OM, VS | 0.80 | below_tested_range |
 | F | Not established | Group 2 25 mg/kg/day | 9 | LB, OM | 0.80 | below_tested_range |
-| Combined | Not established | Group 2 25 mg/kg/day | 26 | CL, LB, OM, VS | 0.80 | below_tested_range |
+| Combined | Not established | Group 2 25 mg/kg/day | 25 | CL, LB, OM, VS | 0.80 | below_tested_range |
 
 ### Target Organs
 
@@ -1063,8 +1063,8 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
 |-----|-------|-------|-----------|---------|------------|--------|
 | M | Not established | 50 mg/kg | 4 | FW, LB | 0.80 | below_tested_range |
-| F | Not established | 50 mg/kg | 9 | BG, BW, FW, OM | 0.80 | below_tested_range |
-| Combined | Not established | 50 mg/kg | 14 | BG, BW, FW, LB, OM | 0.80 | below_tested_range |
+| F | Not established | 50 mg/kg | 4 | BG, FW, OM | 0.80 | below_tested_range |
+| Combined | Not established | 50 mg/kg | 8 | BG, FW, LB, OM | 0.80 | below_tested_range |
 
 ### Target Organs
 
@@ -1142,8 +1142,8 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
 |-----|-------|-------|-----------|---------|------------|--------|
 | M | Not established | 60 mg/kg/day XYZ-12345 | 7 | LB | 0.80 | below_tested_range |
-| F | Not established | 60 mg/kg/day XYZ-12345 | 11 | BG, BW, LB, OM | 0.80 | below_tested_range |
-| Combined | Not established | 60 mg/kg/day XYZ-12345 | 18 | BG, BW, LB, OM | 0.80 | below_tested_range |
+| F | Not established | 60 mg/kg/day XYZ-12345 | 9 | BG, BW, LB | 0.80 | below_tested_range |
+| Combined | 60 mg/kg/day XYZ-12345 | 200 mg/kg/day XYZ-12345 | 29 | BG, BW, FW, LB, OM | 0.80 | highest_dose_no_adverse |
 
 ### Target Organs
 
