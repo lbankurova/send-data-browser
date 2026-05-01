@@ -6,6 +6,7 @@
  */
 
 import rawOverrides from "../../../shared/species-overrides.json";
+import { normalizeSpeciesKey } from "./species-key";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -34,14 +35,20 @@ export interface SpeciesConfig {
 
 const OVERRIDES: Record<string, SpeciesConfig> = rawOverrides.overrides as Record<string, SpeciesConfig>;
 
-/** Resolve species string to a canonical key in the overrides registry. */
+/**
+ * Resolve species string to a canonical key in the overrides registry.
+ * 3-stage dispatch: direct registry key match -> _aliases match -> canonical
+ * pattern fallback. Stages 1+2 are data-driven (read from
+ * shared/species-overrides.json); stage 3 delegates to normalizeSpeciesKey()
+ * (GAP-218: shared canonical pattern matcher).
+ */
 function resolveSpeciesKey(species: string): string | null {
   const lower = species.toLowerCase().trim();
 
-  // Direct match
+  // Stage 1: direct registry key match
   if (OVERRIDES[lower]) return lower;
 
-  // Alias match
+  // Stage 2: registry-defined alias match (data-driven from JSON _aliases)
   for (const [key, config] of Object.entries(OVERRIDES)) {
     const aliases = (config as SpeciesConfig)._aliases;
     if (aliases && aliases.some((a) => lower.includes(a) || a.includes(lower))) {
@@ -49,25 +56,11 @@ function resolveSpeciesKey(species: string): string | null {
     }
   }
 
-  // Partial match (e.g., "sprague-dawley" → "rat", "beagle" → "dog")
-  if (lower.includes("rat") || lower.includes("sprague") || lower.includes("wistar")) return "rat";
-  if (lower.includes("rabbit") || lower.includes("new zealand")) return "rabbit";
-  if (lower.includes("dog") || lower.includes("beagle")) return "dog";
-  if (lower.includes("cyno") || lower.includes("macaq") || lower.includes("monkey") || lower.includes("primate") || lower.includes("nhp")) return "cynomolgus";
-  if (lower.includes("guinea") || lower.includes("cavy") || lower.includes("hartley") || lower.includes("dunkin")) return "guinea pig";
-  // Mouse strain coverage (GAP-262): match common strain identifiers BEFORE the
-  // generic "mouse" fall-through so B6C3F1 / CD-1 / C57BL/6 / BALB/c are picked
-  // up by the dedicated mouse override profile rather than rat-proxied.
-  if (
-    lower.includes("mouse") ||
-    lower.includes("mice") ||
-    lower.includes("b6c3f1") ||
-    lower.includes("cd-1") || lower.includes("cd1") || lower.includes("crl:cd") ||
-    lower.includes("c57bl") || lower.includes("c57") ||
-    lower.includes("balb")
-  ) return "mouse";
-
-  return null;
+  // Stage 3: canonical pattern fallback. The OVERRIDES registry uses the same
+  // vocabulary as the canonical key set (rat / mouse / dog / cynomolgus /
+  // rabbit / guinea pig), so the canonical key maps directly to a registry
+  // entry when one exists.
+  return normalizeSpeciesKey(species);
 }
 
 // ─── Public API ───────────────────────────────────────────

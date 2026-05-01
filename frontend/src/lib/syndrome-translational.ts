@@ -34,6 +34,7 @@ import type {
   ClinicalObservation,
 } from "@/lib/syndrome-interpretation-types";
 import type { ExpectedEffectProfile } from "@/types/compound-profile";
+import { normalizeSpeciesKey } from "@/lib/species-key";
 
 // Certainty module
 import {
@@ -110,15 +111,19 @@ const MEDDRA_INDEX: Map<string, string[]> = new Map();
   }
 }
 
-/** Normalize species strings to concordance lookup keys. */
+/**
+ * Normalize species strings to concordance lookup keys.
+ * GAP-218 adapter: delegates to canonical normalizeSpeciesKey() and maps
+ * "cynomolgus" -> "monkey" because SOC_CONCORDANCE table keys + speciesBands
+ * (organ-sex-concordance.ts:244 invariant) use the "monkey" vocabulary.
+ * Falls through to lowercased input on no match (preserves prior behavior
+ * for unrecognized species; downstream lookup returns null gracefully).
+ */
 export function normalizeSpecies(species: string): string {
-  const s = species.toLowerCase().trim();
-  if (s.includes("sprague") || s.includes("wistar") || s === "rat") return "rat";
-  if (s.includes("beagle") || s === "dog") return "dog";
-  if (s.includes("cynomolgus") || s.includes("rhesus") || s === "monkey") return "monkey";
-  if (s.includes("mouse") || s.includes("cd-1") || s.includes("c57bl")) return "mouse";
-  if (s.includes("rabbit") || s.includes("new zealand")) return "rabbit";
-  return s;
+  const canonical = normalizeSpeciesKey(species);
+  if (canonical === "cynomolgus") return "monkey";
+  if (canonical) return canonical;
+  return species.toLowerCase().trim();
 }
 
 /** Look up SOC-level LR+ for a species × SOC combination. */

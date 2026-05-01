@@ -10,6 +10,7 @@
  */
 
 import type { ReversibilityQualifier } from "./finding-nature";
+import { normalizeSpeciesKey } from "./species-key";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -399,12 +400,16 @@ export function applySeverityModulation(
 
 // ─── Species modifier ─────────────────────────────────────
 
+/**
+ * GAP-218 adapter: delegates to canonical normalizeSpeciesKey() and maps
+ * "cynomolgus" -> "nhp" because the recovery-duration JSON entry.species[]
+ * keys use the "nhp" vocabulary. Returns null for unrecognized species
+ * (preserves prior behavior; consumer skips modifier when null).
+ */
 function normalizeSpecies(species: string): "rat" | "mouse" | "dog" | "nhp" | null {
-  const upper = species.toUpperCase().trim();
-  if (upper === "RAT" || upper.includes("SPRAGUE") || upper.includes("WISTAR") || upper.includes("FISCHER")) return "rat";
-  if (upper === "MOUSE" || upper.includes("CD-1") || upper.includes("B6C3F1")) return "mouse";
-  if (upper === "DOG" || upper.includes("BEAGLE")) return "dog";
-  if (upper === "MONKEY" || upper.includes("MACAQUE") || upper.includes("CYNOMOLGUS") || upper.includes("PRIMATE")) return "nhp";
+  const canonical = normalizeSpeciesKey(species);
+  if (canonical === "cynomolgus") return "nhp";
+  if (canonical === "rat" || canonical === "mouse" || canonical === "dog") return canonical;
   return null;
 }
 
