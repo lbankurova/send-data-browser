@@ -308,7 +308,7 @@ Single source of truth for audit-related work outstanding. Action items separate
 
 | ID | Title | Plan ref |
 |---|---|---|
-| **AUDIT-12** | Phase 4: harness as blocking CI gate | `docs/_internal/incoming/scientific-defensibility-audit-plan.md` §4. Adds `audit-knowledge-load-bearing.py --strict` + `npm test -- generate-validation-docs` as PR-blocking checks. ~1 hour. |
+| ~~**AUDIT-12**~~ | ~~Phase 4: harness as blocking CI gate~~ | SUBSTANTIAL CLOSE 2026-04-30 -- both items now block locally via `.githooks/pre-commit`: item 1 (`audit-knowledge-load-bearing.py --strict`) wired as Step 0i (was unwired); item 2 (`generate-validation-docs` test) was already at Step 0f line 445. **CI bypass-resistance deferred** (per merit-evidence audit, this session): no `.github/workflows/` exists in the repo; bootstrapping CI introduces real determinism + Linux-portability risks (pipeline floating-point divergence, Windows-isms in the generator) without addressing a documented failure mode. Zero documented `--no-verify` baseline-bypass incidents in `.lattice/decisions.log` or BUG-SWEEP -- the bypass concern in plan §4 was generic CI rationale, not project-specific. Side-effect: discovered + fixed CV-FACT-001..005 LIVE_OVERCLAIM defect from AUDIT-4 (parity test at `backend/tests/test_knowledge_facts_cv.py` promotes them to TEST_VERIFIED). Revisit CI when first bypass incident is documented. |
 | **AUDIT-13** | Phase 5: pull oracle authoring into research/peer-review skills | Plan §5. Updates `/lattice:research-cycle` + `/lattice:peer-review` to require an oracle-walk during research. ~1 hour. |
 
 ### Framework infrastructure

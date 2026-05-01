@@ -536,6 +536,55 @@ if [ -f "$REPO_ROOT/scripts/check-rule-attestations.py" ] \
     fi
 fi
 
+# --- Step 0i: Knowledge-graph load-bearing audit (BLOCKS on LIVE_OVERCLAIM/DEAD) ---
+# Runs scripts/audit-knowledge-load-bearing.py --strict. Catches typed facts
+# that claim live consumers (consumed_by paths with status: live) but whose
+# claimed targets either don't exist or don't reference the fact_id. Promotes
+# AUDIT-12's item 1 (per scientific-defensibility-audit-plan.md §4) from
+# unwired to local gate. CI bypass-resistance for this check remains a known
+# follow-on (no .github/workflows/ exists; deferred per merit-evidence
+# review on 2026-04-30 -- see scientific-defensibility-findings.md AUDIT-12).
+#
+# The script is fast (~3s) and operates on the typed graph + grep, not staged
+# diff -- so it always runs. It catches drift in the WHOLE graph, not just
+# what this commit touched.
+#
+# Bypass: LATTICE_LOAD_BEARING_AUDIT_SKIP=1 (emergency only; document why).
+
+if [ -f "$REPO_ROOT/scripts/audit-knowledge-load-bearing.py" ] \
+    && [ -z "$LATTICE_LOAD_BEARING_AUDIT_SKIP" ]; then
+    echo "--- Step 0i: Knowledge-graph load-bearing audit ---"
+    PYBIN="python"
+    if [ -x "$REPO_ROOT/backend/venv/Scripts/python.exe" ]; then
+        PYBIN="$REPO_ROOT/backend/venv/Scripts/python.exe"
+    elif [ -x "$REPO_ROOT/backend/venv/bin/python" ]; then
+        PYBIN="$REPO_ROOT/backend/venv/bin/python"
+    fi
+    if "$PYBIN" "$REPO_ROOT/scripts/audit-knowledge-load-bearing.py" --strict > /tmp/lb-audit.log 2>&1; then
+        echo "  PASS: no LIVE_OVERCLAIM or DEAD facts."
+        echo ""
+    else
+        echo ""
+        echo "  COMMIT BLOCKED: load-bearing audit reports LIVE_OVERCLAIM or DEAD facts."
+        echo ""
+        echo "  Failing facts:"
+        grep -E '^### ' /tmp/lb-audit.log | head -20 | sed 's/^### /    - /'
+        echo ""
+        echo "  Run for details:"
+        echo "    $PYBIN scripts/audit-knowledge-load-bearing.py --strict"
+        echo ""
+        echo "  Fix paths:"
+        echo "    - Add a parity test under backend/tests/test_knowledge_facts_*.py"
+        echo "      mentioning the fact_id (TEST_VERIFIED dominates LIVE_OVERCLAIM)."
+        echo "    - Or correct the consumed_by paths so live targets reference"
+        echo "      the fact_id literally (LIVE_VERIFIED resolution)."
+        echo ""
+        echo "  Emergency bypass (document the reason in commit message):"
+        echo "    LATTICE_LOAD_BEARING_AUDIT_SKIP=1 git commit ..."
+        exit 1
+    fi
+fi
+
 # --- Step 0b: Doc generator freshness (BLOCKS if stale) ---
 # Checks that the 3 doc generators were run after source changes.
 # Only blocks if engine/analysis files are staged (the files that
